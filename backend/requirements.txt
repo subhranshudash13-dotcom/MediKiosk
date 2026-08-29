@@ -1,0 +1,25 @@
+# Core FastAPI & Server
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.8.0
+pydantic-settings>=2.4.0
+python-multipart>=0.0.9
+websockets>=13.0
+python-dotenv>=1.0.1
+
+# Database & Cache
+motor>=3.5.0
+pymongo>=4.8.0
+redis>=5.0.0
+
+# Async HTTP & Network
+httpx>=0.27.0
+aiofiles>=24.1.0
+
+# Background Task Queue
+celery>=5.4.0
+
+# Image & Data Utilities
+Pillow>=10.4.0
+numpy>=1.26.0
+jinja2>=3.1.4
