@@ -3,11 +3,11 @@
 
 ---
 
-## 📌 Executive Architecture & Stack Overview
+## 📌 Executive Architecture & Layered Stack Overview
 
 ```
                                   ┌────────────────────────────────────────┐
-                                  │      MediKiosk Client Surfaces         │
+                                  │       LAYER 1: FRONTEND SURFACES       │
                                   ├───────────────────┬────────────────────┤
                                   │  21.5" Kiosk UI   │  Doctor Dashboard  │
                                   │ (Next.js/Zustand) │ (Next.js/Tailwind) │
@@ -17,15 +17,15 @@
                                             │                   │
                                             ▼                   ▼
                                   ┌────────────────────────────────────────┐
-                                  │        FastAPI API Gateway Layer       │
-                                  │  (CORS, Rate Limit, Auth, Session Mgr) │
+                                  │    LAYER 2: BACKEND & API GATEWAY      │
+                                  │  (FastAPI, Rate Limit, Session Mgr)    │
                                   └─────────┬───────────────────┬──────────┘
                                             │                   │
                      ┌──────────────────────┴──────┐            │
                      │                             │            │
                      ▼                             ▼            ▼
      ┌──────────────────────────────┐    ┌──────────────────────────────┐
-     │   Module A: Speech & AI      │    │  Module B: Document AI       │
+     │  LAYER 3A: SPEECH & LLM AI   │    │    LAYER 3B: DOCUMENT AI     │
      ├──────────────────────────────┤    ├──────────────────────────────┤
      │ • ASR: Bhashini / Whisper    │    │ • OCR: Azure Doc / Vision    │
      │ • TTS: Bhashini / Eleven     │    │ • NER: Gemini 1.5 / LayoutLM │
@@ -36,7 +36,7 @@
                                       │
                                       ▼
      ┌──────────────────────────────────────────────────────────────────┐
-     │   Module C & D: Clinical Summary, FHIR R4 & ABDM Gateway         │
+     │          LAYER 4: ABDM GATEWAY, FHIR R4 & SECURITY               │
      ├──────────────────────────────────────────────────────────────────┤
      │ • FHIR R4 Bundles (Patient, Encounter, Condition, Observation)   │
      │ • ABDM M1 (ABHA Creation/Verify), M2 (HIP Linking), M3 (HIU)     │
@@ -45,7 +45,7 @@
                                       │
                                       ▼
      ┌──────────────────────────────────────────────────────────────────┐
-     │          Persistence, Queue & Storage Infrastructure             │
+     │             LAYER 5: DATABASE, QUEUE & STORAGE                   │
      ├────────────────────────────────┬─────────────────────────────────┤
      │ MongoDB Atlas (FHIR Records)   │ Redis / Celery (Async Tasks)    │
      │ AWS S3 / MinIO (Temp OCR Docs) │ Local In-Memory Fast Cache      │
@@ -70,212 +70,217 @@ To guarantee 100% zero-failure operation during live judge evaluations and produ
 
 ---
 
-## 📅 Multi-Phase Master Implementation Roadmap
+## 🏛️ Implementation Breakdown by Layer
 
+---
+
+### 🎨 Layer 1: Frontend Engineering (Kiosk UI & Doctor Portal)
+
+#### 1.1 Kiosk Client Application (Patient-Facing)
+- **Framework & Tech**: Next.js 14+ (App Router), React 18, Tailwind CSS, Framer Motion, Zustand, Lucide React, Howler.js.
+- **Key Modules & Screens**:
+  1. **Idle & Welcome Screen**:
+     - Language selection grid with 10+ Indian languages (Hindi, English, Bengali, Tamil, Telugu, Marathi, Odia, Gujarati, etc.).
+     - Large animated "Tap to Begin" touch target with welcoming bilingual voice prompt.
+  2. **ABHA Identification & Onboarding**:
+     - ABHA Card Scanner simulation, 14-digit ABHA ID manual entry, and Aadhaar OTP modal.
+     - Audio-guided DPDP Act 2023 consent card with simple "I Agree" tap-to-sign.
+  3. **Multimodal Clinical Interview Interface**:
+     - Full-screen dual-mode layout: Large dynamic choice cards on the right; animated voice ripple visualization on the left.
+     - Interactive Anatomical Body Map for pain site selection.
+     - Visual 1–10 Pain / Severity Slider with visual face expressions (Wong-Baker scale).
+     - AYUSH Pariksha intake toggle for Ayurvedic OPDs.
+  4. **Document Scanner & Camera Capture**:
+     - Live webcam / document camera feed integration with auto-edge cropping guide.
+     - Multi-page prescription and lab report upload queue with thumbnail previews.
+  5. **Review & Completion Screen**:
+     - Audio confirmation in the patient's language summarizing key complaints.
+     - Instant ephemeral session wipe on completion (zero local cookies/tokens).
+
+#### 1.2 Doctor Clinical Dashboard (Physician-Facing)
+- **Framework & Tech**: Next.js 14+, Tailwind CSS (Dark/Light medical theme), TanStack Query, Radix UI.
+- **Key Modules & Views**:
+  1. **Live Queue & Patient Triage Banner**:
+     - Real-time patient waiting list categorized by Token Number, ABHA ID, and Triage Priority.
+     - **P0 Emergency Red Flag Banner**: Flashing alert if a waiting patient exhibits acute cardiac/stroke symptoms.
+  2. **Structured Clinical Summary View**:
+     - Chief Complaint $\rightarrow$ HPI (SOCRATES) $\rightarrow$ Past Medical History $\rightarrow$ Active Medications $\rightarrow$ Allergies $\rightarrow$ AYUSH Prakriti/Agni $\rightarrow$ Review of Systems.
+     - Single-click inline editing for all fields before saving to Hospital EMR.
+  3. **Longitudinal Record & OCR Viewer**:
+     - Side-by-side view of digitized prescription image alongside extracted structured table.
+     - Out-of-range lab alerts highlighted in amber/red with historical trend graphs.
+  4. **ABDM Action Panel**:
+     - 1-Click "Approve & Push to ABDM PHR", "Issue e-Prescription", and "Download FHIR R4 Bundle".
+
+---
+
+### ⚙️ Layer 2: Backend & Microservices Engineering
+
+#### 2.1 FastAPI Core & API Gateway
+- **Framework & Tech**: Python 3.11+, FastAPI, Uvicorn, Pydantic v2, HTTPX (async client), WebSockets.
+- **Key Architecture Components**:
+  1. **API Router & Endpoints (`/api/v1/`)**:
+     - `/kiosk/session`: Session initialization, token generation, state management, and teardown.
+     - `/clinical/socrates`: Dynamic question state machine and adaptive branching logic.
+     - `/clinical/ayush`: Dashavidha Pariksha assessment engine.
+     - `/clinical/red-flags`: Rule-based and zero-shot emergency symptom classifier (<50ms execution).
+     - `/documents/ocr`: Multipart file ingestion, preprocessing, OCR dispatch, and medical NER.
+     - `/fhir/bundle`: Generation and JSON-schema validation of HL7 FHIR R4 Bundles.
+     - `/abdm/*`: Mock and live ABDM Sandbox authentication, ABHA lookup, and health data transfer.
+  2. **WebSocket Real-Time Audio Server (`/api/v1/ws/audio`)**:
+     - Bidirectional audio streaming over WebSocket.
+     - Ingestion of PCM 16kHz / WebM Opus chunks from browser `AudioWorklet`.
+     - Server-side Voice Activity Detection (VAD) via `webrtcvad` / Silero VAD to detect user pauses.
+  3. **Middleware & Security**:
+     - CORS middleware, rate limiter (Redis token bucket), centralized exception handler, request ID correlation logging.
+
+---
+
+### 🧠 Layer 3: AI, Speech & Document Intelligence Pipelines
+
+#### 3.1 Multilingual Speech Processing (ASR & TTS)
+- **Primary Engines**: Bhashini ULCA API (Government of India) & OpenAI Whisper API.
+- **Workflow**:
+  1. Audio stream $\rightarrow$ VAD chunking $\rightarrow$ Noise reduction filter $\rightarrow$ Speech-to-Text inference.
+  2. Detected dialect identification $\rightarrow$ Translation to standardized English clinical transcript.
+  3. Text-to-Speech synthesis for patient prompts in chosen regional language (Hindi, Tamil, Telugu, Odia, etc.).
+  4. Pre-rendered audio asset cache for common system prompts for sub-10ms instant response.
+
+#### 3.2 Clinical Ontology & Conversational LLM Engine
+- **Primary Engine**: Google Gemini 1.5 Pro / Flash (with GPT-4o fallback).
+- **Workflow**:
+  1. **SOCRATES State Machine**:
+     $$\text{Site} \rightarrow \text{Onset} \rightarrow \text{Character} \rightarrow \text{Radiation} \rightarrow \text{Associations} \rightarrow \text{Timing} \rightarrow \text{Exacerbating/Relieving} \rightarrow \text{Severity}$$
+  2. **AYUSH Assessment**:
+     - Captures *Prakriti* (constitution), *Vikriti* (imbalance), *Agni* (metabolic fire), *Koshtha* (bowel type), and *Ahara-Vihara* (diet/lifestyle).
+  3. **Clinical Summarizer**:
+     - Synthesizes spoken transcript + scanned document data into standard medical EMR draft.
+
+#### 3.3 Medical Document OCR & Clinical Entity Extraction (NER)
+- **Primary Engines**: Azure AI Document Intelligence + Google Cloud Vision + Local Tesseract OCR.
+- **Workflow**:
+  1. Image preprocessing (deskew, contrast enhancement, shadow removal with OpenCV).
+  2. Multi-engine text and layout extraction.
+  3. Structured NER parsing via Pydantic schema:
+     - **Medications**: Name, Strength, Form, Frequency, Route, Duration.
+     - **Lab Tests**: Test Name, Observed Value, Unit, Reference Low, Reference High, Out-of-Range Flag.
+     - **Diagnoses**: ICD-10 mapped condition names.
+
+---
+
+### 🗄️ Layer 4: Database, Caching & Storage Engineering
+
+#### 4.1 Persistence & Document Store
+- **Technology**: MongoDB Atlas (Async Motor Client) / Local MongoDB.
+- **Collections & Schemas**:
+  - `kiosk_sessions`: Ephemeral session metadata, station ID, active language, step index.
+  - `patients`: Patient demographics, linked ABHA Address, age, gender, contact.
+  - `encounters`: Clinical encounters, OPD department, token number, triage status.
+  - `clinical_summaries`: Complete structured clinical summaries with doctor sign-off status.
+  - `medical_documents`: OCR parsed documents, extracted parameters, timeline metadata.
+  - `fhir_bundles`: Standardized HL7 FHIR R4 JSON payloads ready for ABDM transfer.
+
+#### 4.2 Caching, State & Task Queue
+- **Technology**: Redis (Upstash / Local Redis) + Python `asyncio` background tasks.
+- **Responsibilities**:
+  - Rate limiting & active session heartbeats.
+  - Kiosk state synchronization with doctor dashboard via Pub/Sub.
+  - Temporary audio buffer caching during live recording.
+
+#### 4.3 Encrypted Temporary Object Storage
+- **Technology**: AWS S3 / Cloudinary / Local temporary directory (`backend/uploads/temp`).
+- **Security Policy**: Auto-deletion lifecycle rule wiping uploaded prescription scans immediately after OCR extraction.
+
+---
+
+### 🛡️ Layer 5: ABDM, FHIR R4 & DPDP Compliance
+
+#### 5.1 Ayushman Bharat Digital Mission (ABDM) Integration
+- **Milestone M1 (ABHA Creation & Verification)**:
+  - ABHA Address creation, Aadhaar KYC OTP validation, and instant QR Code check-in.
+- **Milestone M2 (Health Information Provider - HIP)**:
+  - Linking health records with patient ABHA address and discovering care contexts.
+- **Milestone M3 (Health Information User - HIU)**:
+  - Pulling consented longitudinal records from ABDM network to pre-populate clinical history.
+
+#### 5.2 HL7 FHIR R4 Standardization
+- Strict compliance with ABDM FHIR profiles:
+  - `Patient`, `Encounter`, `Condition`, `Observation`, `MedicationRequest`, `AllergyIntolerance`, `DocumentReference`, and `Bundle`.
+
+#### 5.3 DPDP Act 2023 & Zero-Trust Ephemeral Privacy
+- Audio and visual consent presentation with clear, plain-language audio playback.
+- Granular consent options (allow doctor viewing, allow ABDM PHR export).
+- Immediate destruction of all local session data, cookies, and voice recordings upon session completion or 90s idle timeout.
+
+---
+
+### 🚀 Layer 6: DevOps, Testing & Hackathon Winning Demo Strategy
+
+#### 6.1 Automated Quality Assurance
+- **Backend Tests (`pytest`)**:
+  - Unit tests for all API routes, Pydantic validation, and FHIR R4 JSON schema compliance.
+  - Red-flag sensitivity test (verifying 100% emergency trigger rate on cardiac/stroke test cases).
+- **Frontend Tests (`playwright` / `vitest`)**:
+  - Full end-to-end simulation of multilingual patient check-in, voice interaction, document upload, and doctor sign-off.
+
+#### 6.2 "Judge Demo Mode" & Interactive Showcase Features
+- **Discreet Demo Drawer**:
+  - Instant pre-loaded patient profiles for live presentations:
+    1. **Scenario A (Cardiac Emergency)**: Acute chest pain with left arm radiation $\rightarrow$ Triggers instant red-flag triage alert banner.
+    2. **Scenario B (Rural Hindi Diabetic)**: Spoken Hindi narration + paper lab report scan $\rightarrow$ Flags HbA1c 10.4%, generates bilingual summary.
+    3. **Scenario C (Ayurvedic Chronic Pain)**: Joint stiffness $\rightarrow$ Captures Vata-Kapha Prakriti, Agni score, and Ahara-Vihara habits.
+- **Live System Telemetry**:
+  - Real-time latency monitors displaying ASR response time (<600ms), OCR extraction time (<4.5s), and ABDM connection status.
+
+---
+
+## 📅 Multi-Phase Execution Schedule (Layer by Layer)
+
+```mermaid
+gantt
+    title MediKiosk Multi-Layer Execution Roadmap
+    dateFormat  YYYY-MM-DD
+    section Phase 1: Foundation & Schemas
+    FastAPI Core, Motor MongoDB, Redis Setup       :done,    p1_be, 2026-08-01, 2026-08-08
+    Pydantic & FHIR R4 Data Models                 :done,    p1_dm, 2026-08-05, 2026-08-12
+    Next.js 14 Design Tokens & Layout Shell        :done,    p1_fe, 2026-08-08, 2026-08-15
+    section Phase 2: Speech & UI Parity
+    WebSocket Streaming Audio Server & VAD         :done,    p2_ws, 2026-08-15, 2026-08-20
+    Bhashini / Whisper Multilingual ASR/TTS       :done,    p2_ai, 2026-08-18, 2026-08-23
+    Dual-Mode Touch/Voice Kiosk UI                 :done,    p2_fe, 2026-08-22, 2026-08-28
+    section Phase 3: Clinical & AYUSH Engine
+    SOCRATES State Machine & Branching             :active,  p3_soc, 2026-08-28, 2026-09-03
+    AYUSH Dashavidha Pariksha Intake               :active,  p3_ayu, 2026-08-29, 2026-09-05
+    Emergency Red Flag Triage (<50ms)              :         p3_rf,  2026-09-02, 2026-09-08
+    section Phase 4: Document AI & Timeline
+    Multi-Engine OCR (Azure + Vision + Tesseract)  :         p4_ocr, 2026-09-06, 2026-09-12
+    Medical NER & Lab Out-of-Range Rule Engine     :         p4_ner, 2026-09-10, 2026-09-16
+    Doctor Dashboard Longitudinal Timeline         :         p4_fe,  2026-09-14, 2026-09-20
+    section Phase 5: ABDM, FHIR & Compliance
+    ABDM M1/M2/M3 Sandbox Integration              :         p5_abdm, 2026-09-18, 2026-09-25
+    FHIR R4 Bundle Validation Engine               :         p5_fhir, 2026-09-22, 2026-09-27
+    DPDP Audio Consent & Ephemeral Session Wipe    :         p5_sec,  2026-09-25, 2026-09-30
+    section Phase 6: Demo Polish & Pitch
+    Judge Persona Switcher & Demo Mode             :         p6_demo, 2026-10-01, 2026-10-05
+    Live Latency Metrics & E2E Testing             :         p6_qa,   2026-10-04, 2026-10-08
 ```
-PHASE 1: Foundation & Resilient Infrastructure (Days 1–2)
-├── Setup unified repository architecture & type definitions
-├── Secure API keys & configuration management (.env validation)
-├── Stand up FastAPI core with Pydantic v2 & MongoDB Motor async client
-└── Setup Next.js 14 App Router with Tailwind design system & sound assets
-
-PHASE 2: Multimodal Speech & Multilingual Core (Days 3–4)
-├── Implement WebSocket streaming audio server (`/ws/audio`)
-├── Connect Bhashini / Whisper ASR & TTS pipelines
-├── Build Voice Activity Detection (VAD) & noise cancellation filters
-└── Develop high-contrast Kiosk UI with synchronous visual & audio guidance
-
-PHASE 3: Clinical Intelligence & AYUSH Engine (Days 5–6)
-├── Implement SOCRATES Adaptive Elicitation Framework
-├── Build AYUSH Dashavidha & Ashtavidha Pariksha module
-├── Develop Emergency Red Flag Triage detector (<50ms response)
-└── Implement Doctor-in-the-Loop Clinical Summary Synthesizer
-
-PHASE 4: Document OCR & Longitudinal Timeline Engine (Days 7–8)
-├── Deploy multi-engine OCR pipeline (Azure + Cloud Vision + Tesseract)
-├── Medical NER: Extract drugs, dosages, diagnoses, test parameters
-├── Build Out-of-Range Lab Flagging & Drug Interaction rules
-└── Construct Interactive Patient Longitudinal Timeline view
-
-PHASE 5: ABDM Sandbox, FHIR R4 & DPDP Compliance (Days 9–10)
-├── Integrate ABDM Milestones M1, M2, and M3 APIs
-├── Implement ABDM compliant FHIR R4 Bundle generator & validator
-├── Build Audio-visual DPDP Act 2023 Consent flow
-└── Implement Zero-Trust Kiosk Session Destruction mechanism
-
-PHASE 6: Polish, Failover Engineering & Hackathon Winning Demo (Days 11–12)
-├── End-to-end integrated stress testing & edge-case handling
-├── Build "Demo Mode / Sandbox Switcher" for flawless presentation
-├── Create realistic patient personas (Emergency, Rural AYUSH, Chronic Diabetic)
-└── Prepare pitch deck, architecture video, and interactive judge walkthrough
-```
 
 ---
 
-## 🛠️ Phase-by-Phase Technical Execution Details
+## 🎯 Verification Plan
 
----
+### Automated Tests
+1. **API Endpoints (`pytest backend/tests/`)**:
+   - `test_kiosk_session_lifecycle()`: Validates session start, question transitions, and session destruction.
+   - `test_socrates_branching()`: Validates dynamic follow-ups for chest pain, abdominal pain, and fever.
+   - `test_ayush_assessment()`: Validates Prakriti score calculations and Ahara-Vihara classification.
+   - `test_red_flag_alerting()`: Confirms 100% detection rate on emergency cardiac/stroke keywords.
+   - `test_ocr_ner_pipeline()`: Tests extraction of prescribed drugs and out-of-range lab parameters.
+   - `test_fhir_r4_compliance()`: Validates generated JSON bundles against official HL7 FHIR R4 schema.
 
-### Phase 1: Foundation, Schemas & Infrastructure
-- **Objective**: Establish the bedrock architecture, error handling, strict typing, and database connectivity.
-- **Tasks**:
-  1. **Config & Environment Engine**:
-     - Implement `backend/app/core/config.py` using `pydantic-settings` to strictly validate all API keys on startup.
-     - Provide fallback defaults so local development and offline judge environments never crash.
-  2. **Database & Connection Pooling**:
-     - Configure `backend/app/core/database.py` with Motor (async MongoDB) and Redis client with automatic reconnect.
-  3. **Standard Response & Exception Handlers**:
-     - Build centralized middleware for logging, CORS, rate limiting, and structured JSON responses (`{ success, data, error, timestamp }`).
-  4. **Frontend Design Tokens & Kiosk Shell**:
-     - Configure `tailwind.config.ts` with custom healthcare tokens (Accessible Emerald `#059669`, Medical Indigo `#4F46E5`, Alert Rose `#E11D48`, Warm Slate `#0F172A`).
-     - Install Lucide Icons, Framer Motion, Howler.js (for tactile audio feedback), and TanStack Query.
-
----
-
-### Phase 2: Speech Streaming & Multilingual Conversational Pipeline
-- **Objective**: Flawless real-time voice and touch interaction for non-literate and regional language patients.
-- **Tasks**:
-  1. **WebSocket Real-Time Audio Server**:
-     - Endpoint: `ws://localhost:8000/api/v1/ws/audio`
-     - Accept binary audio chunks (PCM 16kHz / WebM Opus) from browser `AudioWorklet`.
-     - Implement Voice Activity Detection (VAD) via `webrtcvad` / Silero VAD to detect when user stops speaking.
-  2. **Bhashini & Whisper Integration**:
-     - Create `backend/app/services/ai/speech.py`.
-     - Route Indian regional languages (Hindi, Tamil, Telugu, Bengali, Odia, Marathi, Gujarati) to Bhashini ULCA pipeline.
-     - Fallback to OpenAI Whisper or local Web Speech API if network latency exceeds threshold.
-  3. **Interactive Audio Prompts (TTS)**:
-     - Generate audio prompts dynamically for each clinical question.
-     - Cache frequently used system prompts (`"Please describe where it hurts"`, `"Do you have any prior prescriptions?"`) in static audio files for zero-latency instant playback.
-  4. **Kiosk UI Voice Interface**:
-     - Large animated microphone ripple effect indicating listening/processing states.
-     - Large on-screen dual-mode option cards: Patient can tap OR speak their answer.
-
----
-
-### Phase 3: Clinical Intelligence, SOCRATES & AYUSH Engine
-- **Objective**: Structure raw conversational dialogue into standard clinical ontologies and detect emergencies instantly.
-- **Tasks**:
-  1. **SOCRATES Question Engine**:
-     - Dynamic state machine: `Site` $\rightarrow$ `Onset` $\rightarrow$ `Character` $\rightarrow$ `Radiation` $\rightarrow$ `Associations` $\rightarrow$ `Timing` $\rightarrow$ `Exacerbating/Relieving` $\rightarrow$ `Severity (1-10)`.
-     - Interactive visual body map for intuitive touch selection.
-  2. **AYUSH History Taking Mode**:
-     - Extended questionnaire for *Dashavidha Pariksha* (Prakriti, Vikriti, Sara, Samhanana, Pramana, Satmya, Sattva, Ahara Shakti, Vyayama Shakti, Vaya).
-     - Lifestyle and dietary habits analysis (*Ahara-Vihara*).
-  3. **Emergency Red Flag Detection**:
-     - Rule engine + zero-shot LLM classifier evaluating every response against critical symptom keywords (e.g., crushing chest pain, radiating left arm pain, unilateral weakness, hemoptysis, severe shortness of breath).
-     - Instantly triggers a high-priority banner and dispatches a WebSocket notification to the Doctor & Triage Nurse desk.
-  4. **Physician Clinical Summary Synthesizer**:
-     - Formats raw interview and OCR data into standard SOAP/EMR format:
-       `Chief Complaint -> HPI -> Past Medical/Surgical -> Medications -> Allergies -> Family/Personal -> Review of Systems -> Abnormal Labs -> Flagged Risks`.
-
----
-
-### Phase 4: Medical Document OCR & Longitudinal Timeline Engine
-- **Objective**: Transform messy physical prescriptions and lab test slips into structured medical timelines.
-- **Tasks**:
-  1. **Multi-Engine Document Pipeline**:
-     - Image preprocessing: Auto-orientation, contrast enhancement, noise reduction using OpenCV/Pillow.
-     - Multi-engine OCR router: Azure Document Intelligence for dense medical forms, Google Cloud Vision for handwritten cursive texts, local Tesseract for offline fallback.
-  2. **Medical NER & Structured Extraction**:
-     - Prompt Gemini 1.5 Pro with structured Pydantic schema to extract:
-       - **Medications**: Name, Strength (mg/ml), Dosage form (tab/syr), Frequency (1-0-1), Duration.
-       - **Laboratory Tests**: Parameter name, Measured value, Unit, Normal reference range, Abnormal flag (`HIGH`, `LOW`, `CRITICAL`).
-       - **Diagnoses & Dates**: ICD-10 compatible problem list.
-  3. **Longitudinal Patient Timeline**:
-     - Chronologically sorts all historical records into an interactive doctor timeline with filtering by Lab Tests, Prescriptions, and Diagnoses.
-
----
-
-### Phase 5: ABDM Sandbox, FHIR R4 & DPDP Compliance
-- **Objective**: Full national digital health stack integration and legal compliance.
-- **Tasks**:
-  1. **ABDM M1 (ABHA Creation & Verification)**:
-     - ABHA number search, Aadhaar OTP authentication, and ABHA Address creation (`patient@abdm`).
-     - QR code check-in simulation (scanning ABDM card QR to instantly auto-fill demographics).
-  2. **ABDM M2 & M3 (HIP/HIU Data Exchange)**:
-     - Push structured health records (`CareContext`) to hospital repository.
-     - Request and link prior health records via ABDM consent manager.
-  3. **FHIR R4 Bundle Standardization**:
-     - Standard JSON schema generator for: `Bundle`, `Patient`, `Encounter`, `Condition`, `Observation`, `MedicationRequest`, `DocumentReference`.
-  4. **DPDP Act 2023 Compliance & Zero-Trust Session Wipe**:
-     - Visual & Audio consent disclosure with clear plain-language audio playback.
-     - **Session Termination**: After patient clicks "Finish" (or after 90s idle timer), all session state, audio buffers, and uploaded temp images are permanently wiped from the client kiosk.
-
----
-
-### Phase 6: Polish, Failover Engineering & Hackathon Winning Demo
-- **Objective**: Ensure the live demonstration is jaw-dropping, bulletproof, and leaves judges with zero doubts.
-- **Tasks**:
-  1. **"Instant Demo Mode / Persona Switcher"**:
-     - Add a discreet developer drawer in the top corner allowing one-click loading of pre-recorded test cases:
-       - *Scenario A (Cardiac Emergency)*: Chest pain radiating to jaw $\rightarrow$ Triggers instant Red Flag Triage banner.
-       - *Scenario B (Rural Diabetic Patient)*: Spoken Hindi narration + paper lab report upload $\rightarrow$ Extracts HbA1c 10.4%, generates bilingual summary.
-       - *Scenario C (AYUSH OPD Intake)*: Chronic Joint Pain $\rightarrow$ Elicits Vata-Kapha Prakriti, Agni imbalance, and dietary habits.
-  2. **Live Latency & Health Indicator**:
-     - Doctor dashboard displays real-time kiosk connection status, WebSocket latency metrics, and ABDM Sandbox connectivity status.
-  3. **Audio-Visual WOW Factor**:
-     - Smooth micro-interactions, responsive sound effects on touch, animated waveforms during speech recognition, and medical-grade dark/light mode for doctors.
-
----
-
-## 👥 Persona Demonstration Walkthrough for Judges
-
-```
-   ┌─────────────────────────────────────────────────────────────┐
-   │ 1. Kiosk Idle Screen: Multilingual Welcome                  │
-   │    • Patient selects "हिंदी" (Hindi) or "English"           │
-   │    • Audio prompt: "नमस्ते, अपना इलाज शुरू करने के लिए..." │
-   └──────────────────────────────┬──────────────────────────────┘
-                                  │
-                                  ▼
-   ┌─────────────────────────────────────────────────────────────┐
-   │ 2. ABHA Check-In & Audio-Guided DPDP Consent                │
-   │    • Tap/Scan ABHA Card -> Demographics populated           │
-   │    • Audio explains data privacy -> Patient taps "सहमत हूँ"│
-   └──────────────────────────────┬──────────────────────────────┘
-                                  │
-                                  ▼
-   ┌─────────────────────────────────────────────────────────────┐
-   │ 3. Voice & Touch Clinical Elicitation                       │
-   │    • Patient speaks: "मुझे 3 दिन से सीने में दर्द है"       │
-   │    • AI activates SOCRATES engine with dynamic follow-ups   │
-   │    • Red flag triggered: Alerts nurse station immediately  │
-   └──────────────────────────────┬──────────────────────────────┘
-                                  │
-                                  ▼
-   ┌─────────────────────────────────────────────────────────────┐
-   │ 4. Document Scanning & OCR Extraction                       │
-   │    • Patient uploads prior prescription / ECG photo         │
-   │    • AI extracts Metformin 500mg, Troponin Positive         │
-   └──────────────────────────────┬──────────────────────────────┘
-                                  │
-                                  ▼
-   ┌─────────────────────────────────────────────────────────────┐
-   │ 5. Instant Doctor Consultation View                         │
-   │    • Doctor sees structured summary in <1 second            │
-   │    • Doctor reviews, edits notes, approves FHIR record      │
-   │    • Record linked to ABDM Personal Health Record (PHR)     │
-   └─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 🎯 Verification & Automated Quality Assurance Plan
-
-### Automated Test Suites
-- **Backend API Tests** (`pytest backend/tests/`):
-  - Unit tests for all endpoints: `/api/v1/kiosk/session`, `/api/v1/clinical/socrates`, `/api/v1/documents/ocr`, `/api/v1/fhir/bundle`, `/api/v1/abdm/verify`.
-  - Schema validation test: Verifies that output FHIR bundles strictly adhere to HL7 FHIR R4 schema.
-- **Clinical Engine Tests**:
-  - Test red-flag keyword triggers (verifying 100% sensitivity for emergency cardiac and stroke symptoms).
-- **Frontend E2E & Component Tests**:
-  - Cypress/Playwright simulation of complete patient intake flow in both English and Hindi.
-
----
-
-## 🚀 Ready for Execution
-
-With this master plan established:
-1. All architectural requirements, API keys, and fallbacks are accounted for.
-2. The platform is designed for real-world hospital deployment and hackathon-winning impact.
-3. Execution can proceed phase by phase with zero blockers.
+### Manual Verification & Demo Rehearsal
+1. **Persona Simulation**:
+   - Execute the 3 judge demonstration scenarios (Cardiac Emergency, Rural Diabetic, AYUSH Joint Pain) from start to finish.
+2. **Kiosk Usability & Voice Stress Test**:
+   - Test speech recognition in noisy environments using simulated hospital background sound.
+   - Test full tactile touch navigation with zero speech to verify 100% touch parity.
