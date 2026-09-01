@@ -1,0 +1,71 @@
+import io
+import base64
+import logging
+from typing import Optional
+import edge_tts
+
+logger = logging.getLogger(__name__)
+
+# Free, ultra-natural neural voices across Indic languages
+VOICE_MAP = {
+    "hi": "hi-IN-SwaraNeural",       # Hindi Female
+    "hi-male": "hi-IN-MadhurNeural",  # Hindi Male
+    "te": "te-IN-ShrutiNeural",      # Telugu Female
+    "te-male": "te-IN-MohanNeural",   # Telugu Male
+    "en": "en-IN-NeerjaNeural",      # Indian English Female
+    "en-male": "en-IN-PrabhatNeural", # Indian English Male
+    "hinglish": "hi-IN-SwaraNeural",
+    "ta": "ta-IN-PallaviNeural",     # Tamil Female
+    "ta-male": "ta-IN-ValluvarNeural",# Tamil Male
+    "bn": "bn-IN-TanishaaNeural",    # Bengali Female
+    "bn-male": "bn-IN-BashkarNeural", # Bengali Male
+    "mr": "mr-IN-AarohiNeural",      # Marathi Female
+    "mr-male": "mr-IN-ManoharNeural", # Marathi Male
+    "kn": "kn-IN-SapnaNeural",       # Kannada Female
+    "kn-male": "kn-IN-GaganNeural",   # Kannada Male
+    "gu": "gu-IN-DhwaniNeural",      # Gujarati Female
+    "ml": "ml-IN-SobhanaNeural",     # Malayalam Female
+}
+
+
+class TTSService:
+    """Zero-cost, natural neural Text-to-Speech service for Indian languages."""
+
+    async def synthesize_speech(
+        self,
+        text: str,
+        language_code: str = "hi",
+        gender: str = "female"
+    ) -> bytes:
+        """
+        Synthesizes text into high quality MP3 audio bytes.
+        """
+        if not text or not text.strip():
+            return b""
+
+        # Select appropriate voice
+        key = f"{language_code}-{gender}" if gender == "male" else language_code
+        voice = VOICE_MAP.get(key, VOICE_MAP.get(language_code, "hi-IN-SwaraNeural"))
+
+        try:
+            communicate = edge_tts.Communicate(text=text, voice=voice, rate="+0%", pitch="+0Hz")
+            audio_buffer = io.BytesIO()
+            async for chunk in communicate.stream():
+                if chunk["type"] == "audio":
+                    audio_buffer.write(chunk["data"])
+            audio_bytes = audio_buffer.getvalue()
+            return audio_bytes
+        except Exception as e:
+            logger.error(f"TTSService: Speech synthesis failed for text '{text[:30]}...': {e}")
+            return b""
+
+    async def synthesize_speech_base64(self, text: str, language_code: str = "hi") -> str:
+        """Returns synthesized audio as base64 data URI for instant web playback."""
+        audio_bytes = await self.synthesize_speech(text, language_code=language_code)
+        if not audio_bytes:
+            return ""
+        encoded = base64.b64encode(audio_bytes).decode("utf-8")
+        return f"data:audio/mp3;base64,{encoded}"
+
+
+tts_service = TTSService()

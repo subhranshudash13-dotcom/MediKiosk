@@ -23,3 +23,11 @@ celery>=5.4.0
 Pillow>=10.4.0
 numpy>=1.26.0
 jinja2>=3.1.4
+
+# AI & Voice Agent Engine
+groq>=0.18.0
+edge-tts>=7.0.0
+
+# Testing
+pytest>=8.3.0
+pytest-asyncio>=0.24.0
