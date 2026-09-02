@@ -40,17 +40,43 @@ const config: Config = {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
         },
-        border: "hsl(var(--border))",
+        border: "var(--border)",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
-        // Specialized Indian Healthcare Triage Colors
-        kiosk: {
-          emergency: "#DC2626",
-          urgent: "#F59E0B",
-          routine: "#10B981",
-          ayush: "#D97706",
-          abha: "#2563EB",
-        }
+
+        // Official MediKiosk Brand Palette
+        brand: {
+          primary: "var(--brand-primary)",
+          "primary-dark": "var(--brand-primary-dark)",
+          "primary-light": "var(--brand-primary-light)",
+        },
+        success: {
+          DEFAULT: "var(--success)",
+          light: "var(--success-light)",
+        },
+        warning: {
+          DEFAULT: "var(--warning)",
+          light: "var(--warning-light)",
+        },
+        ai: {
+          DEFAULT: "var(--ai)",
+          light: "var(--ai-light)",
+        },
+        text: {
+          primary: "var(--text-primary)",
+          secondary: "var(--text-secondary)",
+          muted: "var(--text-muted)",
+        },
+        surface: {
+          main: "var(--bg-main)",
+          alt: "var(--bg-alt)",
+          dark: "var(--bg-dark)",
+          "dark-card": "var(--bg-dark-card)",
+        },
+        borderTokens: {
+          DEFAULT: "var(--border)",
+          light: "var(--border-light)",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

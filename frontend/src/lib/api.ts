@@ -23,7 +23,28 @@ export const KioskAPI = {
     return res.data;
   },
   verifyAbha: async (abhaId: string) => {
-    const res = await apiClient.post(`/abdm/verify-abha?abha_id=${abhaId}`);
+    const res = await apiClient.post(`/abdm/verify-abha?abha_id=${encodeURIComponent(abhaId)}`);
+    return res.data;
+  },
+  generateOtp: async (identifier: string) => {
+    const res = await apiClient.post("/abdm/generate-otp", { identifier });
+    return res.data;
+  },
+  verifyOtp: async (txnId: string, otp: string, identifier: string) => {
+    const res = await apiClient.post("/abdm/verify-otp", { txn_id: txnId, otp, identifier });
+    return res.data;
+  },
+  scanQr: async (qrToken: string = "COUNTER_QR_SCAN") => {
+    const res = await apiClient.post("/abdm/scan-qr", JSON.stringify(qrToken));
+    return res.data;
+  },
+  requestConsent: async (abhaId: string, hiTypes: string[], purpose: string = "CAREGIV") => {
+    const res = await apiClient.post("/abdm/consent/request", { abha_id: abhaId, hi_types: hiTypes, purpose });
+    return res.data;
+  },
+  getLinkedRecords: async (abhaId: string) => {
+    const res = await apiClient.get(`/abdm/linked-records/${encodeURIComponent(abhaId)}`);
     return res.data;
   },
 };
+
