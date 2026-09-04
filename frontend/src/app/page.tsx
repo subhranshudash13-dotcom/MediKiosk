@@ -22,6 +22,7 @@ import {
 import { HospitalMetricsChart } from "@/components/analytics/HospitalMetricsChart";
 import { ClinicalArchitectureDiagram } from "@/components/illustrations/ClinicalArchitectureDiagram";
 import { LiveTriageSimulator } from "@/components/interactive/LiveTriageSimulator";
+import { HeroMedicalRecordDropzone } from "@/components/documents/HeroMedicalRecordDropzone";
 
 export default function Home() {
   return (
@@ -118,23 +119,46 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Primary CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
-            <Link
-              href="/kiosk"
-              className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-[#7C6EF7] hover:bg-[#6758F0] text-white font-extrabold text-sm flex items-center justify-center gap-2 transition-all shadow-xs"
-            >
-              <Mic className="w-4 h-4" />
-              <span>Launch Patient Voice Kiosk</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link
-              href="/documents"
-              className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-white hover:bg-[#FAFAFC] text-[#111111] border border-[#E7E4DD] hover:border-[#7C6EF7] font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-xs"
-            >
-              <FileScan className="w-4 h-4 text-[#06B6D4]" />
-              <span>Upload Documents &amp; Test OCR</span>
-            </Link>
+          {/* Primary Action Row: Voice Kiosk Launch & Interactive Dropzone */}
+          <div className="flex flex-col lg:flex-row items-center justify-center gap-6 pt-4 w-full max-w-4xl">
+            {/* Left Kiosk Card */}
+            <div className="flex-1 w-full p-6 bg-white border border-[#E7E4DD] rounded-3xl text-left space-y-4 shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-3 border-b border-[#F2F0EB]">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-[#EEEAFE] text-[#7C6EF7] flex items-center justify-center font-bold">
+                      <Mic className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-sm text-[#111111]">
+                        Patient Voice Intake Station
+                      </h3>
+                      <span className="text-[10px] text-[#5F5E5A]">
+                        Point-of-Entry Multilingual Kiosk
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-[#DCFCE7] text-[#12B981]">
+                    LIVE
+                  </span>
+                </div>
+                <p className="text-xs text-[#5F5E5A] mt-3 leading-relaxed">
+                  Natural speech intake in 5+ Indian languages with adaptive SOCRATES clinical questioning and real-time emergency red-flag scoring.
+                </p>
+              </div>
+
+              <Link
+                href="/kiosk"
+                className="w-full py-3 rounded-2xl bg-[#7C6EF7] hover:bg-[#6758F0] text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-xs"
+              >
+                <Mic className="w-4 h-4" />
+                <span>Launch Patient Voice Kiosk</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            {/* Right Interactive Medical Record Dropzone */}
+            <HeroMedicalRecordDropzone />
           </div>
         </section>
 

@@ -1,0 +1,171 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="100%" height="100%" style="background:#ffffff; font-family:'Inter', 'Segoe UI', Arial, sans-serif;">
+  <defs>
+    <!-- Arrow Markers -->
+    <marker id="arr" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1e293b"/>
+    </marker>
+    <marker id="arr-red" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#dc2626"/>
+    </marker>
+    <marker id="arr-green" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#16a34a"/>
+    </marker>
+  </defs>
+
+  <!-- Outer Frame -->
+  <rect x="25" y="20" width="1550" height="860" rx="16" fill="#ffffff" stroke="#334155" stroke-width="2.5"/>
+
+  <!-- Title Header -->
+  <text x="800" y="82" text-anchor="middle" font-size="34" font-weight="900" fill="#0f172a" letter-spacing="1">MEDIKIOSK — End-to-End Patient Workflow</text>
+  <text x="800" y="112" text-anchor="middle" font-size="15" font-weight="600" fill="#64748b">Intelligent Multilingual OPD Intake &amp; Consent-Driven EHR Triaging</text>
+
+  <!-- ============================================================ -->
+  <!-- 1. PATIENT INTAKE (SOLID YELLOW, SHARP CORNERS)             -->
+  <!-- ============================================================ -->
+  <g id="col-intake">
+    <!-- Start Pill (Curved) -->
+    <rect x="130" y="185" width="160" height="48" rx="24" fill="#f472b6" stroke="#db2777" stroke-width="2"/>
+    <text x="210" y="216" text-anchor="middle" font-size="17" font-weight="800" fill="#ffffff">Start</text>
+
+    <!-- Arrow down -->
+    <line x1="210" y1="233" x2="210" y2="280" stroke="#1e293b" stroke-width="2.5" marker-end="url(#arr)"/>
+
+    <!-- Patient Registration (Pointed corners: rx="0") -->
+    <rect x="75" y="280" width="270" height="85" fill="#facc15" stroke="#ca8a04" stroke-width="2"/>
+    <text x="210" y="320" text-anchor="middle" font-size="17" font-weight="800" fill="#713f12">Patient Registration</text>
+    <text x="210" y="344" text-anchor="middle" font-size="12" font-weight="700" fill="#854d0e">Demographics · ABHA ID</text>
+
+    <!-- Arrow down -->
+    <line x1="210" y1="365" x2="210" y2="415" stroke="#1e293b" stroke-width="2.5" marker-end="url(#arr)"/>
+
+    <!-- Language & Consent (Pointed corners: rx="0") -->
+    <rect x="75" y="415" width="270" height="85" fill="#facc15" stroke="#ca8a04" stroke-width="2"/>
+    <text x="210" y="455" text-anchor="middle" font-size="17" font-weight="800" fill="#713f12">Language &amp; Consent</text>
+    <text x="210" y="479" text-anchor="middle" font-size="12" font-weight="700" fill="#854d0e">Vernacular Audio Prompt</text>
+
+    <!-- Arrow down -->
+    <line x1="210" y1="500" x2="210" y2="550" stroke="#1e293b" stroke-width="2.5" marker-end="url(#arr)"/>
+
+    <!-- Voice Interview (Pointed corners: rx="0") -->
+    <rect x="75" y="550" width="270" height="85" fill="#facc15" stroke="#ca8a04" stroke-width="2"/>
+    <text x="210" y="590" text-anchor="middle" font-size="17" font-weight="800" fill="#713f12">Voice Interview</text>
+    <text x="210" y="614" text-anchor="middle" font-size="12" font-weight="700" fill="#854d0e">Adaptive Dialogue · ASR</text>
+
+    <!-- Column Phase Label -->
+    <text x="210" y="780" text-anchor="middle" font-size="18" font-weight="800" fill="#0f172a">Patient Intake</text>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- CONNECTOR: INTAKE TO AI ENGINE                               -->
+  <!-- ============================================================ -->
+  <path d="M 345 592.5 L 415 592.5 L 415 282.5 L 475 282.5" fill="none" stroke="#1e293b" stroke-width="2.5" marker-end="url(#arr)"/>
+
+  <!-- ============================================================ -->
+  <!-- 2. AI CLINICAL UNDERSTANDING (SOLID BLUE, SHARP CORNERS)    -->
+  <!-- ============================================================ -->
+  <g id="col-ai">
+    <!-- Speech to Text (Pointed corners: rx="0") -->
+    <rect x="475" y="240" width="270" height="85" fill="#0369a1" stroke="#075985" stroke-width="2"/>
+    <text x="610" y="280" text-anchor="middle" font-size="17" font-weight="800" fill="#ffffff">Speech-to-Text</text>
+    <text x="610" y="304" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">Acoustic Phonetics</text>
+
+    <!-- Arrow down -->
+    <line x1="610" y1="325" x2="610" y2="375" stroke="#1e293b" stroke-width="2.5" marker-end="url(#arr)"/>
+
+    <!-- AI Clinical Understanding (Pointed corners: rx="0") -->
+    <rect x="460" y="375" width="300" height="90" fill="#0369a1" stroke="#075985" stroke-width="2"/>
+    <text x="610" y="416" text-anchor="middle" font-size="18" font-weight="900" fill="#ffffff">AI Clinical Understanding</text>
+    <text x="610" y="442" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">Symptom &amp; Timeline Extraction</text>
+
+    <!-- Arrow down -->
+    <line x1="610" y1="465" x2="610" y2="505" stroke="#1e293b" stroke-width="2.5" marker-end="url(#arr)"/>
+
+    <!-- Decision Diamond (Sharp corners) -->
+    <polygon points="610,505 715,565 610,625 505,565" fill="#0369a1" stroke="#075985" stroke-width="2.5"/>
+    <text x="610" y="560" text-anchor="middle" font-size="15" font-weight="800" fill="#ffffff">History</text>
+    <text x="610" y="580" text-anchor="middle" font-size="15" font-weight="800" fill="#ffffff">Complete?</text>
+
+    <!-- NO Loop: Dashed Red Line -->
+    <path d="M 505 565 L 435 565 L 435 420 L 460 420" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="6,4" marker-end="url(#arr-red)"/>
+    <text x="470" y="555" font-size="13" font-weight="900" fill="#dc2626">NO</text>
+    <rect x="365" y="480" width="90" height="28" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/>
+    <text x="410" y="499" text-anchor="middle" font-size="11" font-weight="800" fill="#b91c1c">Follow-up Qs</text>
+
+    <!-- YES Connector Downwards -->
+    <line x1="610" y1="625" x2="610" y2="675" stroke="#16a34a" stroke-width="2.5" marker-end="url(#arr-green)"/>
+    <text x="625" y="652" font-size="13" font-weight="900" fill="#16a34a">YES</text>
+
+    <!-- Structured Clinical History (Pointed corners: rx="0") -->
+    <rect x="465" y="675" width="290" height="85" fill="#0369a1" stroke="#075985" stroke-width="2"/>
+    <text x="610" y="715" text-anchor="middle" font-size="17" font-weight="800" fill="#ffffff">Structured Clinical History</text>
+    <text x="610" y="739" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">Standard FHIR IPS Summary</text>
+
+    <!-- Column Phase Label -->
+    <text x="610" y="780" text-anchor="middle" font-size="18" font-weight="800" fill="#0f172a">AI Clinical Understanding</text>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- 3. RECORD ENRICHMENT (SHARP CORNERS, DASHED CONNECTORS)     -->
+  <!-- ============================================================ -->
+  <g id="col-enrichment">
+    <!-- Branch A: Document OCR (Pointed corners: rx="0") -->
+    <path d="M 755 717.5 L 810 717.5 L 810 320 L 845 320" fill="none" stroke="#1e293b" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arr)"/>
+    <rect x="845" y="275" width="210" height="90" fill="#ffffff" stroke="#334155" stroke-width="2"/>
+    <text x="950" y="318" text-anchor="middle" font-size="16" font-weight="800" fill="#0f172a">Document OCR</text>
+    <text x="950" y="342" text-anchor="middle" font-size="11" font-weight="700" fill="#64748b">Rx &amp; Lab Reports</text>
+
+    <!-- Branch B: ABDM Gateway (Pointed corners: rx="0") -->
+    <path d="M 755 717.5 L 810 717.5 L 810 525 L 845 525" fill="none" stroke="#1e293b" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arr)"/>
+    <rect x="845" y="480" width="210" height="90" fill="#ffffff" stroke="#334155" stroke-width="2"/>
+    <text x="950" y="523" text-anchor="middle" font-size="16" font-weight="800" fill="#0f172a">ABDM Gateway</text>
+    <text x="950" y="547" text-anchor="middle" font-size="11" font-weight="700" fill="#64748b">Past Medical Records</text>
+
+    <!-- Converging Dashed Lines to Consolidated Brief -->
+    <path d="M 1055 320 L 1100 320 L 1100 425 L 1120 425" fill="none" stroke="#1e293b" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arr)"/>
+    <path d="M 1055 525 L 1100 525 L 1100 445 L 1120 445" fill="none" stroke="#1e293b" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arr)"/>
+    <!-- Direct voice baseline connection -->
+    <path d="M 755 717.5 L 1170 717.5 L 1170 480" fill="none" stroke="#1e293b" stroke-width="2.5" marker-end="url(#arr)"/>
+
+    <!-- Column Phase Label -->
+    <text x="950" y="780" text-anchor="middle" font-size="18" font-weight="800" fill="#0f172a">Record Enrichment</text>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- 4. DOCTOR DASHBOARD & CONSULTATION (SOLID GREEN, SHARP)     -->
+  <!-- ============================================================ -->
+  <g id="col-doctor">
+    <!-- Consolidated Clinical Brief (Solid Yellow, Pointed corners) -->
+    <rect x="1120" y="390" width="190" height="90" fill="#facc15" stroke="#ca8a04" stroke-width="2.5"/>
+    <text x="1215" y="430" text-anchor="middle" font-size="16" font-weight="900" fill="#713f12">Consolidated</text>
+    <text x="1215" y="454" text-anchor="middle" font-size="16" font-weight="900" fill="#713f12">Clinical Brief</text>
+
+    <!-- Connector from Consolidated to Doctor Dashboard -->
+    <path d="M 1310 435 L 1345 435 L 1345 285 L 1375 285" fill="none" stroke="#1e293b" stroke-width="2.5" marker-end="url(#arr)"/>
+
+    <!-- Doctor Dashboard (Solid Green, Pointed corners: rx="0") -->
+    <rect x="1375" y="240" width="180" height="90" fill="#4ade80" stroke="#16a34a" stroke-width="2"/>
+    <text x="1465" y="280" text-anchor="middle" font-size="17" font-weight="800" fill="#14532d">Doctor</text>
+    <text x="1465" y="304" text-anchor="middle" font-size="17" font-weight="800" fill="#14532d">Dashboard</text>
+
+    <!-- Arrow down -->
+    <line x1="1465" y1="330" x2="1465" y2="415" stroke="#1e293b" stroke-width="2.5" marker-end="url(#arr)"/>
+
+    <!-- Clinical Consultation (Solid Green, Pointed corners: rx="0") -->
+    <rect x="1375" y="415" width="180" height="90" fill="#4ade80" stroke="#16a34a" stroke-width="2"/>
+    <text x="1465" y="455" text-anchor="middle" font-size="17" font-weight="800" fill="#14532d">Clinical</text>
+    <text x="1465" y="479" text-anchor="middle" font-size="17" font-weight="800" fill="#14532d">Consultation</text>
+
+    <!-- Arrow down -->
+    <line x1="1465" y1="505" x2="1465" y2="590" stroke="#1e293b" stroke-width="2.5" marker-end="url(#arr)"/>
+
+    <!-- End Pill (Curved) -->
+    <rect x="1385" y="590" width="160" height="48" rx="24" fill="#f472b6" stroke="#db2777" stroke-width="2"/>
+    <text x="1465" y="621" text-anchor="middle" font-size="17" font-weight="800" fill="#ffffff">End</text>
+
+    <!-- Column Phase Label -->
+    <text x="1465" y="780" text-anchor="middle" font-size="18" font-weight="800" fill="#0f172a">Doctor Consultation</text>
+  </g>
+
+  <!-- Bottom Meta Note -->
+  <text x="800" y="855" text-anchor="middle" font-size="13" font-weight="600" fill="#94a3b8">Smart India Hackathon (SIH) 2024 · MediKiosk Solution Architecture</text>
+</svg>

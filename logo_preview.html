@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediKiosk — Official Logo & Brand Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090e17;
+      --card-bg: #111927;
+      --border: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary-blue: #0284c7;
+      --accent-cyan: #38bdf8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 40px 24px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+    header {
+      margin-bottom: 40px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(2, 132, 199, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #38bdf8;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 32px;
+      font-weight: 900;
+      margin: 0 0 6px 0;
+      letter-spacing: -0.5px;
+    }
+    p.lead {
+      color: var(--text-muted);
+      font-size: 15px;
+      margin: 0;
+    }
+    .section-title {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-top: 36px;
+      margin-bottom: 16px;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 768px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+    .preview-card {
+      border-radius: 16px;
+      padding: 48px 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      min-height: 240px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+    .card-light {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+    }
+    .card-dark {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+    }
+    .card-subtle {
+      background: #1e293b;
+      border: 1px solid #334155;
+    }
+    .card-tag {
+      position: absolute;
+      top: 14px;
+      left: 18px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+    .card-light .card-tag {
+      background: #f1f5f9;
+      color: #475569;
+    }
+    .card-dark .card-tag {
+      background: #1e293b;
+      color: #94a3b8;
+    }
+    .logo-svg {
+      width: 100%;
+      max-width: 440px;
+      height: auto;
+      display: block;
+    }
+    .scales-row {
+      display: flex;
+      gap: 32px;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+    .scale-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .scale-label {
+      font-size: 11px;
+      color: #64748b;
+      font-weight: 700;
+    }
+    .app-bar-mock {
+      width: 100%;
+      background: #ffffff;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    .nav-links {
+      display: flex;
+      gap: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #475569;
+    }
+    .nav-btn {
+      background: #0284c7;
+      color: #ffffff;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      border: none;
+    }
+    .specs-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px 32px;
+      margin-top: 32px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 24px;
+    }
+    .spec-col h3 {
+      font-size: 13px;
+      font-weight: 800;
+      color: #38bdf8;
+      margin: 0 0 8px 0;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .spec-col p {
+      margin: 0;
+      font-size: 13px;
+      color: #cbd5e1;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <span class="badge">Official Vector Identity</span>
+        <h1>MediKiosk Logo System</h1>
+        <p class="lead">The "Resonance Cross" — Architectural Medical Cross with Integrated Acoustic Voice &amp; Vitals Waveform</p>
+      </div>
+      <div style="font-size: 12px; color: #64748b; text-align: right;">
+        Smart India Hackathon (SIH)<br>
+        <strong>100% Scalable Vector SVG</strong>
+      </div>
+    </header>
+
+    <!-- 1. PRIMARY HORIZONTAL LOCKUPS -->
+    <div class="section-title">1. Master Horizontal Lockup (Light &amp; Dark Canvases)</div>
+    <div class="grid-2">
+      <!-- Light Canvas -->
+      <div class="preview-card card-light">
+        <span class="card-tag">Light Mode Canvas</span>
+        <svg class="logo-svg" viewBox="0 0 520 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="mk-pulse-grad-light" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#0284c7" />
+              <stop offset="50%" stop-color="#00a3ff" />
+              <stop offset="100%" stop-color="#0284c7" />
+            </linearGradient>
+          </defs>
+          <g transform="translate(10, 10)">
+            <path d="M 37 18 A 8 8 0 0 1 45 10 L 55 10 A 8 8 0 0 1 63 18 L 63 37 L 82 37 A 8 8 0 0 1 90 45 L 90 55 A 8 8 0 0 1 82 63 L 63 63 L 63 82 A 8 8 0 0 1 55 90 L 45 90 A 8 8 0 0 1 37 82 L 37 63 L 18 63 A 8 8 0 0 1 10 55 L 10 45 A 8 8 0 0 1 18 37 L 37 37 Z" fill="#0f172a"/>
+            <path d="M 12 50 L 35 50 L 40 45 L 46 22 L 54 78 L 60 36 L 65 50 L 88 50" stroke="url(#mk-pulse-grad-light)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          </g>
+          <g transform="translate(130, 0)">
+            <text x="0" y="68" font-family="'Inter', sans-serif" font-size="46" font-weight="900" fill="#0f172a" letter-spacing="-1.5">Medi<tspan fill="#0284c7">Kiosk</tspan></text>
+            <circle cx="230" cy="46" r="4.5" fill="#10b981"/>
+            <circle cx="230" cy="46" r="2" fill="#ffffff"/>
+            <text x="2" y="94" font-family="'Inter', sans-serif" font-size="11.5" font-weight="800" fill="#64748b" letter-spacing="3.2">INTELLIGENT OPD INTAKE &amp; TRIAGE</text>
+          </g>
+        </svg>
+      </div>
+
+      <!-- Dark Canvas -->
+      <div class="preview-card card-dark">
+        <span class="card-tag">Dark Mode Canvas</span>
+        <svg class="logo-svg" viewBox="0 0 520 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="mk-pulse-grad-dark" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#0284c7" />
+              <stop offset="50%" stop-color="#38bdf8" />
+              <stop offset="100%" stop-color="#0284c7" />
+            </linearGradient>
+          </defs>
+          <g transform="translate(10, 10)">
+            <path d="M 37 18 A 8 8 0 0 1 45 10 L 55 10 A 8 8 0 0 1 63 18 L 63 37 L 82 37 A 8 8 0 0 1 90 45 L 90 55 A 8 8 0 0 1 82 63 L 63 63 L 63 82 A 8 8 0 0 1 55 90 L 45 90 A 8 8 0 0 1 37 82 L 37 63 L 18 63 A 8 8 0 0 1 10 55 L 10 45 A 8 8 0 0 1 18 37 L 37 37 Z" fill="#ffffff"/>
+            <path d="M 12 50 L 35 50 L 40 45 L 46 22 L 54 78 L 60 36 L 65 50 L 88 50" stroke="url(#mk-pulse-grad-dark)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          </g>
+          <g transform="translate(130, 0)">
+            <text x="0" y="68" font-family="'Inter', sans-serif" font-size="46" font-weight="900" fill="#ffffff" letter-spacing="-1.5">Medi<tspan fill="#38bdf8">Kiosk</tspan></text>
+            <circle cx="230" cy="46" r="4.5" fill="#34d399"/>
+            <circle cx="230" cy="46" r="2" fill="#ffffff"/>
+            <text x="2" y="94" font-family="'Inter', sans-serif" font-size="11.5" font-weight="800" fill="#94a3b8" letter-spacing="3.2">INTELLIGENT OPD INTAKE &amp; TRIAGE</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 2. STANDALONE ICON SCALABILITY -->
+    <div class="section-title">2. Standalone Icon Mark &amp; Scalability Test (128px down to 16px favicon)</div>
+    <div class="preview-card card-subtle" style="padding: 40px;">
+      <div class="scales-row">
+        <!-- 128px -->
+        <div class="scale-item">
+          <svg viewBox="0 0 100 100" width="110" height="110" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100" height="100" rx="26" fill="#0f172a" stroke="#334155" stroke-width="1.5"/>
+            <g transform="scale(0.8) translate(12.5, 12.5)">
+              <path d="M 37 18 A 8 8 0 0 1 45 10 L 55 10 A 8 8 0 0 1 63 18 L 63 37 L 82 37 A 8 8 0 0 1 90 45 L 90 55 A 8 8 0 0 1 82 63 L 63 63 L 63 82 A 8 8 0 0 1 55 90 L 45 90 A 8 8 0 0 1 37 82 L 37 63 L 18 63 A 8 8 0 0 1 10 55 L 10 45 A 8 8 0 0 1 18 37 L 37 37 Z" fill="#ffffff"/>
+              <path d="M 12 50 L 35 50 L 40 45 L 46 22 L 54 78 L 60 36 L 65 50 L 88 50" stroke="#0284c7" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            </g>
+          </svg>
+          <span class="scale-label">App Badge (110px)</span>
+        </div>
+
+        <!-- 64px Freestanding -->
+        <div class="scale-item">
+          <svg viewBox="0 0 100 100" width="64" height="64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 37 18 A 8 8 0 0 1 45 10 L 55 10 A 8 8 0 0 1 63 18 L 63 37 L 82 37 A 8 8 0 0 1 90 45 L 90 55 A 8 8 0 0 1 82 63 L 63 63 L 63 82 A 8 8 0 0 1 55 90 L 45 90 A 8 8 0 0 1 37 82 L 37 63 L 18 63 A 8 8 0 0 1 10 55 L 10 45 A 8 8 0 0 1 18 37 L 37 37 Z" fill="#ffffff"/>
+            <path d="M 12 50 L 35 50 L 40 45 L 46 22 L 54 78 L 60 36 L 65 50 L 88 50" stroke="#38bdf8" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="scale-label">64px Mark</span>
+        </div>
+
+        <!-- 32px Freestanding -->
+        <div class="scale-item">
+          <svg viewBox="0 0 100 100" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 37 18 A 8 8 0 0 1 45 10 L 55 10 A 8 8 0 0 1 63 18 L 63 37 L 82 37 A 8 8 0 0 1 90 45 L 90 55 A 8 8 0 0 1 82 63 L 63 63 L 63 82 A 8 8 0 0 1 55 90 L 45 90 A 8 8 0 0 1 37 82 L 37 63 L 18 63 A 8 8 0 0 1 10 55 L 10 45 A 8 8 0 0 1 18 37 L 37 37 Z" fill="#ffffff"/>
+            <path d="M 12 50 L 35 50 L 40 45 L 46 22 L 54 78 L 60 36 L 65 50 L 88 50" stroke="#38bdf8" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="scale-label">32px Tab</span>
+        </div>
+
+        <!-- 24px Nav Icon -->
+        <div class="scale-item">
+          <svg viewBox="0 0 100 100" width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 37 18 A 8 8 0 0 1 45 10 L 55 10 A 8 8 0 0 1 63 18 L 63 37 L 82 37 A 8 8 0 0 1 90 45 L 90 55 A 8 8 0 0 1 82 63 L 63 63 L 63 82 A 8 8 0 0 1 55 90 L 45 90 A 8 8 0 0 1 37 82 L 37 63 L 18 63 A 8 8 0 0 1 10 55 L 10 45 A 8 8 0 0 1 18 37 L 37 37 Z" fill="#ffffff"/>
+            <path d="M 12 50 L 35 50 L 40 45 L 46 22 L 54 78 L 60 36 L 65 50 L 88 50" stroke="#38bdf8" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="scale-label">24px Nav</span>
+        </div>
+
+        <!-- 16px Favicon -->
+        <div class="scale-item">
+          <svg viewBox="0 0 100 100" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 37 18 A 8 8 0 0 1 45 10 L 55 10 A 8 8 0 0 1 63 18 L 63 37 L 82 37 A 8 8 0 0 1 90 45 L 90 55 A 8 8 0 0 1 82 63 L 63 63 L 63 82 A 8 8 0 0 1 55 90 L 45 90 A 8 8 0 0 1 37 82 L 37 63 L 18 63 A 8 8 0 0 1 10 55 L 10 45 A 8 8 0 0 1 18 37 L 37 37 Z" fill="#ffffff"/>
+            <path d="M 12 50 L 35 50 L 40 45 L 46 22 L 54 78 L 60 36 L 65 50 L 88 50" stroke="#38bdf8" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="scale-label">16px Favicon</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. IN-SITU APPLICATION PREVIEW -->
+    <div class="section-title">3. Live In-Situ Application (Patient Intake App Bar)</div>
+    <div class="app-bar-mock">
+      <!-- Embedded Logo Component -->
+      <div style="display: inline-flex; align-items: center; gap: 12px;">
+        <div style="width: 38px; height: 38px;">
+          <svg viewBox="0 0 100 100" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 37 18 A 8 8 0 0 1 45 10 L 55 10 A 8 8 0 0 1 63 18 L 63 37 L 82 37 A 8 8 0 0 1 90 45 L 90 55 A 8 8 0 0 1 82 63 L 63 63 L 63 82 A 8 8 0 0 1 55 90 L 45 90 A 8 8 0 0 1 37 82 L 37 63 L 18 63 A 8 8 0 0 1 10 55 L 10 45 A 8 8 0 0 1 18 37 L 37 37 Z" fill="#0f172a"/>
+            <path d="M 12 50 L 35 50 L 40 45 L 46 22 L 54 78 L 60 36 L 65 50 L 88 50" stroke="#0284c7" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div style="display: flex; flex-direction: column; text-align: left;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 20px; font-weight: 900; color: #0f172a; line-height: 1; letter-spacing: -0.5px;">Medi<span style="color: #0284c7;">Kiosk</span></span>
+            <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #10b981;"></span>
+          </div>
+          <span style="font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #64748b; margin-top: 4px;">Intelligent OPD Intake</span>
+        </div>
+      </div>
+
+      <div class="nav-links">
+        <span style="color: #0284c7; border-bottom: 2px solid #0284c7; padding-bottom: 4px;">OPD Kiosk</span>
+        <span>ABHA Connect</span>
+        <span>Doctor Triage</span>
+        <span>Audit Logs</span>
+      </div>
+
+      <div>
+        <button class="nav-btn">Start Intake (Hindi / English)</button>
+      </div>
+    </div>
+
+    <!-- 4. DESIGN METRICS & ARCHITECTURE -->
+    <div class="specs-box">
+      <div class="spec-col">
+        <h3>Symbol Anatomy</h3>
+        <p>Architectural <strong>Medical Cross</strong> representing clinical governance and patient trust, combined with a <strong>Harmonic Pulse Wave</strong> representing vernacular acoustic voice triaging.</p>
+      </div>
+      <div class="spec-col">
+        <h3>Color Specifications</h3>
+        <p><strong>Matte Navy:</strong> <code>#0F172A</code> (Grounding authority)<br>
+        <strong>Electric Cyan:</strong> <code>#0284C7</code> / <code>#38BDF8</code> (Voice AI)<br>
+        <strong>Vitality Emerald:</strong> <code>#10B981</code> (Active status)</p>
+      </div>
+      <div class="spec-col">
+        <h3>Design Philosophy</h3>
+        <p><strong>"Linear meets Apple Health."</strong> Strictly zero cartoonish elements, zero heavy drop-shadows. Precision-machined industrial silhouette that feels tangible on actual kiosk hardware.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
