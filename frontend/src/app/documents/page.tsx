@@ -1,29 +1,23 @@
 "use client";
-
 import { useState } from "react";
 import Link from "next/link";
 import {
   FileScan,
   ArrowLeft,
-  UploadCloud,
-  FileText,
-  CheckCircle2,
-  AlertCircle,
   Sparkles,
   Calendar,
-  Layers,
   Pill,
   Thermometer,
-  ShieldCheck,
   RefreshCw,
-  ExternalLink,
-  Eye,
   ArrowRight,
   Stethoscope,
-  Info,
-  Check,
-  Building2
+  Building2,
+  FileCheck2,
+  CheckCircle2,
+  AlertCircle
 } from "lucide-react";
+import { PrescriptionScanner } from "@/components/visualization/PrescriptionScanner";
+import { MedicalDocument } from "@/lib/types";
 
 interface ExtractedDrug {
   drug: string;
@@ -33,6 +27,7 @@ interface ExtractedDrug {
   confidence: number;
   source: string;
   page: number;
+  purpose?: string;
 }
 
 interface ExtractedLab {
@@ -43,6 +38,7 @@ interface ExtractedLab {
   status: "NORMAL" | "HIGH" | "LOW" | "CRITICAL";
   confidence: number;
   source: string;
+  interpretation?: string;
 }
 
 interface TimelineEvent {
@@ -55,9 +51,8 @@ interface TimelineEvent {
 }
 
 export default function DocumentIntelligencePage() {
-  const [selectedSample, setSelectedSample] = useState<"rx" | "lab" | "discharge">("rx");
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [processed, setProcessed] = useState(true);
+  const [activeTab, setActiveTab] = useState<"live_scanner" | "timeline">("live_scanner");
+  const [latestScannedDoc, setLatestScannedDoc] = useState<MedicalDocument | null>(null);
 
   // Extracted entities
   const [medications, setMedications] = useState<ExtractedDrug[]>([
@@ -164,13 +159,24 @@ export default function DocumentIntelligencePage() {
     },
   ]);
 
-  const handleSimulateUpload = (type: "rx" | "lab" | "discharge") => {
-    setSelectedSample(type);
-    setIsProcessing(true);
-    setTimeout(() => {
-      setIsProcessing(false);
-      setProcessed(true);
-    }, 1200);
+  const handleScanComplete = (doc: MedicalDocument) => {
+    setLatestScannedDoc(doc);
+    const categoryName =
+      doc.document_type === "prescription"
+        ? "Prescription"
+        : doc.document_type === "lab_report"
+        ? "Lab Report"
+        : "Diagnosis";
+
+    const newEvent: TimelineEvent = {
+      year: new Date().getFullYear().toString(),
+      date: "Today (Scanned)",
+      title: `${doc.document_purpose || "Clinical Document"} - ${doc.document_type.toUpperCase()}`,
+      category: categoryName as "Prescription" | "Diagnosis" | "Lab Report" | "Hospitalization",
+      facility: doc.facility_name || "MediKiosk Point-of-Entry Intake #04",
+      details: doc.clinical_intent || doc.document_purpose || "Document processed by Multilingual OCR Engine.",
+    };
+    setTimeline((prev) => [newEvent, ...prev]);
   };
 
   return (
@@ -217,89 +223,59 @@ export default function DocumentIntelligencePage() {
 
       {/* Main Container */}
       <main className="max-w-6xl mx-auto w-full px-6 py-8 flex-1 space-y-8">
-        {/* Upload & Sample Selector Studio */}
-        <div className="bg-white border border-[#E7E4DD] rounded-3xl p-6 sm:p-8 shadow-sm">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-[#F2F0EB]">
-            <div>
-              <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#EEEAFE] text-[#7C6EF7] text-xs font-bold mb-2">
-                <Sparkles className="w-3.5 h-3.5" />
-                PaddleOCR + Clinical Vision Entity Extractor
-              </span>
-              <h2 className="text-2xl font-extrabold text-[#111111]">
-                Upload Past Medical Documents
-              </h2>
-              <p className="text-xs text-[#5F5E5A] mt-1">
-                Upload scanned prescriptions, lab investigation reports, or discharge summaries for automated structured extraction.
-              </p>
+        {/* Module Subheader & Tab Switcher */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-[#E7E4DD]">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#EEEAFE] text-[#7C6EF7] text-xs font-bold mb-1">
+              <Sparkles className="w-3.5 h-3.5" />
+              Live Clinical Intake + ABDM Record Aggregation
             </div>
-
-            {/* Quick Demo Sample Selector */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-[#5F5E5A] font-bold">Try Sample:</span>
-              <button
-                type="button"
-                onClick={() => handleSimulateUpload("rx")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                  selectedSample === "rx"
-                    ? "bg-[#7C6EF7] text-white border-[#7C6EF7] shadow-sm"
-                    : "bg-[#FAFAFC] text-[#5F5E5A] border-[#E7E4DD] hover:border-[#7C6EF7]"
-                }`}
-              >
-                Cardiology Rx
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSimulateUpload("lab")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                  selectedSample === "lab"
-                    ? "bg-[#7C6EF7] text-white border-[#7C6EF7] shadow-sm"
-                    : "bg-[#FAFAFC] text-[#5F5E5A] border-[#E7E4DD] hover:border-[#7C6EF7]"
-                }`}
-              >
-                Blood Lab Report
-              </button>
-            </div>
+            <h2 className="text-xl font-extrabold text-[#111111]">
+              Document Attachment, OCR &amp; Longitudinal EHR
+            </h2>
           </div>
 
-          {/* Drag and Drop Zone */}
-          <div className="p-8 rounded-3xl bg-[#FAFAFC] border-2 border-dashed border-[#7C6EF7]/40 text-center flex flex-col items-center justify-center relative overflow-hidden group">
-            {isProcessing ? (
-              <div className="py-6 flex flex-col items-center justify-center gap-3">
-                <RefreshCw className="w-8 h-8 text-[#7C6EF7] animate-spin" />
-                <span className="font-bold text-sm text-[#111111]">
-                  Running OCR &amp; Medical Entity Extraction...
-                </span>
-                <p className="text-xs text-[#5F5E5A]">
-                  Parsing handwritten dosage notations, reference ranges, and dates
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="w-14 h-14 rounded-2xl bg-[#EEEAFE] text-[#7C6EF7] mx-auto flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <UploadCloud className="w-7 h-7" />
-                </div>
-                <div>
-                  <span className="font-bold text-sm text-[#111111] block">
-                    Drag &amp; drop prescription scans, lab reports (PDF, PNG, JPG)
-                  </span>
-                  <span className="text-xs text-[#5F5E5A] block mt-0.5">
-                    Supports multilingual documents in Hindi, Telugu, Tamil, and English
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleSimulateUpload("rx")}
-                  className="px-5 py-2.5 rounded-2xl bg-[#7C6EF7] hover:bg-[#6758F0] text-white font-bold text-xs shadow-md shadow-[#7C6EF7]/20 transition-all cursor-pointer"
-                >
-                  Select File from Device
-                </button>
-              </div>
-            )}
+          {/* Tab Selector */}
+          <div className="flex items-center gap-1.5 p-1 bg-white border border-[#E7E4DD] rounded-2xl shadow-xs">
+            <button
+              type="button"
+              onClick={() => setActiveTab("live_scanner")}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                activeTab === "live_scanner"
+                  ? "bg-[#7C6EF7] text-white shadow-xs"
+                  : "text-[#5F5E5A] hover:text-[#111111] hover:bg-[#FAFAFC]"
+              }`}
+            >
+              <FileScan className="w-3.5 h-3.5" />
+              <span>Direct Upload &amp; Intent OCR</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("timeline")}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                activeTab === "timeline"
+                  ? "bg-[#7C6EF7] text-white shadow-xs"
+                  : "text-[#5F5E5A] hover:text-[#111111] hover:bg-[#FAFAFC]"
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              <span>EHR Timeline ({timeline.length})</span>
+            </button>
           </div>
         </div>
 
-        {/* Results Grid: Left Extracted Entities & Right Chronological Trajectory */}
-        {processed && (
+        {/* TAB 1: Live Interactive Prescription & Document Scanner */}
+        {activeTab === "live_scanner" && (
+          <div className="space-y-8">
+            <PrescriptionScanner
+              patientId="P-DEMO-001"
+              onScanComplete={handleScanComplete}
+            />
+          </div>
+        )}
+
+        {/* TAB 2: Longitudinal Timeline & Extracted Records */}
+        {activeTab === "timeline" && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
             {/* LEFT: Structured Extracted Entities with Confidence & Provenance (7 Cols) */}
             <div className="lg:col-span-7 space-y-6">

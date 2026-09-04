@@ -202,32 +202,36 @@ class DocumentOCRService:
         return None
 
     async def _extract_with_groq_vision(self, base64_image: str, mime_type: str) -> Optional[Dict[str, Any]]:
-        """Run extraction using Groq Vision (llama-3.2-11b-vision-preview)."""
+        """Run extraction using Groq Vision (llama-3.2-90b-vision-preview)."""
         client = self.groq_client
         if not client:
             return None
 
-        logger.info("DocumentOCR: Attempting Groq Vision extraction (llama-3.2-11b-vision-preview)")
-        data_url = f"data:{mime_type};base64,{base64_image}"
-        response = await client.chat.completions.create(
-            model="llama-3.2-11b-vision-preview",
-            messages=[
-                {"role": "system", "content": DOCUMENT_NER_SYSTEM_PROMPT},
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": "Extract all clinical prescriptions, lab results, diagnoses, and vitals from this document in JSON format."},
-                        {"type": "image_url", "image_url": {"url": data_url}}
-                    ]
-                }
-            ],
-            response_format={"type": "json_object"},
-            temperature=0.1,
-            max_tokens=2048,
-        )
-        raw_content = response.choices[0].message.content
-        if raw_content:
-            return json.loads(raw_content)
+        for model_candidate in ["llama-3.2-90b-vision-preview", "llama-3.2-11b-vision"]:
+            try:
+                logger.info(f"DocumentOCR: Attempting Groq Vision extraction ({model_candidate})")
+                data_url = f"data:{mime_type};base64,{base64_image}"
+                response = await client.chat.completions.create(
+                    model=model_candidate,
+                    messages=[
+                        {"role": "system", "content": DOCUMENT_NER_SYSTEM_PROMPT},
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": "Extract all clinical prescriptions, lab results, diagnoses, and vitals from this document in JSON format."},
+                                {"type": "image_url", "image_url": {"url": data_url}}
+                            ]
+                        }
+                    ],
+                    response_format={"type": "json_object"},
+                    temperature=0.1,
+                    max_tokens=2048,
+                )
+                raw_content = response.choices[0].message.content
+                if raw_content:
+                    return json.loads(raw_content)
+            except Exception as e:
+                logger.warning(f"DocumentOCR: Groq model {model_candidate} failed: {e}. Trying next...")
         return None
 
     def _extract_heuristic_fallback(self, text_or_filename: str) -> Dict[str, Any]:
