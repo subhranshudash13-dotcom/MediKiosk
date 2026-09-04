@@ -2,7 +2,10 @@ import logging
 from typing import Dict, Any, List, Optional
 from groq import AsyncGroq
 import httpx
-from openai import AsyncOpenAI
+try:
+    from openai import AsyncOpenAI
+except ImportError:
+    AsyncOpenAI = None
 
 from app.core.config import settings
 from app.services.ai.schemas import ClinicalIntakeState, ExtractionPayload
@@ -20,7 +23,9 @@ class DialogueEngineService:
         self._openai_client: Optional[AsyncOpenAI] = None
 
     @property
-    def openai_client(self) -> Optional[AsyncOpenAI]:
+    def openai_client(self) -> Optional[Any]:
+        if not AsyncOpenAI:
+            return None
         if not self._openai_client and settings.OPENAI_API_KEY:
             self._openai_client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         return self._openai_client

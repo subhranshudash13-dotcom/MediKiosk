@@ -3,7 +3,10 @@ import tempfile
 import os
 import io
 from typing import Tuple, Optional
-from openai import AsyncOpenAI
+try:
+    from openai import AsyncOpenAI
+except ImportError:
+    AsyncOpenAI = None
 from groq import AsyncGroq
 from app.core.config import settings
 

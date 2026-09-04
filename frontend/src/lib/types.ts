@@ -60,7 +60,13 @@ export interface ExtractedMedication {
   name: string;
   dosage?: string;
   frequency?: string;
+  route?: string;
   duration?: string;
+  indication?: string;
+  therapeutic_class?: string;
+  clinical_purpose?: string; // "What this drug is exactly for in this patient"
+  instructions?: string;
+  confidence?: number;
 }
 
 export interface ExtractedLabResult {
@@ -69,19 +75,44 @@ export interface ExtractedLabResult {
   unit?: string;
   reference_range?: string;
   is_abnormal: boolean;
+  severity_flag?: "NORMAL" | "BORDERLINE" | "ELEVATED" | "CRITICAL_HIGH" | "CRITICAL_LOW" | string;
+  clinical_purpose?: string; // "What clinical condition/organ function this test investigates"
+  clinical_significance?: string;
+}
+
+export interface ExtractedDiagnosis {
+  condition: string;
+  icd10_code?: string;
+  condition_type?: string;
+  notes?: string;
+}
+
+export interface ExtractedVital {
+  vital_name: string;
+  value: string;
+  unit?: string;
+  is_abnormal?: boolean;
 }
 
 export interface MedicalDocument {
   document_id: string;
   patient_id: string;
-  document_type: "prescription" | "lab_report" | "discharge_summary" | "imaging";
+  document_type: "prescription" | "lab_report" | "discharge_summary" | "imaging" | "other" | string;
   document_date?: string;
   raw_ocr_text?: string;
   confidence_score?: number;
-  extracted_diagnoses: string[];
+  document_purpose?: string; // e.g. "Outpatient Follow-Up & Hypertension Management"
+  clinical_intent?: string; // "What this document is exactly for clinically"
+  physician_action_plan?: string; // Actionable doctor steps & safety alerts
+  doctor_name?: string;
+  facility_name?: string;
+  extracted_diagnoses: (string | ExtractedDiagnosis)[];
   extracted_medications: ExtractedMedication[];
   extracted_labs: ExtractedLabResult[];
+  extracted_vitals?: ExtractedVital[];
   file_path?: string;
+  is_abdm_linked?: boolean;
+  created_at?: string;
 }
 
 export interface AbhaKYC {
