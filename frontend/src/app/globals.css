@@ -4,25 +4,61 @@
 
 @layer base {
   :root {
+    /* Brand Design Tokens */
+    --brand-primary: #7C6EF7;
+    --brand-primary-dark: #6758F0;
+    --brand-primary-light: #EEEAFE;
+
+    /* Success */
+    --success: #12B981;
+    --success-light: #DCFCE7;
+
+    /* Warning */
+    --warning: #F59E0B;
+    --warning-light: #FEF3C7;
+
+    /* AI */
+    --ai: #06B6D4;
+    --ai-light: #CFFAFE;
+
+    /* Neutral */
+    --black: #111111;
+    --white: #FFFFFF;
+
+    /* Text */
+    --text-primary: #111111;
+    --text-secondary: #5F5E5A;
+    --text-muted: #8A8A8A;
+
+    /* Borders */
+    --border: #E7E4DD;
+    --border-light: #F2F0EB;
+
+    /* Backgrounds */
+    --bg-main: #FAFAFC;
+    --bg-alt: #F5F3FF;
+    --bg-dark: #111111;
+    --bg-dark-card: #1A1A1A;
+
+    /* Shadcn/UI fallbacks */
     --background: 210 40% 98%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 217 91% 45%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --primary: 247 88% 70%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 250 80% 96%;
+    --secondary-foreground: 247 88% 40%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 250 80% 96%;
+    --accent-foreground: 247 88% 40%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --ring: 247 88% 70%;
     --radius: 0.75rem;
   }
 
