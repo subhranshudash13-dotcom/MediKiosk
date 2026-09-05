@@ -5,15 +5,12 @@ import Link from "next/link";
 import {
   Activity,
   AlertTriangle,
-  CheckCircle2,
   Stethoscope,
   ArrowRight,
-  Sparkles,
-  FileText,
   Clock,
-  ShieldCheck,
   User,
-  HeartPulse
+  CheckCircle2,
+  Sparkles
 } from "lucide-react";
 
 interface CaseScenario {
@@ -49,8 +46,8 @@ const CLINICAL_CASES: CaseScenario[] = [
     chiefComplaint: "Acute Retrosternal Chest Heaviness & Diaphoresis",
     transcript: "Mujhe 45 minute se seene mein bohot bhari dard ho raha hai, left baazu aur gale tak jaa raha hai. Saans lene mein takleef aur paseena aa raha hai.",
     triagePriority: "EMERGENCY",
-    triageColor: "text-[#EF4444]",
-    triageBadgeBg: "bg-[#FEE2E2]",
+    triageColor: "text-[#C2410C]",
+    triageBadgeBg: "bg-red-50 text-[#C2410C] border border-red-200",
     painScore: 9,
     socrates: {
       site: "Retrosternal / Precordial chest",
@@ -62,234 +59,200 @@ const CLINICAL_CASES: CaseScenario[] = [
       exacerbating: "Minimal physical exertion",
       severity: "Severe 9/10 (Emergency Priority)"
     },
-    icd10: "I21.9 - Acute Coronary Syndrome (Suspected STEMI / NSTEMI)",
-    redFlagWarning: "High-risk ACS presentation. Immediate 12-lead ECG, troponin check, and cardiology triage escalation required within 10 minutes.",
-    doctorRecommendation: "Stat ECG + Sublingual Nitroglycerin + Aspirin 300mg loading dose per hospital ACS protocol."
+    icd10: "I20.0 (Unstable Angina / Suspected ACS)",
+    redFlagWarning: "High probability of Acute Myocardial Infarction. Stat 12-lead ECG and Troponin-I ordered.",
+    doctorRecommendation: "Direct to Emergency Resuscitation Bay (Bed 02). Cardiology Code Alert triggered."
   },
   {
-    id: "case-abdo",
-    patientName: "Anjali Verma",
-    ageGender: "34 Y / Female",
-    chiefComplaint: "Right Lower Quadrant Abdominal Pain & Low-Grade Fever",
-    transcript: "Kal shaam se pet ke daayein niche hisse mein tez dard hai. Ulti jaisa lag raha hai aur halka bukhar bhi hai. Chalne mein dard badhta hai.",
+    id: "case-fever",
+    patientName: "Sunita Verma",
+    ageGender: "32 Y / Female",
+    chiefComplaint: "High Fever, Chills & Severe Retro-Orbital Pain",
+    transcript: "3 din se bohot tez bukhar hai, aankhon ke peeche dard ho raha hai aur sar dard itna hai ki aankh kholne par bhi dukh raha hai.",
     triagePriority: "URGENT",
-    triageColor: "text-[#F59E0B]",
-    triageBadgeBg: "bg-[#FEF3C7]",
+    triageColor: "text-[#FB923C]",
+    triageBadgeBg: "bg-amber-50 text-amber-800 border border-amber-200",
     painScore: 7,
     socrates: {
-      site: "Right Lower Quadrant (McBurney's Point)",
-      onset: "Yesterday evening (~18 hours duration)",
-      character: "Constant, sharp, stabbing pain",
-      radiation: "Started periumbilical, migrated to right iliac fossa",
-      associated: "Nausea, low-grade fever (100.2°F), anorexia",
-      timeCourse: "Steadily intensifying",
-      exacerbating: "Walking, coughing, deep palpation",
-      severity: "Moderate-to-Severe 7/10"
+      site: "Frontal / Retro-orbital & Generalized body",
+      onset: "3 days duration, sudden onset with rigors",
+      character: "Severe throbbing headache & intense myalgia",
+      radiation: "Non-radiating, localized to forehead and eyes",
+      associated: "Chills, bitter taste, vomiting tendency, severe fatigue",
+      timeCourse: "Spiking fever in evenings up to 103°F",
+      exacerbating: "Bright light exposure (photophobia)",
+      severity: "Moderate-to-Severe 7/10 (Urgent Care)"
     },
-    icd10: "K35.80 - Acute Appendicitis (Unspecified)",
-    redFlagWarning: "Migratory RLQ pain with peritoneal irritation signs. Surgical consult & ultrasound abdomen advised.",
-    doctorRecommendation: "NPO status, complete blood count (leukocytosis check), USG abdomen & pelvis, and general surgery evaluation."
+    icd10: "A90 (Dengue Fever / Acute Febrile Illness)",
+    redFlagWarning: "Thrombocytopenia warning: CBC and Dengue NS1 / IgM ordered to rule out hemorrhagic manifestation.",
+    doctorRecommendation: "Route to Fever Clinic (Room 04). Stat CBC with differential count and IV hydration."
   },
   {
-    id: "case-diab",
-    patientName: "Gopal Krishna",
-    ageGender: "62 Y / Male",
-    chiefComplaint: "Uncontrolled Blood Sugar Fluctuations & Diabetic Peripheral Neuropathy",
-    transcript: "Do hafton se sugar 220 se upar aa rahi hai. Pyaas bohot lagti hai aur dono pairo ke talwo mein jalan aur sunnpan rehta hai.",
+    id: "case-neuro",
+    patientName: "Deepak Patel",
+    ageGender: "44 Y / Male",
+    chiefComplaint: "Persistent Unilateral Throbbing Headache with Aura",
+    transcript: "Kal subah se right side sar mein tez pulsating dard hai. Roshni aur aawaaz se dard badhta hai aur ulti jaisi feeling aa rahi hai.",
     triagePriority: "ROUTINE",
-    triageColor: "text-[#12B981]",
-    triageBadgeBg: "bg-[#DCFCE7]",
-    painScore: 4,
+    triageColor: "text-emerald-700",
+    triageBadgeBg: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+    painScore: 6,
     socrates: {
-      site: "Bilateral feet (stocking distribution)",
-      onset: "Gradual progression over past 2-3 months",
-      character: "Burning dysesthesia with numbness",
-      radiation: "Distal extremities (toes to mid-calf)",
-      associated: "Polyuria, polydipsia, fasting glucose > 220 mg/dL",
-      timeCourse: "Chronic, worse at nighttime",
-      exacerbating: "Prolonged standing",
-      severity: "Mild-to-Moderate 4/10"
+      site: "Right hemicranial / Temporoparietal",
+      onset: "Yesterday morning (~30 hours duration)",
+      character: "Pulsating, throbbing vascular pattern",
+      radiation: "Radiating to right occiput and neck muscles",
+      associated: "Visual shimmering aura, photophobia, phonophobia",
+      timeCourse: "Episodic, lasting 24-48 hours",
+      exacerbating: "Physical activity, bright light, loud sound",
+      severity: "Moderate 6/10 (Routine OPD)"
     },
-    icd10: "E11.40 - Type 2 Diabetes Mellitus with Diabetic Neuropathy",
-    doctorRecommendation: "HbA1c test, fasting/postprandial glucose profile, monofilament foot sensory test, and adjustment of oral hypoglycemic agents."
+    icd10: "G43.109 (Migraine with Aura, Not Intractable)",
+    doctorRecommendation: "Route to Neurology OPD (Room 18). Triptan therapy evaluation & lifestyle review."
   }
 ];
 
 export function LiveTriageSimulator() {
   const [selectedCaseId, setSelectedCaseId] = useState<string>("case-cardio");
-
-  const activeCase =
-    CLINICAL_CASES.find((c) => c.id === selectedCaseId) || CLINICAL_CASES[0];
+  const currentCase = CLINICAL_CASES.find((c) => c.id === selectedCaseId) || CLINICAL_CASES[0];
 
   return (
-    <div className="w-full bg-white border border-[#E7E4DD] rounded-3xl p-6 sm:p-8 shadow-xs">
+    <div className="bg-white border border-[#FDEBD0] rounded-[16px] p-6 sm:p-8 shadow-sm space-y-6 text-left">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#F2F0EB]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-[#FDEBD0]/80">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EEEAFE] border border-[#7C6EF7]/20 text-[#7C6EF7] text-xs font-bold mb-2">
-            <Activity className="w-3.5 h-3.5" />
-            <span>Real-Time Clinical Extraction Engine</span>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="w-2 h-2 rounded-full bg-[#FB923C]" />
+            <span className="text-[11px] font-mono font-bold text-[#1D2A8F] uppercase tracking-wider">
+              Interactive Triage Simulator
+            </span>
           </div>
-          <h3 className="text-xl sm:text-2xl font-extrabold text-[#111111]">
-            Live Triage &amp; SOCRATES Simulation Sandbox
+          <h3 className="font-heading font-bold text-lg text-[#374151]">
+            Real-Time SOCRATES Clinical Extraction
           </h3>
-          <p className="text-xs text-[#5F5E5A] mt-1">
-            Test how conversational patient input in Indian languages is instantly structured into high-fidelity medical telemetry.
-          </p>
         </div>
-
-        {/* Case Selector Pills */}
-        <div className="flex items-center gap-2 self-start sm:self-center">
-          <span className="text-xs font-bold text-[#5F5E5A] hidden md:inline">
-            Try Case:
-          </span>
-          {CLINICAL_CASES.map((c) => {
-            const isSelected = c.id === selectedCaseId;
-            return (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => setSelectedCaseId(c.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  isSelected
-                    ? "bg-[#7C6EF7] text-white shadow-xs"
-                    : "bg-[#FAFAFC] text-[#5F5E5A] border border-[#E7E4DD] hover:border-[#7C6EF7]"
-                }`}
-              >
-                {c.triagePriority === "EMERGENCY" && "🚨 "}
-                {c.patientName.split(" ")[0]} ({c.ageGender.split("/")[0].trim()})
-              </button>
-            );
-          })}
-        </div>
+        <span className="text-xs text-[#374151]/70 font-medium">
+          Select a patient scenario to see AI parsing in action
+        </span>
       </div>
 
-      {/* Main Grid: Left Simulated Voice Input & Right Live Extracted HPI */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6">
-        {/* Left 5 Cols: Patient Voice Input & Demographic Card */}
-        <div className="lg:col-span-5 space-y-4">
-          {/* Patient Profile Bar */}
-          <div className="p-4 rounded-2xl bg-[#FAFAFC] border border-[#E7E4DD] flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white border border-[#E7E4DD] flex items-center justify-center text-[#7C6EF7]">
-                <User className="w-5 h-5" />
+      {/* Case Selectors */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {CLINICAL_CASES.map((c) => {
+          const isSelected = c.id === selectedCaseId;
+          return (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => setSelectedCaseId(c.id)}
+              className={`p-4 rounded-[12px] border text-left transition-all cursor-pointer ${
+                isSelected
+                  ? "bg-[#FDFBF7] border-[#1D2A8F] shadow-xs ring-1 ring-[#1D2A8F]"
+                  : "bg-white border-[#FDEBD0] hover:border-[#1D2A8F]/40 hover:bg-[#FDFBF7]"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-[#374151] flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-[#1D2A8F]" />
+                  {c.patientName}
+                </span>
+                <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${c.triageBadgeBg}`}>
+                  {c.triagePriority}
+                </span>
               </div>
-              <div>
-                <h4 className="font-extrabold text-sm text-[#111111]">
-                  {activeCase.patientName}
-                </h4>
-                <span className="text-xs text-[#5F5E5A]">{activeCase.ageGender}</span>
-              </div>
-            </div>
+              <p className="text-[11px] text-[#374151]/80 line-clamp-2 leading-relaxed">
+                {c.chiefComplaint}
+              </p>
+            </button>
+          );
+        })}
+      </div>
 
-            <span className={`px-2.5 py-1 rounded-xl text-[10px] font-extrabold ${activeCase.triageBadgeBg} ${activeCase.triageColor}`}>
-              {activeCase.triagePriority} TRIAGE
+      {/* Main Clinical Output Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left: Vernacular Audio & Transcript Box (5 cols) */}
+        <div className="lg:col-span-5 p-5 rounded-[12px] bg-[#FDFBF7] border border-[#FDEBD0] space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-[#FDEBD0]/80">
+            <span className="text-[10px] font-mono font-bold text-[#1D2A8F] uppercase">
+              Spoken Vernacular Input
+            </span>
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white border border-[#FDEBD0] text-[#374151]">
+              Hindi (hi-IN)
             </span>
           </div>
 
-          {/* Voice Input Transcript */}
-          <div className="p-5 rounded-2xl bg-[#FAFAFC] border border-[#E7E4DD] space-y-2">
-            <span className="text-[10px] font-mono uppercase tracking-wider font-extrabold text-[#7C6EF7] block">
-              Live Conversational ASR Input (Hindi/Hinglish):
-            </span>
-            <p className="text-xs font-semibold text-[#111111] italic leading-relaxed bg-white p-3.5 rounded-xl border border-[#E7E4DD]">
-              "{activeCase.transcript}"
+          <div className="p-4 rounded-[8px] bg-white border border-[#FDEBD0]">
+            <p className="text-xs font-medium text-[#374151] italic leading-relaxed">
+              "{currentCase.transcript}"
             </p>
           </div>
 
-          {/* Red Flag Alert if Emergency */}
-          {activeCase.redFlagWarning && (
-            <div className="p-4 rounded-2xl bg-[#FEE2E2] border border-[#EF4444]/30 text-xs text-[#111111] space-y-1">
-              <div className="flex items-center gap-1.5 text-[#EF4444] font-extrabold">
-                <AlertTriangle className="w-4 h-4" />
-                <span>Immediate Clinical Action Flag</span>
-              </div>
-              <p className="text-[11px] text-[#5F5E5A] leading-relaxed">
-                {activeCase.redFlagWarning}
+          {currentCase.redFlagWarning && (
+            <div className="p-3.5 rounded-[8px] bg-red-50/70 border border-red-200 text-[#374151] space-y-1">
+              <span className="font-bold text-[#C2410C] text-[11px] flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                Red-Flag Clinical Warning
+              </span>
+              <p className="text-[11px] text-[#374151]/80 leading-relaxed">
+                {currentCase.redFlagWarning}
               </p>
             </div>
           )}
 
-          {/* Action CTA to open workstation */}
-          <Link
-            href="/doctor"
-            className="w-full py-3 rounded-2xl bg-[#7C6EF7] hover:bg-[#6758F0] text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-xs"
-          >
-            <Stethoscope className="w-4 h-4" />
-            <span>Open in Doctor Workstation</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
+          <div className="p-3 rounded-[8px] bg-white border border-[#FDEBD0] flex items-center justify-between text-xs">
+            <span className="text-[#374151]/70 font-medium">Mapped ICD-10 Coding:</span>
+            <span className="font-mono font-bold text-[#1D2A8F]">{currentCase.icd10}</span>
+          </div>
         </div>
 
-        {/* Right 7 Cols: Structured 8-Factor SOCRATES HPI Telemetry */}
-        <div className="lg:col-span-7 bg-[#FAFAFC] border border-[#E7E4DD] rounded-2xl p-6 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-[#E7E4DD]">
-            <div>
-              <span className="text-[10px] font-mono font-extrabold text-[#7C6EF7] uppercase tracking-wider block">
-                Structured Clinical Entity Mapping
-              </span>
-              <h4 className="font-extrabold text-sm text-[#111111]">
-                SOCRATES Protocol Telemetry
+        {/* Right: SOCRATES 8-Factor Matrix (7 cols) */}
+        <div className="lg:col-span-7 bg-white border border-[#FDEBD0] rounded-[12px] p-5 shadow-xs space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-[#FDEBD0]/80">
+            <div className="flex items-center gap-2">
+              <Activity className="w-4 h-4 text-[#1D2A8F]" />
+              <h4 className="font-heading font-bold text-xs text-[#374151] uppercase tracking-wider">
+                Extracted 8-Factor SOCRATES Matrix
               </h4>
             </div>
-            <div className="flex items-center gap-1.5 text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-white border border-[#E7E4DD] text-[#111111]">
-              <Clock className="w-3.5 h-3.5 text-[#7C6EF7]" />
-              <span>Extracted in 420ms</span>
-            </div>
+            <span className="text-xs font-mono font-extrabold text-[#C2410C]">
+              Pain Severity: {currentCase.painScore} / 10
+            </span>
           </div>
 
-          {/* SOCRATES Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-            <div className="p-3 rounded-xl bg-white border border-[#E7E4DD]">
-              <span className="text-[10px] font-bold text-[#8A8A8A] block uppercase">
-                Site &amp; Anatomical Location
-              </span>
-              <p className="font-extrabold text-[#111111] mt-0.5">{activeCase.socrates.site}</p>
+            <div className="p-2.5 rounded-[6px] bg-[#FDFBF7] border border-[#FDEBD0]">
+              <span className="text-[9px] font-mono font-semibold text-[#374151]/70 uppercase block mb-0.5">Site</span>
+              <span className="font-medium text-[#374151]">{currentCase.socrates.site}</span>
             </div>
-
-            <div className="p-3 rounded-xl bg-white border border-[#E7E4DD]">
-              <span className="text-[10px] font-bold text-[#8A8A8A] block uppercase">
-                Onset &amp; Chronology
-              </span>
-              <p className="font-bold text-[#111111] mt-0.5">{activeCase.socrates.onset}</p>
+            <div className="p-2.5 rounded-[6px] bg-[#FDFBF7] border border-[#FDEBD0]">
+              <span className="text-[9px] font-mono font-semibold text-[#374151]/70 uppercase block mb-0.5">Onset</span>
+              <span className="font-medium text-[#374151]">{currentCase.socrates.onset}</span>
             </div>
-
-            <div className="p-3 rounded-xl bg-white border border-[#E7E4DD]">
-              <span className="text-[10px] font-bold text-[#8A8A8A] block uppercase">
-                Character &amp; Intensity
-              </span>
-              <p className="font-bold text-[#111111] mt-0.5">{activeCase.socrates.character}</p>
+            <div className="p-2.5 rounded-[6px] bg-[#FDFBF7] border border-[#FDEBD0]">
+              <span className="text-[9px] font-mono font-semibold text-[#374151]/70 uppercase block mb-0.5">Character</span>
+              <span className="font-medium text-[#374151]">{currentCase.socrates.character}</span>
             </div>
-
-            <div className="p-3 rounded-xl bg-white border border-[#E7E4DD]">
-              <span className="text-[10px] font-bold text-[#8A8A8A] block uppercase">
-                Radiation Pattern
-              </span>
-              <p className="font-bold text-[#111111] mt-0.5">{activeCase.socrates.radiation}</p>
+            <div className="p-2.5 rounded-[6px] bg-[#FDFBF7] border border-[#FDEBD0]">
+              <span className="text-[9px] font-mono font-semibold text-[#374151]/70 uppercase block mb-0.5">Radiation</span>
+              <span className="font-medium text-[#374151]">{currentCase.socrates.radiation}</span>
             </div>
-
-            <div className="p-3 rounded-xl bg-white border border-[#E7E4DD] sm:col-span-2">
-              <span className="text-[10px] font-bold text-[#8A8A8A] block uppercase">
-                Associated Secondary Symptoms
-              </span>
-              <p className="font-bold text-[#111111] mt-0.5">{activeCase.socrates.associated}</p>
+            <div className="p-2.5 rounded-[6px] bg-[#FDFBF7] border border-[#FDEBD0]">
+              <span className="text-[9px] font-mono font-semibold text-[#374151]/70 uppercase block mb-0.5">Associated</span>
+              <span className="font-medium text-[#374151]">{currentCase.socrates.associated}</span>
+            </div>
+            <div className="p-2.5 rounded-[6px] bg-[#FDFBF7] border border-[#FDEBD0]">
+              <span className="text-[9px] font-mono font-semibold text-[#374151]/70 uppercase block mb-0.5">Time Course</span>
+              <span className="font-medium text-[#374151]">{currentCase.socrates.timeCourse}</span>
             </div>
           </div>
 
-          {/* Suggested Diagnosis & Protocol Box */}
-          <div className="p-3.5 rounded-xl bg-white border border-[#E7E4DD] space-y-1.5 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono font-bold text-[#8A8A8A] uppercase">
-                SNOMED CT / ICD-10 Differential Prompt:
-              </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#EEEAFE] text-[#7C6EF7] font-extrabold">
-                {activeCase.icd10.split("-")[0].trim()}
-              </span>
-            </div>
-            <p className="font-bold text-[#111111]">{activeCase.icd10}</p>
-            <div className="pt-2 border-t border-[#F2F0EB] text-[11px] text-[#5F5E5A]">
-              <strong>Doctor Action Plan:</strong> {activeCase.doctorRecommendation}
-            </div>
+          <div className="p-3.5 rounded-[8px] bg-[#FDFBF7] border border-[#FDEBD0] space-y-1">
+            <span className="text-[10px] font-mono font-bold text-[#1D2A8F] uppercase block">
+              Physician Disposition Order
+            </span>
+            <p className="text-xs font-medium text-[#374151]">
+              {currentCase.doctorRecommendation}
+            </p>
           </div>
         </div>
       </div>

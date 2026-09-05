@@ -2,7 +2,6 @@
 
 import { motion } from "framer-motion";
 import { Check, ShieldCheck } from "lucide-react";
-import { DotAccent } from "@/components/illustrations/CareImagery";
 import { cn } from "@/lib/utils";
 
 export interface SocratesData {
@@ -37,22 +36,22 @@ export function SocratesRadar({ socrates, className }: SocratesRadarProps) {
   const percentage = Math.round((completedCount / items.length) * 100);
 
   return (
-    <div className={cn("card-arch-top relative overflow-hidden", className)}>
-      <DotAccent className="absolute top-5 right-5" />
-
+    <div className={cn("rounded-[16px] border border-[#FDEBD0] bg-white p-6 shadow-sm text-left relative overflow-hidden", className)}>
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-line/60 pb-3.5">
+      <div className="flex items-center justify-between border-b border-[#FDEBD0]/80 pb-3.5">
         <div>
-          <p className="label-eyebrow">Diagnostic Completeness</p>
-          <h3 className="font-serif text-lg font-bold text-ink mt-0.5">
+          <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#1D2A8F]">
+            Diagnostic Completeness
+          </p>
+          <h3 className="font-heading text-base font-bold text-[#374151] mt-0.5">
             SOCRATES Clinical Intake Matrix
           </h3>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-olive">{percentage}% Captured</span>
-          <div className="h-2 w-16 overflow-hidden rounded-full bg-oat">
+          <span className="text-xs font-bold text-[#1D2A8F]">{percentage}% Captured</span>
+          <div className="h-2 w-16 overflow-hidden rounded-full bg-[#FDEBD0]">
             <motion.div
-              className="h-full bg-olive"
+              className="h-full bg-[#1D2A8F]"
               initial={{ width: 0 }}
               animate={{ width: `${percentage}%` }}
               transition={{ duration: 0.5 }}
@@ -69,17 +68,17 @@ export function SocratesRadar({ socrates, className }: SocratesRadarProps) {
             <div
               key={item.key}
               className={cn(
-                "rounded-2xl border p-3 transition-all text-left shadow-xs",
+                "rounded-[10px] border p-3 transition-all text-left shadow-xs",
                 isFilled
-                  ? "border-olive/30 bg-olive-soft/70 text-olive-deep"
-                  : "border-line bg-paper text-ink-muted"
+                  ? "border-emerald-200 bg-emerald-50/70 text-emerald-900"
+                  : "border-[#FDEBD0] bg-[#FDFBF7] text-[#374151]/60"
               )}
             >
               <div className="flex items-center justify-between">
                 <span
                   className={cn(
                     "flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-black",
-                    isFilled ? "bg-olive text-white" : "bg-oat text-ink-muted"
+                    isFilled ? "bg-emerald-700 text-white" : "bg-[#FDEBD0] text-[#374151]"
                   )}
                 >
                   {item.label}
@@ -88,8 +87,8 @@ export function SocratesRadar({ socrates, className }: SocratesRadarProps) {
                   {isFilled ? "✓ Verified" : "Pending"}
                 </span>
               </div>
-              <p className="mt-2 text-[11px] font-bold truncate text-ink">{item.full}</p>
-              <p className="text-xs font-medium text-ink-muted truncate mt-0.5">
+              <p className="mt-2 text-[11px] font-bold truncate text-[#374151]">{item.full}</p>
+              <p className="text-xs font-medium text-[#374151]/70 truncate mt-0.5">
                 {item.value || "—"}
               </p>
             </div>

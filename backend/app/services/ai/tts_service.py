@@ -43,9 +43,10 @@ class TTSService:
         if not text or not text.strip():
             return b""
 
-        # Select appropriate voice
-        key = f"{language_code}-{gender}" if gender == "male" else language_code
-        voice = VOICE_MAP.get(key, VOICE_MAP.get(language_code, "hi-IN-SwaraNeural"))
+        # Normalize language code (e.g. 'hi-IN' -> 'hi')
+        norm_lang = language_code.split("-")[0].lower() if language_code else "hi"
+        key = f"{norm_lang}-{gender}" if gender == "male" else norm_lang
+        voice = VOICE_MAP.get(key, VOICE_MAP.get(norm_lang, "hi-IN-SwaraNeural"))
 
         try:
             communicate = edge_tts.Communicate(text=text, voice=voice, rate="+0%", pitch="+0Hz")

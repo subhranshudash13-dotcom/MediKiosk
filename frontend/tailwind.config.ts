@@ -10,79 +10,104 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
+        // Master 5-Color Palette: Cobalt + Rust + Marigold + Almond + Slate
+        cobalt: {
+          DEFAULT: "#1D2A8F",
+          dark: "#141E66",
+          light: "#2A3ABF",
+          subtle: "#EAEBFA",
+        },
+        rust: {
+          DEFAULT: "#C2410C",
+          dark: "#9A3412",
+          light: "#FFEDD5",
+          hover: "#EA580C",
+        },
+        marigold: {
+          DEFAULT: "#FB923C",
+          light: "#FFF7ED",
+          dark: "#EA580C",
+        },
+        almond: {
+          DEFAULT: "#FDEBD0",
+          warm: "#FDEBD0",
+          card: "#FFFFFF",
+          subtle: "#FAF2E8",
+          border: "#EAD7C0",
+        },
+        slate: {
+          DEFAULT: "#374151",
+          soft: "#1F2937",
+          secondary: "#6B7280",
+          muted: "#9CA3AF",
+          border: "#E5E7EB",
+          "border-subtle": "#F3F4F6",
+        },
+        emerald: {
+          DEFAULT: "#059669",
+          light: "#D1FAE5",
+          dark: "#047857",
+        },
+
+        // Semantic Mappings
+        background: "#FDEBD0",
+        foreground: "#374151",
         card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
+          DEFAULT: "#FFFFFF",
+          foreground: "#374151",
         },
         popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
+          DEFAULT: "#FFFFFF",
+          foreground: "#374151",
         },
         primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
+          DEFAULT: "#1D2A8F",
+          foreground: "#FFFFFF",
         },
         secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
+          DEFAULT: "#FB923C",
+          foreground: "#FFFFFF",
         },
         muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
+          DEFAULT: "#FAF2E8",
+          foreground: "#6B7280",
         },
         accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
+          DEFAULT: "#C2410C",
+          foreground: "#FFFFFF",
         },
         destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
+          DEFAULT: "#C2410C",
+          foreground: "#FFFFFF",
         },
-        border: "var(--border)",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-
-        // Official MediKiosk Brand Palette
-        brand: {
-          primary: "var(--brand-primary)",
-          "primary-dark": "var(--brand-primary-dark)",
-          "primary-light": "var(--brand-primary-light)",
-        },
-        success: {
-          DEFAULT: "var(--success)",
-          light: "var(--success-light)",
-        },
-        warning: {
-          DEFAULT: "var(--warning)",
-          light: "var(--warning-light)",
-        },
-        ai: {
-          DEFAULT: "var(--ai)",
-          light: "var(--ai-light)",
-        },
-        text: {
-          primary: "var(--text-primary)",
-          secondary: "var(--text-secondary)",
-          muted: "var(--text-muted)",
-        },
-        surface: {
-          main: "var(--bg-main)",
-          alt: "var(--bg-alt)",
-          dark: "var(--bg-dark)",
-          "dark-card": "var(--bg-dark-card)",
-        },
-        borderTokens: {
-          DEFAULT: "var(--border)",
-          light: "var(--border-light)",
-        },
+        border: "#EAD7C0",
+        input: "#EAD7C0",
+        ring: "#1D2A8F",
+      },
+      fontFamily: {
+        sans: ["var(--font-inter)", "Inter", "system-ui", "sans-serif"],
+        heading: ["var(--font-dm-sans)", "DM Sans", "Manrope", "system-ui", "sans-serif"],
+        display: ["var(--font-dm-sans)", "DM Sans", "Manrope", "system-ui", "sans-serif"],
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        "data": "6px",          // 4–6px: clinical data, tables, badges, vitals tags
+        "clinical": "6px",      // 4–6px: clinical data values, ICD-10 tags
+        "card": "14px",         // 10–14px: cards, containers, panels, previews
+        "panel": "14px",        // 10–14px: panels
+        "interactive": "24px",  // 20–24px: patient-facing touch targets, kiosk buttons
+        "patient": "24px",      // 20–24px: patient buttons
+        "control": "24px",      // 20–24px: primary action controls
+        lg: "14px",
+        md: "8px",
+        sm: "6px",
       },
+      boxShadow: {
+        "subtle": "0 1px 3px 0 rgba(55, 65, 81, 0.05)",
+        "card": "0 2px 6px 0 rgba(55, 65, 81, 0.06), 0 1px 3px -1px rgba(55, 65, 81, 0.04)",
+        "elevated": "0 6px 18px -3px rgba(29, 42, 143, 0.1), 0 2px 6px -2px rgba(29, 42, 143, 0.05)",
+        "glow-amber": "0 0 20px -2px rgba(251, 146, 60, 0.35)",
+        "glow-cobalt": "0 0 20px -2px rgba(29, 42, 143, 0.25)",
+      }
     },
   },
   plugins: [require("tailwindcss-animate")],

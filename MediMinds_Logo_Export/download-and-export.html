@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MediMinds Team Logo - Export & Download Kit</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #FDFBF7;
+      color: #374151;
+      padding: 40px 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      max-width: 760px;
+      width: 100%;
+      background: #FFFFFF;
+      border: 1px solid #FDEBD0;
+      border-radius: 20px;
+      padding: 36px;
+      box-shadow: 0 4px 20px rgba(29, 42, 143, 0.06);
+    }
+    .header {
+      border-bottom: 1px solid #FDEBD0;
+      padding-bottom: 20px;
+      margin-bottom: 28px;
+    }
+    .header h1 {
+      font-size: 24px;
+      font-weight: 800;
+      color: #1D2A8F;
+    }
+    .header p {
+      font-size: 13px;
+      color: #756F73;
+      margin-top: 4px;
+    }
+    .preview-card {
+      background: #FDFBF7;
+      border: 1px solid #FDEBD0;
+      border-radius: 14px;
+      padding: 36px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+      min-height: 160px;
+    }
+    .preview-card svg {
+      max-width: 380px;
+      width: 100%;
+      height: auto;
+    }
+    .actions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    button, .btn-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 18px;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+    }
+    .btn-primary {
+      background: #1D2A8F;
+      color: #FFFFFF;
+    }
+    .btn-primary:hover {
+      background: #141E66;
+    }
+    .btn-accent {
+      background: #C2410C;
+      color: #FFFFFF;
+    }
+    .btn-accent:hover {
+      background: #9A3412;
+    }
+    .btn-secondary {
+      background: #FDFBF7;
+      color: #374151;
+      border: 1px solid #FDEBD0;
+    }
+    .btn-secondary:hover {
+      background: #FFFFFF;
+      border-color: #1D2A8F;
+      color: #1D2A8F;
+    }
+    .specs-box {
+      background: #FDFBF7;
+      border: 1px solid #FDEBD0;
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 12px;
+      color: #756F73;
+      line-height: 1.6;
+    }
+    .specs-box strong {
+      color: #374151;
+    }
+    .color-pill {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>MediMinds Logo Export Kit</h1>
+      <p>Clean, flat vector logo for team presentations, hackathon submissions, and export.</p>
+    </div>
+
+    <!-- Live SVG Preview -->
+    <div class="preview-card" id="svg-container">
+      <svg id="mediminds-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" width="320" height="80" fill="none">
+        <g transform="translate(10, 8)">
+          <path
+            d="M 23 9 A 6 6 0 0 1 29 3 L 35 3 A 6 6 0 0 1 41 9 L 41 23 L 55 23 A 6 6 0 0 1 61 29 L 61 35 A 6 6 0 0 1 55 41 L 41 41 L 41 55 A 6 6 0 0 1 35 61 L 29 61 A 6 6 0 0 1 23 55 L 23 41 L 9 41 A 6 6 0 0 1 3 35 L 3 29 A 6 6 0 0 1 9 23 L 23 23 Z"
+            fill="#1D2A8F"
+          />
+          <path
+            d="M 5 32 L 20 32 L 24 28 L 29 12 L 35 52 L 40 22 L 44 32 L 59 32"
+            stroke="#C2410C"
+            stroke-width="4"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </g>
+        <g transform="translate(86, 14)">
+          <text
+            x="0"
+            y="28"
+            font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+            font-size="26"
+            font-weight="600"
+            letter-spacing="-0.01em"
+          >
+            <tspan fill="#1D2A8F">Medi</tspan><tspan fill="#C2410C">Minds</tspan>
+          </text>
+          <text
+            x="1"
+            y="46"
+            font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+            font-size="10.5"
+            font-weight="500"
+            letter-spacing="0.16em"
+            fill="#756F73"
+          >
+            CLINICAL INTELLIGENCE
+          </text>
+        </g>
+      </svg>
+    </div>
+
+    <!-- Download Buttons -->
+    <div class="actions-grid">
+      <button class="btn-primary" onclick="downloadSVG()">
+        ⬇ Download SVG (Vector)
+      </button>
+      <button class="btn-accent" onclick="downloadPNG(1280, 320, 'mediminds-logo-highres.png')">
+        ⬇ Download PNG (High-Res)
+      </button>
+      <button class="btn-secondary" onclick="downloadPNG(2560, 640, 'mediminds-logo-4k.png')">
+        ⬇ Download PNG (Ultra 4K)
+      </button>
+      <button class="btn-secondary" onclick="downloadIconPNG(512, 512)">
+        ⬇ Download Square Icon PNG
+      </button>
+    </div>
+
+    <!-- Specs Box -->
+    <div class="specs-box">
+      <strong>Color Palette:</strong><br/>
+      • <span class="color-pill" style="background:#1D2A8F;"></span> <strong>Cobalt Navy:</strong> <code>#1D2A8F</code> (Text & Medical Cross)<br/>
+      • <span class="color-pill" style="background:#C2410C;"></span> <strong>Rich Rust:</strong> <code>#C2410C</code> (ECG Pulse Wave)<br/>
+      • <span class="color-pill" style="background:#756F73;"></span> <strong>Slate Charcoal:</strong> <code>#756F73</code> (Clinical Intelligence Tagline)
+    </div>
+  </div>
+
+  <script>
+    function downloadSVG() {
+      const svgEl = document.getElementById("mediminds-svg");
+      const serializer = new XMLSerializer();
+      const svgStr = serializer.serializeToString(svgEl);
+      const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "mediminds-logo.svg";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadPNG(width, height, filename) {
+      const svgEl = document.getElementById("mediminds-svg");
+      const serializer = new XMLSerializer();
+      const svgStr = serializer.serializeToString(svgEl);
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      const img = new Image();
+      const svgBlob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(svgBlob);
+
+      img.onload = function() {
+        ctx.clearRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+        URL.revokeObjectURL(url);
+        const pngUrl = canvas.toDataURL("image/png");
+        const a = document.createElement("a");
+        a.href = pngUrl;
+        a.download = filename || "mediminds-logo.png";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      };
+      img.src = url;
+    }
+
+    function downloadIconPNG(width, height) {
+      const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+        <path d="M 23 9 A 6 6 0 0 1 29 3 L 35 3 A 6 6 0 0 1 41 9 L 41 23 L 55 23 A 6 6 0 0 1 61 29 L 61 35 A 6 6 0 0 1 55 41 L 41 41 L 41 55 A 6 6 0 0 1 35 61 L 29 61 A 6 6 0 0 1 23 55 L 23 41 L 9 41 A 6 6 0 0 1 3 35 L 3 29 A 6 6 0 0 1 9 23 L 23 23 Z" fill="#1D2A8F" />
+        <path d="M 5 32 L 20 32 L 24 28 L 29 12 L 35 52 L 40 22 L 44 32 L 59 32" stroke="#C2410C" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>`;
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      const img = new Image();
+      const svgBlob = new Blob([iconSvg], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(svgBlob);
+
+      img.onload = function() {
+        ctx.clearRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+        URL.revokeObjectURL(url);
+        const pngUrl = canvas.toDataURL("image/png");
+        const a = document.createElement("a");
+        a.href = pngUrl;
+        a.download = "mediminds-icon-512x512.png";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      };
+      img.src = url;
+    }
+  </script>
+</body>
+</html>

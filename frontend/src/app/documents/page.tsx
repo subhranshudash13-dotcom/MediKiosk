@@ -1,4 +1,5 @@
 "use client";
+
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -57,31 +58,34 @@ export default function DocumentIntelligencePage() {
   // Extracted entities
   const [medications, setMedications] = useState<ExtractedDrug[]>([
     {
-      drug: "Tab Amlodipine",
-      dose: "5 mg",
-      frequency: "1-0-0 (OD Morning)",
-      duration: "30 Days",
+      drug: "Tab Telmisartan",
+      dose: "40 mg",
+      frequency: "1-0-0 (Morning OD)",
+      duration: "30 days",
       confidence: 98.4,
       source: "Prescription_Cardiology_2024.pdf",
       page: 1,
+      purpose: "Essential Hypertension"
     },
     {
-      drug: "Tab Metformin SR",
+      drug: "Tab Metformin HCl",
       dose: "500 mg",
-      frequency: "1-0-1 (BD After Meals)",
-      duration: "60 Days",
-      confidence: 96.1,
+      frequency: "1-0-1 (After Food BD)",
+      duration: "30 days",
+      confidence: 99.1,
       source: "Prescription_Cardiology_2024.pdf",
       page: 1,
+      purpose: "Type 2 Diabetes Mellitus"
     },
     {
       drug: "Tab Atorvastatin",
       dose: "20 mg",
-      frequency: "0-0-1 (HS Night)",
-      duration: "30 Days",
-      confidence: 95.8,
+      frequency: "0-0-1 (Night HS)",
+      duration: "30 days",
+      confidence: 96.8,
       source: "Prescription_Cardiology_2024.pdf",
       page: 1,
+      purpose: "Primary Dyslipidemia"
     },
   ]);
 
@@ -90,9 +94,9 @@ export default function DocumentIntelligencePage() {
       test: "HbA1c (Glycated Hemoglobin)",
       value: "7.4",
       unit: "%",
-      refRange: "< 5.7 %",
+      refRange: "< 5.7%",
       status: "HIGH",
-      confidence: 99.2,
+      confidence: 99.4,
       source: "Comprehensive_Metabolic_Panel.pdf",
     },
     {
@@ -180,30 +184,30 @@ export default function DocumentIntelligencePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAFC] text-[#111111] flex flex-col justify-between selection:bg-[#EEEAFE]">
+    <div className="min-h-screen bg-[#FDFBF7] text-[#374151] flex flex-col justify-between selection:bg-[#FDEBD0] selection:text-[#1D2A8F]">
       {/* Top Header */}
-      <header className="bg-white border-b border-[#E7E4DD] px-6 py-4 sticky top-0 z-30 shadow-sm">
+      <header className="bg-white border-b border-[#FDEBD0] px-4 sm:px-6 py-3.5 sticky top-0 z-30 shadow-xs">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
               href="/"
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[#E7E4DD] bg-[#FAFAFC] hover:bg-[#F5F3FF] hover:border-[#7C6EF7] text-[#5F5E5A] hover:text-[#7C6EF7] text-xs font-semibold transition-all"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#FDEBD0] bg-[#FDFBF7] hover:bg-white text-[#374151]/80 hover:text-[#1D2A8F] text-xs font-semibold transition-colors"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-3.5 h-3.5" />
               <span>Back to Home</span>
             </Link>
-            <div className="h-5 w-[1px] bg-[#E7E4DD] hidden sm:block" />
+            <div className="h-5 w-[1px] bg-[#FDEBD0] hidden sm:block" />
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-[#CFFAFE] border border-[#06B6D4]/20 flex items-center justify-center text-[#06B6D4]">
-                <FileScan className="w-5 h-5" />
+              <div className="w-8 h-8 rounded-[8px] bg-[#1D2A8F] text-white flex items-center justify-center font-bold shadow-xs">
+                <FileScan className="w-4 h-4 text-[#FB923C]" />
               </div>
-              <div>
-                <h1 className="font-bold text-base text-[#111111] leading-tight">
+              <div className="text-left">
+                <h1 className="font-heading font-bold text-sm text-[#374151] leading-tight">
                   Document Intelligence &amp; Medical Timeline
                 </h1>
-                <p className="text-xs text-[#5F5E5A] flex items-center gap-1.5">
-                  <span className="inline-block w-2 h-2 rounded-full bg-[#06B6D4] animate-pulse" />
-                  Multilingual Prescription OCR &amp; Provenance Tracking (Part 4)
+                <p className="text-[11px] text-[#374151]/70 flex items-center gap-1.5">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Multilingual Prescription OCR &amp; Provenance Tracking
                 </p>
               </div>
             </div>
@@ -212,38 +216,38 @@ export default function DocumentIntelligencePage() {
           <div className="flex items-center gap-2">
             <Link
               href="/doctor"
-              className="px-3.5 py-1.5 rounded-xl bg-[#7C6EF7] hover:bg-[#6758F0] text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md shadow-[#7C6EF7]/20"
+              className="px-4 py-1.5 rounded-full bg-[#1D2A8F] hover:bg-[#15206B] text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs"
             >
-              <Stethoscope className="w-3.5 h-3.5" />
-              <span>View in Doctor Workstation</span>
+              <Stethoscope className="w-3.5 h-3.5 text-[#FB923C]" />
+              <span>View in Doctor Cockpit</span>
             </Link>
           </div>
         </div>
       </header>
 
       {/* Main Container */}
-      <main className="max-w-6xl mx-auto w-full px-6 py-8 flex-1 space-y-8">
+      <main className="max-w-6xl mx-auto w-full px-4 sm:px-6 py-8 flex-1 space-y-8 text-left">
         {/* Module Subheader & Tab Switcher */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-[#E7E4DD]">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-[#FDEBD0]">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#EEEAFE] text-[#7C6EF7] text-xs font-bold mb-1">
-              <Sparkles className="w-3.5 h-3.5" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1D2A8F]/10 text-[#1D2A8F] text-xs font-semibold mb-1">
+              <Sparkles className="w-3.5 h-3.5 text-[#FB923C]" />
               Live Clinical Intake + ABDM Record Aggregation
             </div>
-            <h2 className="text-xl font-extrabold text-[#111111]">
+            <h2 className="font-heading font-bold text-xl sm:text-2xl text-[#374151]">
               Document Attachment, OCR &amp; Longitudinal EHR
             </h2>
           </div>
 
           {/* Tab Selector */}
-          <div className="flex items-center gap-1.5 p-1 bg-white border border-[#E7E4DD] rounded-2xl shadow-xs">
+          <div className="flex items-center gap-1 p-1 bg-white border border-[#FDEBD0] rounded-full shadow-xs">
             <button
               type="button"
               onClick={() => setActiveTab("live_scanner")}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                 activeTab === "live_scanner"
-                  ? "bg-[#7C6EF7] text-white shadow-xs"
-                  : "text-[#5F5E5A] hover:text-[#111111] hover:bg-[#FAFAFC]"
+                  ? "bg-[#1D2A8F] text-white shadow-xs"
+                  : "text-[#374151]/70 hover:text-[#1D2A8F] hover:bg-[#FDFBF7]"
               }`}
             >
               <FileScan className="w-3.5 h-3.5" />
@@ -252,10 +256,10 @@ export default function DocumentIntelligencePage() {
             <button
               type="button"
               onClick={() => setActiveTab("timeline")}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                 activeTab === "timeline"
-                  ? "bg-[#7C6EF7] text-white shadow-xs"
-                  : "text-[#5F5E5A] hover:text-[#111111] hover:bg-[#FAFAFC]"
+                  ? "bg-[#1D2A8F] text-white shadow-xs"
+                  : "text-[#374151]/70 hover:text-[#1D2A8F] hover:bg-[#FDFBF7]"
               }`}
             >
               <Calendar className="w-3.5 h-3.5" />
@@ -276,52 +280,52 @@ export default function DocumentIntelligencePage() {
 
         {/* TAB 2: Longitudinal Timeline & Extracted Records */}
         {activeTab === "timeline" && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* LEFT: Structured Extracted Entities with Confidence & Provenance (7 Cols) */}
             <div className="lg:col-span-7 space-y-6">
               {/* Medications Card */}
-              <div className="bg-white border border-[#E7E4DD] rounded-3xl p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#F2F0EB]">
+              <div className="bg-white border border-[#FDEBD0] rounded-[16px] p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#FDEBD0]/80">
                   <div className="flex items-center gap-2.5">
-                    <Pill className="w-5 h-5 text-[#7C6EF7]" />
+                    <Pill className="w-4 h-4 text-[#C2410C]" />
                     <div>
-                      <h3 className="font-bold text-sm text-[#111111]">
+                      <h3 className="font-heading font-bold text-sm text-[#374151]">
                         Extracted Medications &amp; Dosages
                       </h3>
-                      <p className="text-[11px] text-[#5F5E5A]">
+                      <p className="text-[11px] text-[#374151]/70">
                         Parsed from Prescription_Cardiology_2024.pdf
                       </p>
                     </div>
                   </div>
-                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#DCFCE7] text-[#12B981]">
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                     3 Drugs Parsed
                   </span>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {medications.map((item, idx) => (
                     <div
                       key={idx}
-                      className="p-4 rounded-2xl bg-[#FAFAFC] border border-[#E7E4DD] hover:bg-white hover:border-[#7C6EF7] transition-all text-xs"
+                      className="p-3.5 rounded-[10px] bg-[#FDFBF7] border border-[#FDEBD0] hover:bg-white hover:border-[#1D2A8F] transition-colors text-xs"
                     >
-                      <div className="flex items-start justify-between gap-3 mb-1.5">
+                      <div className="flex items-start justify-between gap-3 mb-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-extrabold text-sm text-[#111111]">
+                          <span className="font-bold text-xs text-[#374151]">
                             {item.drug}
                           </span>
-                          <span className="font-mono font-bold text-xs px-2 py-0.5 rounded-md bg-[#EEEAFE] text-[#7C6EF7]">
+                          <span className="font-mono font-bold text-[11px] px-2 py-0.5 rounded-full bg-[#1D2A8F]/10 text-[#1D2A8F]">
                             {item.dose}
                           </span>
                         </div>
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-[#DCFCE7] text-[#12B981]">
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                           Confidence: {item.confidence}%
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between text-[#5F5E5A] mt-2 pt-2 border-t border-[#F2F0EB]">
-                        <span>Frequency: <strong className="text-[#111111]">{item.frequency}</strong></span>
+                      <div className="flex items-center justify-between text-[#374151]/70 mt-2 pt-2 border-t border-[#FDEBD0]/80">
+                        <span>Frequency: <strong className="text-[#374151] font-semibold">{item.frequency}</strong></span>
                         <span>Duration: <strong>{item.duration}</strong></span>
-                        <span className="text-[10px] text-[#8A8A8A] font-mono">Pg {item.page}</span>
+                        <span className="text-[10px] text-[#374151]/50 font-mono">Pg {item.page}</span>
                       </div>
                     </div>
                   ))}
@@ -329,54 +333,54 @@ export default function DocumentIntelligencePage() {
               </div>
 
               {/* Lab Values Card */}
-              <div className="bg-white border border-[#E7E4DD] rounded-3xl p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#F2F0EB]">
+              <div className="bg-white border border-[#FDEBD0] rounded-[16px] p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#FDEBD0]/80">
                   <div className="flex items-center gap-2.5">
-                    <Thermometer className="w-5 h-5 text-[#06B6D4]" />
+                    <Thermometer className="w-4 h-4 text-[#FB923C]" />
                     <div>
-                      <h3 className="font-bold text-sm text-[#111111]">
+                      <h3 className="font-heading font-bold text-sm text-[#374151]">
                         Extracted Lab &amp; Diagnostic Parameters
                       </h3>
-                      <p className="text-[11px] text-[#5F5E5A]">
+                      <p className="text-[11px] text-[#374151]/70">
                         Parsed with reference range comparison
                       </p>
                     </div>
                   </div>
-                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#CFFAFE] text-[#06B6D4]">
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-red-50 text-[#C2410C] border border-red-200">
                     4 Tests Extracted
                   </span>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {labs.map((lab, idx) => (
                     <div
                       key={idx}
-                      className="p-4 rounded-2xl bg-[#FAFAFC] border border-[#E7E4DD] flex items-center justify-between gap-4 text-xs"
+                      className="p-3.5 rounded-[10px] bg-[#FDFBF7] border border-[#FDEBD0] flex items-center justify-between gap-4 text-xs"
                     >
                       <div>
-                        <h4 className="font-bold text-[#111111] text-xs">{lab.test}</h4>
-                        <span className="text-[#8A8A8A] text-[11px]">Ref: {lab.refRange}</span>
+                        <h4 className="font-bold text-[#374151] text-xs">{lab.test}</h4>
+                        <span className="text-[#374151]/70 text-[11px]">Ref: {lab.refRange}</span>
                       </div>
 
                       <div className="text-right">
                         <div className="flex items-center gap-2 justify-end">
-                          <span className="font-mono font-bold text-sm text-[#111111]">
-                            {lab.value} <span className="text-xs font-normal text-[#5F5E5A]">{lab.unit}</span>
+                          <span className="font-mono font-bold text-xs text-[#374151]">
+                            {lab.value} <span className="text-[11px] font-normal text-[#374151]/70">{lab.unit}</span>
                           </span>
                           <span
-                            className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                               lab.status === "HIGH"
-                                ? "bg-[#FEE2E2] text-[#EF4444]"
+                                ? "bg-red-50 text-[#C2410C] border border-red-200"
                                 : lab.status === "LOW"
-                                ? "bg-[#FEF3C7] text-[#F59E0B]"
-                                : "bg-[#DCFCE7] text-[#12B981]"
+                                ? "bg-amber-50 text-amber-800 border border-amber-200"
+                                : "bg-emerald-50 text-emerald-700 border border-emerald-200"
                             }`}
                           >
                             {lab.status}
                           </span>
                         </div>
-                        <span className="text-[10px] text-[#8A8A8A] block mt-0.5">
-                          AI Confidence: {lab.confidence}%
+                        <span className="text-[10px] text-[#374151]/50 block mt-0.5">
+                          Confidence: {lab.confidence}%
                         </span>
                       </div>
                     </div>
@@ -387,32 +391,32 @@ export default function DocumentIntelligencePage() {
 
             {/* RIGHT: Longitudinal Medical Timeline (5 Cols) */}
             <div className="lg:col-span-5 space-y-6">
-              <div className="bg-white border border-[#E7E4DD] rounded-3xl p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-6 pb-3 border-b border-[#F2F0EB]">
+              <div className="bg-white border border-[#FDEBD0] rounded-[16px] p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-6 pb-3 border-b border-[#FDEBD0]/80">
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-[#7C6EF7]" />
-                    <h3 className="font-bold text-sm text-[#111111]">
+                    <Calendar className="w-4 h-4 text-[#1D2A8F]" />
+                    <h3 className="font-heading font-bold text-sm text-[#374151]">
                       Automated Health Timeline
                     </h3>
                   </div>
-                  <span className="text-xs text-[#7C6EF7] font-bold">2021 – 2026</span>
+                  <span className="text-xs text-[#1D2A8F] font-bold">2021 – 2026</span>
                 </div>
 
-                <div className="relative pl-6 space-y-6 border-l-2 border-[#EEEAFE]">
+                <div className="relative pl-6 space-y-4 border-l-2 border-[#1D2A8F]/20">
                   {timeline.map((event, idx) => (
                     <div key={idx} className="relative group">
-                      <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-white border-2 border-[#7C6EF7] group-hover:scale-125 transition-transform" />
-                      <div className="bg-[#FAFAFC] p-4 rounded-2xl border border-[#E7E4DD] hover:bg-white hover:border-[#7C6EF7] transition-all">
+                      <div className="absolute -left-[31px] top-1 w-3.5 h-3.5 rounded-full bg-white border-2 border-[#1D2A8F]" />
+                      <div className="bg-[#FDFBF7] p-3.5 rounded-[10px] border border-[#FDEBD0] hover:bg-white hover:border-[#1D2A8F] transition-colors">
                         <div className="flex items-center justify-between text-xs mb-1">
-                          <span className="font-extrabold text-[#7C6EF7]">{event.date}</span>
-                          <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-[#EEEAFE] text-[#7C6EF7]">
+                          <span className="font-bold text-[#1D2A8F]">{event.date}</span>
+                          <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-[#1D2A8F]/10 text-[#1D2A8F]">
                             {event.category}
                           </span>
                         </div>
-                        <h4 className="font-bold text-xs text-[#111111] mb-1">{event.title}</h4>
-                        <p className="text-[11px] text-[#5F5E5A] leading-relaxed mb-2">{event.details}</p>
-                        <span className="text-[10px] text-[#8A8A8A] flex items-center gap-1">
-                          <Building2 className="w-3 h-3 text-[#7C6EF7]" />
+                        <h4 className="font-heading font-bold text-xs text-[#374151] mb-1">{event.title}</h4>
+                        <p className="text-[11px] text-[#374151]/70 leading-relaxed mb-2">{event.details}</p>
+                        <span className="text-[10px] text-[#374151]/50 flex items-center gap-1">
+                          <Building2 className="w-3 h-3 text-[#1D2A8F]" />
                           {event.facility}
                         </span>
                       </div>
@@ -421,21 +425,21 @@ export default function DocumentIntelligencePage() {
                 </div>
 
                 {/* Direct CTA */}
-                <div className="mt-8 p-4 rounded-2xl bg-[#F5F3FF] border border-[#7C6EF7]/30 flex items-center justify-between gap-3">
+                <div className="mt-8 p-4 rounded-[12px] bg-[#1D2A8F]/5 border border-[#1D2A8F]/20 flex items-center justify-between gap-3">
                   <div>
-                    <h5 className="font-bold text-xs text-[#111111]">
+                    <h5 className="font-heading font-bold text-xs text-[#374151]">
                       Sync with Patient Kiosk
                     </h5>
-                    <p className="text-[11px] text-[#5F5E5A]">
+                    <p className="text-[11px] text-[#374151]/70">
                       Timeline attached to active consultation session.
                     </p>
                   </div>
                   <Link
                     href="/kiosk"
-                    className="px-3.5 py-2 rounded-xl bg-[#7C6EF7] hover:bg-[#6758F0] text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-[#7C6EF7]/20 whitespace-nowrap"
+                    className="px-4 py-2 rounded-full bg-[#1D2A8F] hover:bg-[#15206B] text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs whitespace-nowrap"
                   >
                     <span>Go to Kiosk</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ArrowRight className="w-3.5 h-3.5 text-[#FB923C]" />
                   </Link>
                 </div>
               </div>
@@ -445,10 +449,10 @@ export default function DocumentIntelligencePage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-[#E7E4DD] py-4 px-6 mt-12 text-center text-xs text-[#5F5E5A]">
+      <footer className="bg-white border-t border-[#FDEBD0] py-4 px-6 mt-12 text-center text-xs text-[#374151]/70">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>MediKiosk Document Intelligence Engine • FHIR DocumentReference Linked</span>
-          <span className="text-[#8A8A8A]">Compliant with DPDP Act 2023 &amp; ABDM M2/M3 Standards</span>
+          <span className="text-[#374151]/50">Compliant with DPDP Act 2023 &amp; ABDM M2/M3 Standards</span>
         </div>
       </footer>
     </div>

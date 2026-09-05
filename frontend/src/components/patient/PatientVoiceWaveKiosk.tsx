@@ -24,6 +24,8 @@ import {
   Check,
   ChevronDown
 } from "lucide-react";
+import { useKioskStore, PatientQueueItem } from "@/lib/store";
+import { KioskAPI } from "@/lib/api";
 
 interface ClinicalExtraction {
   chiefComplaint: string;
@@ -89,16 +91,31 @@ const LANGUAGES = [
 ];
 
 export function PatientVoiceWaveKiosk() {
-  const [patientName, setPatientName] = useState("Rahul");
+  const [patientName, setPatientName] = useState("Ananya Sharma");
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [voiceState, setVoiceState] = useState<"listening" | "speaking" | "processing" | "idle">("listening");
-  const [transcript, setTranscript] = useState("I'm having pain in my chest since yesterday.");
+  const [transcript, setTranscript] = useState("I'm having severe pain in my chest since yesterday morning. It radiates to my left arm.");
   const [activeExtraction, setActiveExtraction] = useState<ClinicalExtraction>(SAMPLE_UTTERANCES[0].extracted);
   const [isComplete, setIsComplete] = useState(false);
+  const [generatedToken, setGeneratedToken] = useState("#107");
 
-  // Animated Waveform Canvas Reference
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  const pushPatientToQueue = useKioskStore((state) => state.pushPatientToQueue);
+
+  useEffect(() => {
+    audioElementRef.current = new Audio();
+    return () => {
+      if (audioElementRef.current) {
+        audioElementRef.current.pause();
+      }
+    };
+  }, []);
+
+  // Multi-harmonic sinusoidal waveform animation in Cobalt, Marigold, and Rust
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -108,12 +125,11 @@ export function PatientVoiceWaveKiosk() {
     let time = 0;
     let animationFrameId: number;
 
-    // Multi-harmonic wave physics configuration
-    const waveLayers = Array.from({ length: 6 }).map((_, i) => ({
-      baseFreq: 2.5 + i * 1.2,
-      amplitude: 0.35 + i * 0.08,
-      speed: 0.03 + i * 0.015,
-      phase: i * 0.8,
+    const waveLayers = Array.from({ length: 5 }).map((_, i) => ({
+      baseFreq: 2.2 + i * 1.1,
+      amplitude: 0.38 + i * 0.09,
+      speed: 0.025 + i * 0.012,
+      phase: i * 0.9,
     }));
 
     function resize() {
@@ -127,14 +143,14 @@ export function PatientVoiceWaveKiosk() {
       if (!ctx || !canvas) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Deep, clean solid card background
-      ctx.fillStyle = "#111111";
+      // Deep, clean Slate Charcoal background
+      ctx.fillStyle = "#1E2433";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw subtle grid guides
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+      // Subtle grid guides
+      ctx.strokeStyle = "rgba(253, 235, 208, 0.05)";
       ctx.lineWidth = 1;
-      const step = 20 * (window.devicePixelRatio || 1);
+      const step = 24 * (window.devicePixelRatio || 1);
       for (let x = 0; x < canvas.width; x += step) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
@@ -142,30 +158,28 @@ export function PatientVoiceWaveKiosk() {
         ctx.stroke();
       }
 
-      // Dynamic activity multiplier based on voice state
       let activityMult = 1.0;
-      if (voiceState === "listening") activityMult = 1.8;
+      if (voiceState === "listening") activityMult = 2.0;
       else if (voiceState === "speaking") activityMult = 2.2;
       else if (voiceState === "processing") activityMult = 0.8;
-      else activityMult = 0.4;
+      else activityMult = 0.3;
 
-      // Draw multi-harmonic sinusoidal waves
+      // Draw multi-harmonic sinusoidal waves in Marigold (#FB923C) and Rust (#C2410C)
       waveLayers.forEach((wave, idx) => {
         ctx.beginPath();
         const yCenter = canvas.height / 2;
         const width = canvas.width;
 
         for (let x = 0; x <= width; x += 3) {
-          const normX = (x / width) * 2 - 1; // -1 to +1
-          // Bell curve windowing so wave tapers smoothly at edges
+          const normX = (x / width) * 2 - 1;
           const envelope = Math.cos((normX * Math.PI) / 2);
 
           const sinVal = Math.sin(normX * wave.baseFreq * 3 + time * wave.speed * 20 + wave.phase);
-          const cosVal = Math.cos(normX * 4 + time * 1.5);
+          const cosVal = Math.cos(normX * 3.5 + time * 1.3);
           const waveHeight =
             sinVal *
             cosVal *
-            (canvas.height * 0.32) *
+            (canvas.height * 0.34) *
             wave.amplitude *
             envelope *
             activityMult;
@@ -178,14 +192,13 @@ export function PatientVoiceWaveKiosk() {
           }
         }
 
-        // Color mapping using MediKiosk brand palette: #7C6EF7 (Brand), #06B6D4 (AI), #12B981 (Success)
-        ctx.lineWidth = (2 + idx * 0.6) * (window.devicePixelRatio || 1);
-        if (idx % 3 === 0) {
-          ctx.strokeStyle = "rgba(124, 110, 247, 0.85)"; // #7C6EF7 Brand Primary
-        } else if (idx % 3 === 1) {
-          ctx.strokeStyle = "rgba(6, 182, 212, 0.8)"; // #06B6D4 AI Accent
+        ctx.lineWidth = (2.4 + idx * 0.4) * (window.devicePixelRatio || 1);
+        if (idx === 0 || idx === 1) {
+          ctx.strokeStyle = "rgba(251, 146, 60, 0.95)"; // Warm Marigold #FB923C
+        } else if (idx === 2 || idx === 3) {
+          ctx.strokeStyle = "rgba(194, 65, 12, 0.85)"; // Rich Rust #C2410C
         } else {
-          ctx.strokeStyle = "rgba(18, 185, 129, 0.75)"; // #12B981 Success
+          ctx.strokeStyle = "rgba(253, 235, 208, 0.7)"; // Almond Cream #FDEBD0
         }
 
         ctx.stroke();
@@ -208,21 +221,76 @@ export function PatientVoiceWaveKiosk() {
     };
   }, [voiceState]);
 
-  const handleSelectSample = (sample: typeof SAMPLE_UTTERANCES[0]) => {
+  const handleSelectSample = async (sample: typeof SAMPLE_UTTERANCES[0]) => {
     setVoiceState("processing");
     setTranscript(sample.transcript);
     setActiveExtraction(sample.extracted);
-    setTimeout(() => {
-      setVoiceState("listening");
-    }, 600);
+
+    try {
+      const resp = await KioskAPI.sendChatIntake(
+        sample.transcript,
+        "kiosk_sample_session",
+        selectedLanguage
+      );
+      if (resp.spoken_response) {
+        setVoiceState("speaking");
+        if (resp.audio_base64 && audioElementRef.current) {
+          audioElementRef.current.src = resp.audio_base64;
+          audioElementRef.current.play().catch(() => {});
+        }
+      }
+    } catch {
+      setTimeout(() => {
+        setVoiceState("listening");
+      }, 600);
+    }
   };
 
-  const handleToggleVoice = () => {
+  const handleToggleVoice = async () => {
     if (voiceState === "listening") {
-      setVoiceState("processing");
-      setTimeout(() => {
-        setVoiceState("speaking");
-      }, 800);
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioChunksRef.current = [];
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) audioChunksRef.current.push(e.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+          const audioBlob = new Blob(audioChunksRef.current, { type: "audio/wav" });
+          setVoiceState("processing");
+          try {
+            const resp = await KioskAPI.sendVoiceIntake(
+              audioBlob,
+              "kiosk_live_session",
+              selectedLanguage
+            );
+            if (resp.clinical_state?.raw_transcripts?.length) {
+              setTranscript(resp.clinical_state.raw_transcripts.slice(-1)[0]);
+            }
+            if (resp.spoken_response) {
+              setVoiceState("speaking");
+              if (resp.audio_base64 && audioElementRef.current) {
+                audioElementRef.current.src = resp.audio_base64;
+                audioElementRef.current.play().catch(() => {});
+              }
+            } else {
+              setVoiceState("idle");
+            }
+          } catch {
+            setVoiceState("idle");
+          }
+        };
+
+        mediaRecorder.start();
+        setVoiceState("listening");
+      } catch {
+        // Fallback: cycle states
+        setVoiceState("processing");
+        setTimeout(() => setVoiceState("speaking"), 600);
+      }
     } else if (voiceState === "speaking") {
       setVoiceState("idle");
     } else {
@@ -230,10 +298,65 @@ export function PatientVoiceWaveKiosk() {
     }
   };
 
+  const handleCompleteIntake = () => {
+    const newToken = `#${Math.floor(100 + Math.random() * 900)}`;
+    setGeneratedToken(newToken);
+
+    const newPatient: PatientQueueItem = {
+      id: `pat-${Date.now()}`,
+      token: newToken,
+      name: patientName,
+      age: 26,
+      gender: "Female",
+      abhaId: "91-4567-8901-2345",
+      triageLevel: activeExtraction.triageLevel,
+      chiefComplaint: activeExtraction.chiefComplaint,
+      triagedTime: "Just now",
+      vitals: {
+        bp: "124/82 mmHg",
+        pulse: "88 bpm",
+        spo2: "98%",
+        temp: "99.1 °F",
+        bmi: "22.6 (Normal)",
+      },
+      hpi: {
+        onset: activeExtraction.onset,
+        location: "Thorax / Upper Body",
+        character: "Severe acute onset",
+        radiation: "Radiating to left extremity",
+        severity: activeExtraction.severity,
+        aggravating: "Movement, deep inhalation",
+        relieving: "Resting in upright posture",
+        associated: activeExtraction.associated,
+      },
+      voiceTranscript: {
+        original: transcript,
+        language: selectedLanguage,
+        confidence: 99.2,
+      },
+      redFlags:
+        activeExtraction.triageLevel === "EMERGENCY"
+          ? ["Severe acute chest discomfort radiating to left arm", "Immediate ECG evaluation ordered"]
+          : [],
+      ocrHistory: {
+        medications: [
+          { drug: "Tab Paracetamol", dose: "650 mg", frequency: "1-0-1 (BD)" },
+        ],
+        abnormalLabs: [],
+        timeline: [
+          { year: "2026", event: "Point-of-Entry Triage at MediKiosk", type: "OPD Intake" },
+        ],
+      },
+    };
+
+    pushPatientToQueue(newPatient);
+    setIsComplete(true);
+  };
+
   const handleReset = () => {
     setIsComplete(false);
     setVoiceState("listening");
-    setTranscript("I'm having pain in my chest since yesterday.");
+    setTranscript("I'm having severe pain in my chest since yesterday morning. It radiates to my left arm.");
     setActiveExtraction(SAMPLE_UTTERANCES[0].extracted);
   };
 
@@ -242,63 +365,63 @@ export function PatientVoiceWaveKiosk() {
       {!isComplete ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* LEFT: The Signature MediKiosk Waveform & Voice Intake Stage (7 Cols) */}
-          <div className="lg:col-span-7 bg-white border border-[#E7E4DD] rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+          <div className="lg:col-span-7 bg-white border border-[#FDEBD0] rounded-[16px] p-6 sm:p-8 shadow-sm space-y-6">
             {/* Greeting Header */}
-            <div className="text-center space-y-2 pb-4 border-b border-[#F2F0EB]">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EEEAFE] border border-[#7C6EF7]/20 text-[#7C6EF7] text-xs font-extrabold">
-                <HeartPulse className="w-3.5 h-3.5" />
-                <span>MediKiosk Point-of-Entry Intake Station</span>
+            <div className="text-center space-y-2 pb-4 border-b border-[#FDEBD0]/80">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1D2A8F]/10 border border-[#1D2A8F]/20 text-[#1D2A8F] text-xs font-semibold">
+                <HeartPulse className="w-3.5 h-3.5 text-[#FB923C]" />
+                <span>Point-of-Entry Voice Intake Station</span>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#111111] tracking-tight">
+              <h2 className="font-heading text-2xl sm:text-3xl font-bold text-[#374151] tracking-tight">
                 Good morning, {patientName}.
               </h2>
-              <p className="text-sm font-semibold text-[#5F5E5A]">
-                Tell us what brings you here today.
+              <p className="text-sm text-[#374151]/70">
+                Tell us what brings you here today in your own words.
               </p>
             </div>
 
             {/* Central Animated Waveform Visualizer Card */}
-            <div className="relative rounded-3xl overflow-hidden border border-[#E7E4DD] bg-[#111111] shadow-xs">
+            <div className="relative rounded-[14px] overflow-hidden border border-[#FDEBD0] bg-[#1E2433] shadow-md">
               {/* Waveform Canvas */}
               <div className="w-full h-52 sm:h-60 relative">
                 <canvas
                   ref={canvasRef}
                   className="w-full h-full block cursor-pointer"
                   onClick={handleToggleVoice}
-                  title="Click to toggle voice state"
+                  title="Click to toggle voice recording"
                 />
 
                 {/* Status Overlay Badge */}
-                <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#111111]/80 backdrop-blur-md border border-white/10 text-white text-xs font-bold">
+                <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1E2433]/90 border border-white/10 text-white text-xs font-medium backdrop-blur-sm">
                   <span
                     className={`w-2 h-2 rounded-full ${
                       voiceState === "listening"
-                        ? "bg-[#12B981] animate-pulse"
+                        ? "bg-[#FB923C] animate-pulse"
                         : voiceState === "speaking"
-                        ? "bg-[#7C6EF7] animate-pulse"
-                        : "bg-[#F59E0B]"
+                        ? "bg-[#FDEBD0] animate-pulse"
+                        : "bg-[#C2410C]"
                     }`}
                   />
-                  <span className="capitalize">{voiceState}...</span>
+                  <span className="capitalize">{voiceState === "listening" ? "Listening..." : `${voiceState}...`}</span>
                 </div>
 
-                {/* Language Channel Indicator (Top Right) */}
-                <div className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#111111]/80 backdrop-blur-md border border-white/10 text-white text-xs font-mono font-bold">
-                  <Languages className="w-3.5 h-3.5 text-[#06B6D4]" />
+                {/* Language Channel Indicator */}
+                <div className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1E2433]/90 border border-white/10 text-white text-xs font-mono font-medium backdrop-blur-sm">
+                  <Languages className="w-3.5 h-3.5 text-[#FB923C]" />
                   <span>Bhashini Indic AI</span>
                 </div>
               </div>
 
               {/* Bottom Interactive Voice Control Strip */}
-              <div className="p-4 bg-[#1A1A1A] border-t border-white/10 flex items-center justify-between gap-4">
-                {/* 8-Dot Language Channel Wave Indicator */}
-                <div className="flex items-center gap-1.5" title="Active Multilingual Audio Channels">
+              <div className="p-4 bg-[#141A28] border-t border-white/10 flex items-center justify-between gap-4">
+                {/* Channel Indicator Dots */}
+                <div className="flex items-center gap-1.5" title="Active Multilingual Channels">
                   {[...Array(8)].map((_, i) => (
                     <span
                       key={i}
                       className={`w-2 h-2 rounded-full transition-all ${
                         voiceState === "listening" || voiceState === "speaking"
-                          ? "bg-[#7C6EF7]"
+                          ? "bg-[#FB923C]"
                           : "bg-white/20"
                       }`}
                       style={{
@@ -315,7 +438,7 @@ export function PatientVoiceWaveKiosk() {
                 <button
                   type="button"
                   onClick={handleToggleVoice}
-                  className="px-5 py-2 rounded-xl bg-[#7C6EF7] hover:bg-[#6758F0] text-white font-extrabold text-xs flex items-center gap-2 transition-all shadow-xs cursor-pointer"
+                  className="px-5 py-2.5 rounded-full bg-[#FB923C] hover:bg-[#F97316] text-[#1E2433] font-bold text-xs flex items-center gap-2 transition-all shadow-sm cursor-pointer"
                 >
                   <Mic className="w-4 h-4" />
                   <span>{voiceState === "listening" ? "Listening Active" : "Tap to Speak"}</span>
@@ -324,24 +447,47 @@ export function PatientVoiceWaveKiosk() {
             </div>
 
             {/* Live ASR Transcript Bubble */}
-            <div className="p-5 rounded-2xl bg-[#FAFAFC] border border-[#E7E4DD] space-y-2">
+            <div className="p-5 rounded-[12px] bg-[#FDFBF7] border border-[#FDEBD0] space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono font-extrabold text-[#7C6EF7] uppercase tracking-wider">
-                  Live Conversational Transcript:
+                <span className="text-[10px] font-mono font-bold text-[#1D2A8F] uppercase tracking-wider">
+                  Live Conversational Speech Transcript
                 </span>
-                <span className="text-[10px] font-bold text-[#12B981] bg-[#DCFCE7] px-2 py-0.5 rounded-md">
-                  High Confidence (99.1%)
+                <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                  High Confidence (99.2%)
                 </span>
               </div>
-              <p className="text-sm font-semibold text-[#111111] italic leading-relaxed bg-white p-4 rounded-xl border border-[#E7E4DD]">
+              <p className="text-sm font-medium text-[#374151] italic leading-relaxed bg-white p-4 rounded-[8px] border border-[#FDEBD0]">
                 "{transcript}"
               </p>
             </div>
 
+            {/* Language Selector Chips */}
+            <div className="space-y-2">
+              <span className="text-xs font-semibold text-[#374151]/80 block">
+                Preferred Spoken Language:
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {LANGUAGES.map((lang) => (
+                  <button
+                    key={lang.code}
+                    type="button"
+                    onClick={() => setSelectedLanguage(lang.code)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all cursor-pointer ${
+                      selectedLanguage === lang.code
+                        ? "bg-[#1D2A8F] text-white border-[#1D2A8F] shadow-xs"
+                        : "bg-white text-[#374151]/80 border-[#FDEBD0] hover:border-[#1D2A8F] hover:text-[#1D2A8F]"
+                    }`}
+                  >
+                    {lang.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* One-Click Clinical Sample Triggers */}
-            <div className="space-y-2 pt-1">
-              <span className="text-xs font-bold text-[#5F5E5A] block">
-                Or test with sample patient complaints:
+            <div className="space-y-2 pt-2 border-t border-[#FDEBD0]/80">
+              <span className="text-xs font-semibold text-[#374151]/80 block">
+                Or test with simulated patient complaints:
               </span>
               <div className="flex flex-wrap gap-2">
                 {SAMPLE_UTTERANCES.map((sample, idx) => (
@@ -349,7 +495,7 @@ export function PatientVoiceWaveKiosk() {
                     key={idx}
                     type="button"
                     onClick={() => handleSelectSample(sample)}
-                    className="px-3 py-1.5 rounded-xl bg-[#FAFAFC] hover:bg-white text-xs font-bold text-[#111111] border border-[#E7E4DD] hover:border-[#7C6EF7] transition-all cursor-pointer shadow-xs"
+                    className="px-3 py-1.5 rounded-full bg-[#FDFBF7] hover:bg-white text-xs font-medium text-[#374151] border border-[#FDEBD0] hover:border-[#1D2A8F] transition-all cursor-pointer shadow-xs"
                   >
                     {sample.label}
                   </button>
@@ -359,19 +505,19 @@ export function PatientVoiceWaveKiosk() {
           </div>
 
           {/* RIGHT: Real-Time Structured Clinical Extraction Telemetry (5 Cols) */}
-          <div className="lg:col-span-5 bg-white border border-[#E7E4DD] rounded-3xl p-6 sm:p-8 shadow-xs space-y-5">
-            <div className="flex items-center justify-between pb-3 border-b border-[#F2F0EB]">
+          <div className="lg:col-span-5 bg-white border border-[#FDEBD0] rounded-[16px] p-6 sm:p-8 shadow-sm space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-[#FDEBD0]/80">
               <div className="flex items-center gap-2">
-                <Activity className="w-4 h-4 text-[#7C6EF7]" />
-                <h3 className="font-extrabold text-sm text-[#111111]">
-                  Real-Time Clinical Extraction
+                <Activity className="w-4 h-4 text-[#1D2A8F]" />
+                <h3 className="font-heading font-semibold text-sm text-[#374151]">
+                  Structured Clinical Extraction
                 </h3>
               </div>
               <span
-                className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${
+                className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
                   activeExtraction.triageLevel === "EMERGENCY"
-                    ? "bg-[#FEE2E2] text-[#EF4444]"
-                    : "bg-[#DCFCE7] text-[#12B981]"
+                    ? "bg-red-50 text-[#C2410C] border border-red-200"
+                    : "bg-emerald-50 text-emerald-700 border border-emerald-200"
                 }`}
               >
                 {activeExtraction.triageLevel} PRIORITY
@@ -379,48 +525,48 @@ export function PatientVoiceWaveKiosk() {
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="p-3.5 rounded-2xl bg-[#FAFAFC] border border-[#E7E4DD]">
-                <span className="text-[#8A8A8A] font-bold block uppercase text-[10px] mb-0.5">
+              <div className="p-3.5 rounded-[10px] bg-[#FDFBF7] border border-[#FDEBD0]">
+                <span className="text-[#374151]/70 font-semibold block uppercase text-[10px] mb-0.5">
                   Chief Complaint
                 </span>
-                <p className="font-extrabold text-[#111111]">
+                <p className="font-bold text-[#374151]">
                   {activeExtraction.chiefComplaint}
                 </p>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-[#FAFAFC] border border-[#E7E4DD]">
-                <span className="text-[#8A8A8A] font-bold block uppercase text-[10px] mb-0.5">
+              <div className="p-3.5 rounded-[10px] bg-[#FDFBF7] border border-[#FDEBD0]">
+                <span className="text-[#374151]/70 font-semibold block uppercase text-[10px] mb-0.5">
                   Onset &amp; Chronology
                 </span>
-                <p className="font-bold text-[#111111]">
+                <p className="font-medium text-[#374151]">
                   {activeExtraction.onset}
                 </p>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-[#FAFAFC] border border-[#E7E4DD]">
-                <span className="text-[#8A8A8A] font-bold block uppercase text-[10px] mb-0.5">
+              <div className="p-3.5 rounded-[10px] bg-[#FDFBF7] border border-[#FDEBD0]">
+                <span className="text-[#374151]/70 font-semibold block uppercase text-[10px] mb-0.5">
                   Pain Severity Score
                 </span>
-                <p className="font-extrabold text-[#EF4444]">
+                <p className="font-extrabold text-[#C2410C]">
                   {activeExtraction.severity}
                 </p>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-[#FAFAFC] border border-[#E7E4DD]">
-                <span className="text-[#8A8A8A] font-bold block uppercase text-[10px] mb-0.5">
+              <div className="p-3.5 rounded-[10px] bg-[#FDFBF7] border border-[#FDEBD0]">
+                <span className="text-[#374151]/70 font-semibold block uppercase text-[10px] mb-0.5">
                   Associated Symptoms
                 </span>
-                <p className="font-semibold text-[#111111]">
+                <p className="font-medium text-[#374151]">
                   {activeExtraction.associated}
                 </p>
               </div>
 
               {activeExtraction.triageLevel === "EMERGENCY" && (
-                <div className="p-3.5 rounded-2xl bg-[#FEE2E2] border border-[#EF4444]/30 text-[#111111]">
-                  <span className="font-extrabold text-[#EF4444] block text-[11px] mb-0.5">
-                    🚨 Emergency Alert: Immediate Triage Protocol
+                <div className="p-3.5 rounded-[10px] bg-red-50/70 border border-red-200 text-[#374151]">
+                  <span className="font-bold text-[#C2410C] block text-[11px] mb-0.5">
+                    🚨 Emergency Protocol Triggered
                   </span>
-                  <span className="text-[11px] text-[#5F5E5A]">
+                  <span className="text-[11px] text-[#374151]/80">
                     Routing patient directly to Cardiology OPD with Stat ECG order pre-generated.
                   </span>
                 </div>
@@ -430,54 +576,54 @@ export function PatientVoiceWaveKiosk() {
             {/* Complete Intake Action Button */}
             <button
               type="button"
-              onClick={() => setIsComplete(true)}
-              className="w-full py-3.5 rounded-2xl bg-[#7C6EF7] hover:bg-[#6758F0] text-white font-extrabold text-xs transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer mt-4"
+              onClick={handleCompleteIntake}
+              className="w-full py-3.5 rounded-full bg-[#1D2A8F] hover:bg-[#15206B] text-white font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer mt-4"
             >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Complete Intake &amp; Generate OPD Token Slip</span>
+              <CheckCircle2 className="w-4 h-4 text-[#FB923C]" />
+              <span>Complete Intake &amp; Dispatch to Doctor Queue</span>
             </button>
           </div>
         </div>
       ) : (
         /* Printable OPD Triage Token Slip */
-        <div className="max-w-2xl mx-auto bg-white border border-[#E7E4DD] rounded-3xl p-8 sm:p-10 shadow-md text-center space-y-6">
-          <div className="w-16 h-16 rounded-3xl bg-[#DCFCE7] text-[#12B981] mx-auto flex items-center justify-center">
-            <CheckCircle2 className="w-9 h-9" />
+        <div className="max-w-2xl mx-auto bg-white border border-[#FDEBD0] rounded-[16px] p-8 sm:p-10 shadow-sm text-center space-y-6">
+          <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 mx-auto flex items-center justify-center">
+            <CheckCircle2 className="w-8 h-8" />
           </div>
 
           <div>
-            <span className="text-xs font-bold uppercase tracking-widest text-[#7C6EF7] block mb-1">
-              Clinical Intake Completed
+            <span className="text-xs font-bold uppercase tracking-widest text-[#1D2A8F] block mb-1">
+              Clinical Intake Completed &amp; Pushed to Queue
             </span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#111111]">
-              Patient OPD Token #104
+            <h2 className="font-heading text-2xl sm:text-3xl font-bold text-[#374151]">
+              Patient OPD Token {generatedToken}
             </h2>
-            <p className="text-xs text-[#5F5E5A] mt-1">
+            <p className="text-xs text-[#374151]/70 mt-1">
               Assigned to: <strong>{activeExtraction.department} ({activeExtraction.roomNumber})</strong>
             </p>
           </div>
 
           {/* Token Summary Card */}
-          <div className="p-6 rounded-2xl bg-[#FAFAFC] border border-[#E7E4DD] text-left text-xs space-y-3">
-            <div className="flex justify-between py-1.5 border-b border-[#F2F0EB]">
-              <span className="text-[#5F5E5A]">Patient Name:</span>
-              <span className="font-extrabold text-[#111111]">{patientName} (38Y / Male)</span>
+          <div className="p-6 rounded-[12px] bg-[#FDFBF7] border border-[#FDEBD0] text-left text-xs space-y-3">
+            <div className="flex justify-between py-1.5 border-b border-[#FDEBD0]/80">
+              <span className="text-[#374151]/70">Patient Name:</span>
+              <span className="font-bold text-[#374151]">{patientName} (26F)</span>
             </div>
-            <div className="flex justify-between py-1.5 border-b border-[#F2F0EB]">
-              <span className="text-[#5F5E5A]">Triage Priority:</span>
-              <span className="font-extrabold text-[#EF4444]">{activeExtraction.triageLevel}</span>
+            <div className="flex justify-between py-1.5 border-b border-[#FDEBD0]/80">
+              <span className="text-[#374151]/70">Triage Priority:</span>
+              <span className="font-extrabold text-[#C2410C]">{activeExtraction.triageLevel}</span>
             </div>
-            <div className="flex justify-between py-1.5 border-b border-[#F2F0EB]">
-              <span className="text-[#5F5E5A]">Chief Complaint:</span>
-              <span className="font-bold text-[#111111]">{activeExtraction.chiefComplaint}</span>
+            <div className="flex justify-between py-1.5 border-b border-[#FDEBD0]/80">
+              <span className="text-[#374151]/70">Chief Complaint:</span>
+              <span className="font-medium text-[#374151]">{activeExtraction.chiefComplaint}</span>
             </div>
-            <div className="flex justify-between py-1.5 border-b border-[#F2F0EB]">
-              <span className="text-[#5F5E5A]">HPI Duration &amp; Severity:</span>
-              <span className="font-semibold text-[#111111]">{activeExtraction.onset} • Score {activeExtraction.severity}</span>
+            <div className="flex justify-between py-1.5 border-b border-[#FDEBD0]/80">
+              <span className="text-[#374151]/70">HPI Duration &amp; Severity:</span>
+              <span className="font-medium text-[#374151]">{activeExtraction.onset} • Score {activeExtraction.severity}</span>
             </div>
             <div className="flex justify-between py-1.5">
-              <span className="text-[#5F5E5A]">ABDM Status:</span>
-              <span className="font-extrabold text-[#12B981]">Linked (91-4567-8901-2345)</span>
+              <span className="text-[#374151]/70">ABDM Status:</span>
+              <span className="font-semibold text-emerald-700">Linked (91-4567-8901-2345)</span>
             </div>
           </div>
 
@@ -486,7 +632,7 @@ export function PatientVoiceWaveKiosk() {
             <button
               type="button"
               onClick={handleReset}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-2xl border border-[#E7E4DD] bg-[#FAFAFC] hover:bg-white text-xs font-bold text-[#5F5E5A] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-full border border-[#FDEBD0] bg-[#FDFBF7] hover:bg-white text-xs font-semibold text-[#374151]/80 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Start New Intake</span>
@@ -494,9 +640,9 @@ export function PatientVoiceWaveKiosk() {
 
             <Link
               href="/doctor"
-              className="w-full sm:w-auto px-6 py-2.5 rounded-2xl bg-[#7C6EF7] hover:bg-[#6758F0] text-white text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-xs"
+              className="w-full sm:w-auto px-6 py-2.5 rounded-full bg-[#1D2A8F] hover:bg-[#15206B] text-white text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-xs"
             >
-              <Stethoscope className="w-4 h-4" />
+              <Stethoscope className="w-4 h-4 text-[#FB923C]" />
               <span>Open in Doctor Workstation</span>
             </Link>
           </div>

@@ -1,98 +1,56 @@
-# 🎨 MediKiosk Design System & Color Palette
+# 🎨 MediKiosk 5-Color Master Design System
 
-This document defines the official design system and color palette tokens for MediKiosk. All frontend interfaces, components, kiosk screens, and doctor dashboards must strictly adhere to this color system.
+> **Visual Identity**: Intelligence (`#1D2A8F` Cobalt Navy) + Human Physical Urgency (`#C2410C` Rust) + Active Acoustic Vitality (`#FB923C` Marigold) + Welcoming Warmth (`#FDEBD0` Almond Cream) + High-Precision Clinical Clarity (`#374151` Slate Charcoal).
 
 ---
 
-## 🌈 Master Color Palette Specification
+## 🌈 5-Color Palette Tokens
 
 ```css
 :root {
-  /* Brand */
-  --brand-primary: #7C6EF7;
-  --brand-primary-dark: #6758F0;
-  --brand-primary-light: #EEEAFE;
+  /* 🔵 1. Primary Cobalt Navy (Intelligence / Navigation / Doctor Highlights / Headings) */
+  --cobalt-primary: #1D2A8F;
+  --cobalt-dark: #141E66;
+  --cobalt-light: #2A3ABF;
+  --cobalt-subtle: #EAEBFA;
 
-  /* Success */
-  --success: #12B981;
-  --success-light: #DCFCE7;
+  /* 🔴 2. Rich Rust / Burnt Terracotta (Emergency Triage / Safety Red Flags / Secondary CTAs) */
+  --rust-accent: #C2410C;
+  --rust-dark: #9A3412;
+  --rust-hover: #EA580C;
+  --rust-light: #FFEDD5;
 
-  /* Warning */
-  --warning: #F59E0B;
-  --warning-light: #FEF3C7;
+  /* 🟠 3. Warm Marigold / Amber Orange (Microphone Waveform / Active Voice Stream / Micro-badges) */
+  --marigold-vital: #FB923C;
+  --marigold-light: #FFF7ED;
 
-  /* AI */
-  --ai: #06B6D4;
-  --ai-light: #CFFAFE;
+  /* 🥛 4. Almond Cream / Warm Neutral (Environment Canvas / Page Background) */
+  --almond-canvas: #FDEBD0;
+  --almond-subtle: #FAF2E8;
+  --almond-border: #EAD7C0;
+  --surface-white: #FFFFFF;
 
-  /* Neutral */
-  --black: #111111;
-  --white: #FFFFFF;
+  /* 🖤 5. Slate Charcoal (Typography / Structural Data / High Contrast Clinical Copy) */
+  --slate-text: #374151;
+  --slate-dark: #1F2937;
+  --slate-muted: #6B7280;
+  --slate-border: #E5E7EB;
 
-  /* Text */
-  --text-primary: #111111;
-  --text-secondary: #5F5E5A;
-  --text-muted: #8A8A8A;
-
-  /* Borders */
-  --border: #E7E4DD;
-  --border-light: #F2F0EB;
-
-  /* Backgrounds */
-  --bg-main: #FAFAFC;
-  --bg-alt: #F5F3FF;
-  --bg-dark: #111111;
-  --bg-dark-card: #1A1A1A;
+  /* 🌿 Secondary State (ABDM Verified, Healthy Vitals, Completed Sessions) */
+  --emerald-success: #059669;
+  --emerald-light: #D1FAE5;
 }
 ```
 
 ---
 
-## 📊 Palette Breakdown & Semantic Usage
+## 📊 Semantic Distribution Matrix
 
-| Category | Token Variable | Hex Code | Purpose & Semantic Usage |
+| Token | Hex Code | Visual Role | Application |
 | :--- | :--- | :--- | :--- |
-| **Brand** | `--brand-primary` | `#7C6EF7` | Primary buttons, active highlights, key CTAs |
-| **Brand** | `--brand-primary-dark` | `#6758F0` | Button hover states, emphasized accents |
-| **Brand** | `--brand-primary-light` | `#EEEAFE` | Badge backgrounds, secondary highlight containers |
-| **Success** | `--success` | `#12B981` | Routine triage, verified ABHA status, healthy vitals |
-| **Success** | `--success-light` | `#DCFCE7` | Success chip/badge backgrounds |
-| **Warning** | `--warning` | `#F59E0B` | Urgent triage, caution alerts, pending consents |
-| **Warning** | `--warning-light` | `#FEF3C7` | Warning badge & banner backgrounds |
-| **AI** | `--ai` | `#06B6D4` | Voice agent waveforms, OCR confidence, AI insights |
-| **AI** | `--ai-light` | `#CFFAFE` | AI reasoning containers, transcription bubbles |
-| **Neutral** | `--black` | `#111111` | Pure dark accents, high-contrast borders |
-| **Neutral** | `--white` | `#FFFFFF` | Card surfaces, clean canvas backgrounds |
-| **Text** | `--text-primary` | `#111111` | Headings, primary clinical copy, essential labels |
-| **Text** | `--text-secondary` | `#5F5E5A` | Sub-headings, metadata, helper descriptions |
-| **Text** | `--text-muted` | `#8A8A8A` | Placeholders, timestamps, disabled indicators |
-| **Borders** | `--border` | `#E7E4DD` | Card dividers, input borders, structural separators |
-| **Borders** | `--border-light` | `#F2F0EB` | Subtle row separators, table borders |
-| **Backgrounds** | `--bg-main` | `#FAFAFC` | Main app background canvas |
-| **Backgrounds** | `--bg-alt` | `#F5F3FF` | Hero sections, highlighted sidebars, subtle tint cards |
-| **Backgrounds** | `--bg-dark` | `#111111` | Dark mode canvas / Kiosk high-contrast theme |
-| **Backgrounds** | `--bg-dark-card` | `#1A1A1A` | Dark mode surface cards |
-
----
-
-## ⚡ Tailwind CSS Class Reference
-
-Use the customized Tailwind classes mapped directly to this palette:
-
-```html
-<!-- Primary Brand Button -->
-<button className="bg-brand-primary hover:bg-brand-primary-dark text-white">
-  Continue
-</button>
-
-<!-- AI Assistant Tag -->
-<span className="bg-ai-light text-ai px-2.5 py-1 rounded-full">
-  Voice Agent Active
-</span>
-
-<!-- Verified ABHA Card -->
-<div className="bg-bg-main border border-border p-6 rounded-2xl">
-  <p className="text-text-primary font-bold">ABHA Verified</p>
-  <p className="text-text-secondary">Health ID: 91-4567-8901-2345</p>
-</div>
-```
+| **Primary** | `#1D2A8F` | Cobalt Navy | Doctor sidebar, primary buttons, logo mark, key headings, active navigation |
+| **Accent / Alert** | `#C2410C` | Rich Rust | Emergency red flags, severity >= 7 badges, high-priority actions |
+| **Voice / Waveform** | `#FB923C` | Warm Marigold | Multi-harmonic audio waveform canvas, recording states, micro-highlights |
+| **Canvas** | `#FDEBD0` | Almond Cream | Page background canvas, warm touch kiosks, subtle card containers |
+| **Typography** | `#374151` | Slate Charcoal | Main body text, patient clinical quotes, medical data metrics |
+| **Surface** | `#FFFFFF` | Pure White | Information cards, EHR consultation panels, OCR dropzones |

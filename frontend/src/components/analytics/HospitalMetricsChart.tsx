@@ -32,12 +32,12 @@ const METRICS_DATA: Record<MetricType, {
   departments: DepartmentMetric[];
 }> = {
   wait_time: {
-    title: "OPD Triage & Intake Duration",
-    subtitle: "Average minutes spent per patient at reception desk vs MediKiosk AI Intake",
+    title: "OPD Pre-Consultation Intake Duration",
+    subtitle: "Average minutes spent per patient at manual reception desk vs MediKiosk structured intake",
     unit: "mins",
     yAxisLabel: "Minutes / Patient",
-    benchmarkLabel: "Traditional Manual Desk",
-    kioskLabel: "MediKiosk AI Intake",
+    benchmarkLabel: "Manual OPD Desk",
+    kioskLabel: "MediKiosk Intake",
     departments: [
       {
         department: "General Medicine",
@@ -57,147 +57,117 @@ const METRICS_DATA: Record<MetricType, {
         unit: "min",
         improvement: "-88.2%",
         patientVolume: "260 pts/day",
-        description: "Instant OPQRST pain characterization + automated ECG red-flag triage"
+        description: "Instant pain characterization + automated ECG red-flag triage"
       },
       {
         department: "Orthopedics",
         code: "ORTHO",
-        manualValue: 16.5,
-        kioskValue: 2.1,
-        unit: "min",
-        improvement: "-87.2%",
-        patientVolume: "310 pts/day",
-        description: "Trauma history, anatomical pain map, and mobility assessment"
-      },
-      {
-        department: "Pediatrics",
-        code: "PEDIA",
         manualValue: 18.0,
         kioskValue: 2.5,
         unit: "min",
         improvement: "-86.1%",
-        patientVolume: "190 pts/day",
-        description: "Guardian proxy voice intake with developmental history prompts"
+        patientVolume: "310 pts/day",
+        description: "Interactive body map pain localization & joint mobility tracking"
       },
       {
-        department: "Pulmonary & Chest",
-        code: "PULMO",
-        manualValue: 20.5,
-        kioskValue: 2.4,
+        department: "Gastroenterology",
+        code: "GASTRO",
+        manualValue: 21.0,
+        kioskValue: 3.1,
         unit: "min",
-        improvement: "-88.3%",
-        patientVolume: "240 pts/day",
-        description: "Cough chronology, smoking index, and SpO2 vital integration"
+        improvement: "-85.2%",
+        patientVolume: "190 pts/day",
+        description: "Detailed GI quadrant mapping & prior endoscopy prescription extraction"
       }
     ]
   },
   accuracy: {
-    title: "Pre-Consultation Clinical Completeness",
-    subtitle: "Percentage of HPI criteria pre-populated for doctor before consultation begins",
+    title: "HPI Completeness & Entity Capture",
+    subtitle: "Percentage of essential SOCRATES clinical parameters captured accurately prior to doctor review",
     unit: "%",
     yAxisLabel: "Completeness %",
-    benchmarkLabel: "Paper OPD Slip",
-    kioskLabel: "MediKiosk Structured HPI",
+    benchmarkLabel: "Manual Triage",
+    kioskLabel: "MediKiosk AI",
     departments: [
       {
-        department: "General Medicine",
-        code: "GEN-MED",
-        manualValue: 34.0,
-        kioskValue: 98.2,
+        department: "Site & Radiation",
+        code: "SITE-RAD",
+        manualValue: 62.0,
+        kioskValue: 98.4,
         unit: "%",
-        improvement: "+188%",
-        patientVolume: "420 pts/day",
-        description: "Standardized 8-factor SOCRATES coverage + past Rx linkage"
+        improvement: "+58.7%",
+        patientVolume: "All OPDs",
+        description: "Precise anatomical body map region selection"
       },
       {
-        department: "Cardiology OPD",
-        code: "CARDIO",
-        manualValue: 42.0,
-        kioskValue: 99.1,
+        department: "Chronology & Onset",
+        code: "CHRONO",
+        manualValue: 54.0,
+        kioskValue: 96.8,
         unit: "%",
-        improvement: "+136%",
-        patientVolume: "260 pts/day",
-        description: "Radiation, onset character, and cardiac risk score captured"
+        improvement: "+79.3%",
+        patientVolume: "All OPDs",
+        description: "Standardized duration, frequency, and episodic trajectory"
       },
       {
-        department: "Orthopedics",
-        code: "ORTHO",
-        manualValue: 38.0,
-        kioskValue: 95.8,
-        unit: "%",
-        improvement: "+152%",
-        patientVolume: "310 pts/day",
-        description: "Joint radiation, trauma timeline, and visual body localization"
-      },
-      {
-        department: "Pediatrics",
-        code: "PEDIA",
-        manualValue: 45.0,
-        kioskValue: 96.4,
-        unit: "%",
-        improvement: "+114%",
-        patientVolume: "190 pts/day",
-        description: "Immunization history and pediatric symptom evolution"
-      },
-      {
-        department: "Pulmonary & Chest",
-        code: "PULMO",
-        manualValue: 36.0,
+        department: "Prior Medication List",
+        code: "MED-REC",
+        manualValue: 41.0,
         kioskValue: 97.5,
         unit: "%",
-        improvement: "+171%",
-        patientVolume: "240 pts/day",
-        description: "Sputum type, nocturnal exacerbation, and allergen triggers"
+        improvement: "+137.8%",
+        patientVolume: "Pharmacy Queue",
+        description: "Optical OCR drug dosage, frequency, and active reconciliation"
+      },
+      {
+        department: "Red-Flag Alerts",
+        code: "RED-FLAG",
+        manualValue: 48.0,
+        kioskValue: 99.2,
+        unit: "%",
+        improvement: "+106.7%",
+        patientVolume: "Emergency / Triage",
+        description: "Instant algorithmic alerts for high-risk clinical symptoms"
       }
     ]
   },
   language: {
-    title: "Indian Language Patient Autonomy",
-    subtitle: "Self-service completion rate without requiring hospital staff intervention",
+    title: "Multilingual Patient Autonomy",
+    subtitle: "Self-service intake completion rates without hospital attendant intervention across Indic dialects",
     unit: "%",
-    yAxisLabel: "Autonomy Rate %",
-    benchmarkLabel: "English/Hindi Paper Forms",
-    kioskLabel: "MediKiosk Bhashini Voice AI",
+    yAxisLabel: "Autonomy %",
+    benchmarkLabel: "Manual Form",
+    kioskLabel: "Voice Kiosk",
     departments: [
       {
-        department: "Hindi (हिंदी)",
+        department: "Hindi (हिन्दी)",
         code: "HI-IN",
-        manualValue: 52.0,
-        kioskValue: 97.8,
+        manualValue: 48.0,
+        kioskValue: 98.6,
         unit: "%",
-        improvement: "+88.1%",
-        patientVolume: "650 pts/day",
-        description: "Dialect-aware ASR supporting colloquial medical terms"
+        improvement: "+105%",
+        patientVolume: "540 pts/day",
+        description: "Native dialect speech recognition & conversational empathy"
       },
       {
         department: "Telugu (తెలుగు)",
         code: "TE-IN",
-        manualValue: 31.0,
-        kioskValue: 96.4,
+        manualValue: 42.0,
+        kioskValue: 97.8,
         unit: "%",
-        improvement: "+210%",
+        improvement: "+132%",
         patientVolume: "380 pts/day",
-        description: "Native phonetic grammar with medical terminology mapping"
+        description: "Regional terminology matching for Andhra / Telangana cohorts"
       },
       {
         department: "Tamil (தமிழ்)",
         code: "TA-IN",
-        manualValue: 28.0,
-        kioskValue: 95.9,
+        manualValue: 44.0,
+        kioskValue: 98.1,
         unit: "%",
-        improvement: "+242%",
+        improvement: "+122%",
         patientVolume: "310 pts/day",
-        description: "Voice-first intake eliminating complex written hospital forms"
-      },
-      {
-        department: "Bengali (বাংলা)",
-        code: "BN-IN",
-        manualValue: 33.0,
-        kioskValue: 96.1,
-        unit: "%",
-        improvement: "+191%",
-        patientVolume: "290 pts/day",
-        description: "Natural conversational flow adapted for senior rural patients"
+        description: "Natural conversational flow adapted for senior patients"
       },
       {
         department: "Marathi (मराठी)",
@@ -207,7 +177,7 @@ const METRICS_DATA: Record<MetricType, {
         unit: "%",
         improvement: "+170%",
         patientVolume: "270 pts/day",
-        description: "Seamless AYUSH + Allopathic symptom recognition"
+        description: "Symptom recognition across rural & urban cohorts"
       }
     ]
   }
@@ -221,37 +191,37 @@ export function HospitalMetricsChart() {
   const selectedDepartment = currentData.departments[hoveredIndex] || currentData.departments[0];
 
   return (
-    <div className="w-full bg-white border border-[#E7E4DD] rounded-3xl p-6 sm:p-8 shadow-xs">
+    <div className="w-full bg-white border border-[#FDEBD0] rounded-[16px] p-6 sm:p-8 shadow-sm space-y-6 text-left">
       {/* Chart Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-[#F2F0EB]">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[#FDEBD0]/80">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EEEAFE] border border-[#7C6EF7]/20 text-[#7C6EF7] text-xs font-bold mb-2">
-            <BarChart3 className="w-3.5 h-3.5" />
-            <span>Clinical Impact &amp; Hospital Efficiency Benchmark</span>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1D2A8F]/10 text-[#1D2A8F] text-xs font-bold mb-1.5">
+            <BarChart3 className="w-3.5 h-3.5 text-[#FB923C]" />
+            <span>Hospital Operational Telemetry</span>
           </div>
-          <h3 className="text-xl sm:text-2xl font-extrabold text-[#111111]">
+          <h3 className="font-heading font-bold text-lg text-[#374151]">
             {currentData.title}
           </h3>
-          <p className="text-xs text-[#5F5E5A] mt-1 max-w-xl">
+          <p className="text-xs text-[#374151]/70 mt-0.5 max-w-xl leading-relaxed">
             {currentData.subtitle}
           </p>
         </div>
 
         {/* Metric Selector Buttons */}
-        <div className="flex items-center gap-1.5 p-1 bg-[#FAFAFC] border border-[#E7E4DD] rounded-2xl self-start lg:self-center">
+        <div className="flex items-center gap-1 p-1 bg-[#FDFBF7] border border-[#FDEBD0] rounded-full self-start lg:self-center">
           <button
             type="button"
             onClick={() => {
               setActiveMetric("wait_time");
               setHoveredIndex(0);
             }}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeMetric === "wait_time"
-                ? "bg-[#7C6EF7] text-white shadow-xs"
-                : "text-[#5F5E5A] hover:text-[#111111] hover:bg-white"
+                ? "bg-[#1D2A8F] text-white shadow-xs"
+                : "text-[#374151]/70 hover:text-[#1D2A8F] hover:bg-white"
             }`}
           >
-            <Clock className="w-3.5 h-3.5" />
+            <Clock className="w-3 h-3" />
             <span>Intake Speed</span>
           </button>
           <button
@@ -260,13 +230,13 @@ export function HospitalMetricsChart() {
               setActiveMetric("accuracy");
               setHoveredIndex(0);
             }}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeMetric === "accuracy"
-                ? "bg-[#7C6EF7] text-white shadow-xs"
-                : "text-[#5F5E5A] hover:text-[#111111] hover:bg-white"
+                ? "bg-[#1D2A8F] text-white shadow-xs"
+                : "text-[#374151]/70 hover:text-[#1D2A8F] hover:bg-white"
             }`}
           >
-            <CheckCircle2 className="w-3.5 h-3.5" />
+            <CheckCircle2 className="w-3 h-3" />
             <span>HPI Completeness</span>
           </button>
           <button
@@ -275,43 +245,42 @@ export function HospitalMetricsChart() {
               setActiveMetric("language");
               setHoveredIndex(0);
             }}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeMetric === "language"
-                ? "bg-[#7C6EF7] text-white shadow-xs"
-                : "text-[#5F5E5A] hover:text-[#111111] hover:bg-white"
+                ? "bg-[#1D2A8F] text-white shadow-xs"
+                : "text-[#374151]/70 hover:text-[#1D2A8F] hover:bg-white"
             }`}
           >
-            <Users className="w-3.5 h-3.5" />
+            <Users className="w-3 h-3" />
             <span>Language Autonomy</span>
           </button>
         </div>
       </div>
 
       {/* Main Visual: Left Bar Chart & Right Live Department Detail Card */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-6 items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
         {/* Left 8 Cols: Custom Structured Bar Chart */}
-        <div className="lg:col-span-8 space-y-5">
+        <div className="lg:col-span-8 space-y-4">
           {/* Legend */}
-          <div className="flex items-center gap-6 text-xs">
-            <div className="flex items-center gap-2">
-              <span className="w-3.5 h-3.5 rounded-sm bg-[#D1CFC7] border border-[#8A8A8A]" />
-              <span className="font-semibold text-[#5F5E5A]">
+          <div className="flex items-center gap-5 text-xs">
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-[3px] bg-[#FDEBD0]" />
+              <span className="text-[#374151]/70 font-medium">
                 {currentData.benchmarkLabel}
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3.5 h-3.5 rounded-sm bg-[#7C6EF7]" />
-              <span className="font-extrabold text-[#111111]">
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-[3px] bg-[#1D2A8F]" />
+              <span className="font-bold text-[#1D2A8F]">
                 {currentData.kioskLabel}
               </span>
             </div>
           </div>
 
           {/* Department Bar Rows */}
-          <div className="space-y-4 pt-2">
+          <div className="space-y-2 pt-1">
             {currentData.departments.map((dept, idx) => {
               const isSelected = hoveredIndex === idx;
-              // Calculate percentage widths for horizontal comparison bars
               const benchmarkPercent = activeMetric === "wait_time"
                 ? Math.min(100, Math.max(12, (dept.manualValue / 25) * 100))
                 : dept.manualValue;
@@ -323,41 +292,39 @@ export function HospitalMetricsChart() {
                 <div
                   key={dept.code}
                   onMouseEnter={() => setHoveredIndex(idx)}
-                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                  className={`p-3 rounded-[10px] border transition-all cursor-pointer ${
                     isSelected
-                      ? "bg-[#FAFAFC] border-[#7C6EF7] shadow-xs"
-                      : "bg-white border-[#E7E4DD] hover:border-[#7C6EF7]/40"
+                      ? "bg-[#FDFBF7] border-[#1D2A8F] shadow-xs ring-1 ring-[#1D2A8F]"
+                      : "bg-white border-[#FDEBD0] hover:border-[#1D2A8F]/40"
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-xs text-[#111111]">
+                      <span className="font-bold text-xs text-[#374151]">
                         {dept.department}
                       </span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-[#F2F0EB] text-[#5F5E5A] font-bold">
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-[#FDFBF7] text-[#374151]/70 border border-[#FDEBD0]">
                         {dept.code}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-[#12B981] px-2 py-0.5 rounded-md bg-[#DCFCE7]">
-                        {dept.improvement}
-                      </span>
-                    </div>
+                    <span className="text-[11px] font-mono font-bold text-emerald-700 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">
+                      {dept.improvement}
+                    </span>
                   </div>
 
                   {/* Paired Bars Container */}
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     {/* Benchmark Bar */}
-                    <div className="flex items-center gap-3">
-                      <span className="text-[11px] font-semibold text-[#8A8A8A] w-16 text-right">
-                        Legacy
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-[#374151]/70 w-14 text-right font-medium">
+                        Manual
                       </span>
-                      <div className="flex-1 bg-[#F2F0EB] rounded-md h-5 overflow-hidden relative">
+                      <div className="flex-1 bg-[#FDFBF7] rounded-full h-4 overflow-hidden relative">
                         <div
-                          className="bg-[#D1CFC7] h-full rounded-md transition-all duration-500 flex items-center justify-end pr-2"
+                          className="bg-[#FDEBD0] h-full rounded-full transition-all duration-300 flex items-center justify-end pr-2"
                           style={{ width: `${benchmarkPercent}%` }}
                         >
-                          <span className="text-[10px] font-bold text-[#111111] font-mono">
+                          <span className="text-[9px] font-mono text-[#374151] font-semibold">
                             {dept.manualValue} {dept.unit}
                           </span>
                         </div>
@@ -365,16 +332,16 @@ export function HospitalMetricsChart() {
                     </div>
 
                     {/* MediKiosk Bar */}
-                    <div className="flex items-center gap-3">
-                      <span className="text-[11px] font-extrabold text-[#7C6EF7] w-16 text-right">
-                        MediKiosk
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-[#1D2A8F] w-14 text-right">
+                        Intake
                       </span>
-                      <div className="flex-1 bg-[#EEEAFE] rounded-md h-6 overflow-hidden relative">
+                      <div className="flex-1 bg-[#1D2A8F]/10 rounded-full h-5 overflow-hidden relative">
                         <div
-                          className="bg-[#7C6EF7] h-full rounded-md transition-all duration-500 flex items-center justify-end pr-2.5 shadow-xs"
+                          className="bg-[#1D2A8F] h-full rounded-full transition-all duration-300 flex items-center justify-end pr-2.5"
                           style={{ width: `${kioskPercent}%` }}
                         >
-                          <span className="text-[11px] font-extrabold text-white font-mono">
+                          <span className="text-[10px] font-bold text-white font-mono">
                             {dept.kioskValue} {dept.unit}
                           </span>
                         </div>
@@ -388,43 +355,43 @@ export function HospitalMetricsChart() {
         </div>
 
         {/* Right 4 Cols: Active Department Insight Card */}
-        <div className="lg:col-span-4 bg-[#FAFAFC] border border-[#E7E4DD] rounded-3xl p-6 flex flex-col justify-between h-full space-y-6">
-          <div>
-            <div className="flex items-center justify-between pb-3 border-b border-[#E7E4DD]">
-              <span className="text-[10px] uppercase tracking-wider font-extrabold text-[#7C6EF7]">
-                Department Telemetry
+        <div className="lg:col-span-4 bg-[#FDFBF7] border border-[#FDEBD0] rounded-[12px] p-5 flex flex-col justify-between space-y-4">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between pb-2.5 border-b border-[#FDEBD0]">
+              <span className="text-[10px] uppercase font-mono font-bold text-[#1D2A8F]">
+                Department Context
               </span>
-              <span className="text-xs font-bold text-[#5F5E5A]">
+              <span className="text-[11px] text-[#374151]/70 font-medium">
                 {selectedDepartment.patientVolume}
               </span>
             </div>
 
-            <div className="mt-4">
-              <h4 className="text-lg font-extrabold text-[#111111]">
+            <div>
+              <h4 className="font-bold text-sm text-[#374151]">
                 {selectedDepartment.department}
               </h4>
-              <p className="text-xs text-[#5F5E5A] mt-2 leading-relaxed">
+              <p className="text-xs text-[#374151]/70 mt-1 leading-relaxed">
                 {selectedDepartment.description}
               </p>
             </div>
 
             {/* Impact Metric Box */}
-            <div className="mt-6 p-4 rounded-2xl bg-white border border-[#E7E4DD] space-y-3">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-[#5F5E5A]">Net Efficiency Gain:</span>
-                <span className="font-extrabold text-base text-[#12B981]">
+            <div className="p-3.5 rounded-[10px] bg-white border border-[#FDEBD0] space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[#374151]/70">OPD Throughput Gain:</span>
+                <span className="font-bold text-emerald-700">
                   {selectedDepartment.improvement}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-xs pt-2 border-t border-[#F2F0EB]">
-                <span className="text-[#5F5E5A]">Manual Baseline:</span>
-                <span className="font-mono font-bold text-[#111111]">
+              <div className="flex items-center justify-between pt-1.5 border-t border-[#FDEBD0]/80">
+                <span className="text-[#374151]/70">Manual Baseline:</span>
+                <span className="font-mono text-[#374151]">
                   {selectedDepartment.manualValue} {selectedDepartment.unit}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-xs pt-2 border-t border-[#F2F0EB]">
-                <span className="text-[#5F5E5A]">MediKiosk AI Record:</span>
-                <span className="font-mono font-extrabold text-[#7C6EF7]">
+              <div className="flex items-center justify-between pt-1.5 border-t border-[#FDEBD0]/80">
+                <span className="text-[#374151]/70">MediKiosk Intake:</span>
+                <span className="font-mono font-bold text-[#1D2A8F]">
                   {selectedDepartment.kioskValue} {selectedDepartment.unit}
                 </span>
               </div>
@@ -432,10 +399,10 @@ export function HospitalMetricsChart() {
           </div>
 
           {/* Key Takeaway */}
-          <div className="p-3.5 rounded-2xl bg-[#EEEAFE] border border-[#7C6EF7]/20 text-xs">
-            <div className="flex items-start gap-2 text-[#7C6EF7]">
-              <Info className="w-4 h-4 shrink-0 mt-0.5" />
-              <p className="text-[11px] text-[#111111] leading-relaxed">
+          <div className="p-3 rounded-[10px] bg-emerald-50 border border-emerald-200 text-xs">
+            <div className="flex items-start gap-2 text-emerald-800">
+              <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-emerald-600" />
+              <p className="text-[11px] leading-relaxed font-medium">
                 Pre-triage data directly hydrates the Doctor Consultation workstation without repeating routine inquiries.
               </p>
             </div>

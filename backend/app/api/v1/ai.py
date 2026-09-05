@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.services.ai.orchestrator import ai_orchestrator
 from app.services.ai.schemas import DialogueTurnResponse, ClinicalIntakeState
@@ -10,19 +10,24 @@ router = APIRouter(prefix="/ai", tags=["AI Clinical Voice Agent"])
 
 class ChatIntakeRequest(BaseModel):
     session_id: Optional[str] = None
-    transcript: str
+    transcript: Optional[str] = None
+    user_utterance: Optional[str] = None
+    text: Optional[str] = None
     language_code: str = "hi"
     synthesize_audio: bool = True
 
 
 @router.post("/chat-intake", response_model=DialogueTurnResponse)
+@router.post("/dialogue", response_model=DialogueTurnResponse)
 async def chat_intake(req: ChatIntakeRequest):
     """
     Process a text-based patient clinical intake turn.
+    Accepts transcript, user_utterance, or text field.
     Returns dynamic spoken response, structured clinical state, and optional neural TTS audio.
     """
+    utterance = req.transcript or req.user_utterance or req.text or ""
     return await ai_orchestrator.process_text_turn(
-        transcript=req.transcript,
+        transcript=utterance,
         session_id=req.session_id,
         language_code=req.language_code,
         synthesize_audio=req.synthesize_audio

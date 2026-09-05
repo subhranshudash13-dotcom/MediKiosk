@@ -10,6 +10,7 @@ export const apiClient = axios.create({
 });
 
 export const KioskAPI = {
+  // 1. Kiosk Session Lifecycle
   getLanguages: async () => {
     const res = await apiClient.get("/kiosk/languages");
     return res.data;
@@ -22,6 +23,56 @@ export const KioskAPI = {
     const res = await apiClient.get(`/clinical/summary/${sessionId}`);
     return res.data;
   },
+
+  // 2. AI Voice & Chat Intake
+  sendVoiceIntake: async (audioBlob: Blob, sessionId: string, languageCode: string = "hi") => {
+    const formData = new FormData();
+    formData.append("file", audioBlob, "patient_speech.wav");
+    formData.append("session_id", sessionId);
+    formData.append("language_code", languageCode);
+    formData.append("synthesize_audio", "true");
+
+    const res = await apiClient.post("/ai/voice-intake", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
+  },
+  sendChatIntake: async (transcript: string, sessionId: string, languageCode: string = "hi") => {
+    const res = await apiClient.post("/ai/chat-intake", {
+      session_id: sessionId,
+      transcript,
+      language_code: languageCode,
+      synthesize_audio: true,
+    });
+    return res.data;
+  },
+  getSessionState: async (sessionId: string) => {
+    const res = await apiClient.get(`/ai/session/${sessionId}/state`);
+    return res.data;
+  },
+
+  // 3. Document AI & OCR Extraction
+  uploadDocument: async (file: File, patientId: string = "P-DEMO-001") => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("patient_id", patientId);
+    formData.append("auto_sync_timeline", "true");
+
+    const res = await apiClient.post("/documents/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
+  },
+  processSampleDocument: async (sampleType: string = "prescription", patientId: string = "P-DEMO-001") => {
+    const res = await apiClient.post(`/documents/process-sample?sample_type=${sampleType}&patient_id=${patientId}`);
+    return res.data;
+  },
+  getPatientTimeline: async (patientId: string = "P-DEMO-001") => {
+    const res = await apiClient.get(`/documents/timeline/${patientId}`);
+    return res.data;
+  },
+
+  // 4. ABDM Gateway
   verifyAbha: async (abhaId: string) => {
     const res = await apiClient.post(`/abdm/verify-abha?abha_id=${encodeURIComponent(abhaId)}`);
     return res.data;
@@ -47,4 +98,3 @@ export const KioskAPI = {
     return res.data;
   },
 };
-

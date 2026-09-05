@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { DotAccent } from "@/components/illustrations/CareImagery";
 import { cn } from "@/lib/utils";
 
 interface ClinicalPainGaugeProps {
@@ -28,29 +27,29 @@ export function ClinicalPainGauge({
   const currentScore = score ?? 0;
 
   const getStatusText = (val: number) => {
-    if (val === 0) return { text: "No Pain (0/10)", color: "text-olive" };
-    if (val <= 3) return { text: `Mild Discomfort (${val}/10)`, color: "text-olive-light" };
-    if (val <= 6) return { text: `Moderate Pain (${val}/10)`, color: "text-amber" };
-    if (val <= 8) return { text: `Severe Pain (${val}/10)`, color: "text-coral" };
-    return { text: `Critical Distress (${val}/10)`, color: "text-coral" };
+    if (val === 0) return { text: "No Discomfort (0/10)", color: "text-emerald-700" };
+    if (val <= 3) return { text: `Mild Discomfort (${val}/10)`, color: "text-emerald-600" };
+    if (val <= 6) return { text: `Moderate Pain (${val}/10)`, color: "text-[#FB923C]" };
+    if (val <= 8) return { text: `Severe Pain (${val}/10)`, color: "text-[#C2410C]" };
+    return { text: `Critical Distress (${val}/10)`, color: "text-[#C2410C]" };
   };
 
   const status = getStatusText(currentScore);
 
   return (
-    <div className={cn("card-arch-top relative overflow-hidden", className)}>
-      <DotAccent className="absolute top-5 right-5" />
-
+    <div className={cn("rounded-[16px] border border-[#FDEBD0] bg-white p-6 shadow-sm text-left relative overflow-hidden", className)}>
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-line/60 pb-3.5">
+      <div className="flex items-center justify-between border-b border-[#FDEBD0]/80 pb-3.5">
         <div>
-          <p className="label-eyebrow">Wong-Baker Pain Scale</p>
-          <h3 className={cn("font-serif text-lg font-bold mt-0.5", status.color)}>
+          <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#1D2A8F]">
+            Wong-Baker Clinical Pain Rating
+          </p>
+          <h3 className={cn("font-heading text-lg font-bold mt-0.5", status.color)}>
             {status.text}
           </h3>
         </div>
-        <span className="rounded-full bg-oat px-3 py-1 text-[10px] font-bold text-ink-muted uppercase tracking-wider">
-          Standard Clinical Dial
+        <span className="rounded-full bg-[#FDFBF7] border border-[#FDEBD0] px-3 py-1 text-[10px] font-bold text-[#374151]/70 uppercase tracking-wider">
+          Standard 0–10 Scale
         </span>
       </div>
 
@@ -61,15 +60,16 @@ export function ClinicalPainGauge({
             key={i}
             disabled={readOnly}
             onClick={() => onChange?.(i)}
+            type="button"
             className={cn(
-              "flex-1 h-10 rounded-xl text-xs font-bold transition-all flex items-center justify-center shadow-xs",
+              "flex-1 h-11 rounded-[8px] text-xs font-bold transition-all flex items-center justify-center shadow-xs cursor-pointer",
               i <= currentScore
                 ? i <= 3
-                  ? "bg-olive text-white scale-105"
+                  ? "bg-emerald-600 text-white scale-105"
                   : i <= 6
-                  ? "bg-amber text-white scale-105"
-                  : "bg-coral text-white scale-105"
-                : "bg-oat text-ink-muted hover:bg-line"
+                  ? "bg-[#FB923C] text-white scale-105"
+                  : "bg-[#C2410C] text-white scale-105"
+                : "bg-[#FDFBF7] border border-[#FDEBD0] text-[#374151]/60 hover:bg-white hover:text-[#1D2A8F]"
             )}
           >
             {i}
@@ -78,12 +78,12 @@ export function ClinicalPainGauge({
       </div>
 
       {/* Scale Qualifiers */}
-      <div className="mt-4 grid grid-cols-5 text-center text-[10px] text-ink-muted">
+      <div className="mt-4 grid grid-cols-5 text-center text-[10px] text-[#374151]/70">
         {PAIN_LEVELS.map((lvl) => (
           <div key={lvl.val} className="flex flex-col items-center">
             <span className="text-base">{lvl.emoji}</span>
-            <span className="font-bold text-ink mt-1">{lvl.label}</span>
-            <span className="hidden sm:inline text-[9px] text-ink-muted">{lvl.desc}</span>
+            <span className="font-bold text-[#374151] mt-1">{lvl.label}</span>
+            <span className="hidden sm:inline text-[9px] text-[#374151]/60">{lvl.desc}</span>
           </div>
         ))}
       </div>

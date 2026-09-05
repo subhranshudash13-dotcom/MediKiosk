@@ -62,8 +62,9 @@ class ExtractionPayload(BaseModel):
 class DialogueTurnResponse(BaseModel):
     """Unified voice agent turn output."""
     session_id: str
-    spoken_response: str
-    language_code: str
+    spoken_response: str = "आपकी तकलीफ़ नोट कर ली गई है।"
+    language_code: str = "hi"
+    user_transcript: Optional[str] = None
     audio_base64: Optional[str] = None
     audio_url: Optional[str] = None
     clinical_state: ClinicalIntakeState

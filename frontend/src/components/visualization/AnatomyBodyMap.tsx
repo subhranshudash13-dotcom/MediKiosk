@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Heart, Brain, Activity, Wind } from "lucide-react";
-import { DotAccent } from "@/components/illustrations/CareImagery";
 import { cn } from "@/lib/utils";
 
 export type AnatomicalRegion =
@@ -118,19 +117,19 @@ export function AnatomyBodyMap({
   const IconComponent = meta.icon;
 
   return (
-    <div className={cn("card-arch-top relative overflow-hidden", className)}>
-      <DotAccent className="absolute top-5 right-5" />
-
+    <div className={cn("rounded-[16px] border border-[#FDEBD0] bg-white p-6 shadow-sm text-left relative overflow-hidden", className)}>
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-line/60 pb-3.5">
+      <div className="flex items-center justify-between border-b border-[#FDEBD0]/80 pb-3.5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="flex h-5 w-5 items-center justify-center rounded-md bg-olive-soft text-olive">
+            <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[#1D2A8F]/10 text-[#1D2A8F]">
               <IconComponent className="h-3.5 w-3.5" />
             </span>
-            <p className="label-eyebrow">Anatomical Symptom Locator</p>
+            <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#1D2A8F]">
+              Anatomical Symptom Locator
+            </p>
           </div>
-          <h3 className="font-serif text-lg font-bold text-ink mt-0.5">
+          <h3 className="font-heading text-base font-bold text-[#374151] mt-0.5">
             {meta.name} ({meta.organ})
           </h3>
         </div>
@@ -139,8 +138,8 @@ export function AnatomyBodyMap({
           className={cn(
             "rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider",
             meta.riskLevel === "critical"
-              ? "bg-coral-soft text-coral border border-coral/30"
-              : "bg-olive-soft text-olive border border-olive/30"
+              ? "bg-red-50 text-[#C2410C] border border-red-200"
+              : "bg-emerald-50 text-emerald-700 border border-emerald-200"
           )}
         >
           {meta.riskLevel === "critical" ? "High Risk Area" : "Active Region"}
@@ -150,10 +149,10 @@ export function AnatomyBodyMap({
       {/* Body Diagram & Drilldowns */}
       <div className="mt-5 grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
         {/* SVG Human Figure (5 cols) */}
-        <div className="md:col-span-5 relative flex flex-col items-center justify-center bg-oat/50 rounded-2xl p-4 border border-line/60 min-h-[250px]">
+        <div className="md:col-span-5 relative flex flex-col items-center justify-center bg-[#FDFBF7] rounded-[12px] p-4 border border-[#FDEBD0] min-h-[250px]">
           <svg
             viewBox="0 0 240 340"
-            className="h-60 w-auto text-line-dark"
+            className="h-60 w-auto"
             fill="none"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -166,8 +165,8 @@ export function AnatomyBodyMap({
               className={cn(
                 "cursor-pointer transition-all duration-200",
                 selectedZone === "head"
-                  ? "fill-coral-soft stroke-coral stroke-[2.5]"
-                  : "fill-white stroke-ink-muted stroke-[1.5] hover:stroke-olive hover:fill-olive-soft"
+                  ? "fill-red-100 stroke-[#C2410C] stroke-[2.5]"
+                  : "fill-white stroke-[#374151]/40 stroke-[1.5] hover:stroke-[#1D2A8F] hover:fill-[#1D2A8F]/10"
               )}
               onClick={() => onSelectRegion?.("head")}
               onMouseEnter={() => setHoveredRegion("head")}
@@ -180,7 +179,7 @@ export function AnatomyBodyMap({
               height="14"
               className={cn(
                 "cursor-pointer transition-all",
-                selectedZone === "throat" ? "fill-coral-soft stroke-coral stroke-2" : "fill-white stroke-ink-muted"
+                selectedZone === "throat" ? "fill-red-100 stroke-[#C2410C] stroke-2" : "fill-white stroke-[#374151]/40"
               )}
               onClick={() => onSelectRegion?.("throat")}
               onMouseEnter={() => setHoveredRegion("throat")}
@@ -191,8 +190,8 @@ export function AnatomyBodyMap({
               className={cn(
                 "cursor-pointer transition-all duration-200",
                 selectedZone === "chest"
-                  ? "fill-coral-soft stroke-coral stroke-[2.5]"
-                  : "fill-white stroke-ink-muted stroke-[1.5] hover:stroke-olive hover:fill-olive-soft"
+                  ? "fill-red-100 stroke-[#C2410C] stroke-[2.5]"
+                  : "fill-white stroke-[#374151]/40 stroke-[1.5] hover:stroke-[#1D2A8F] hover:fill-[#1D2A8F]/10"
               )}
               onClick={() => onSelectRegion?.("chest")}
               onMouseEnter={() => setHoveredRegion("chest")}
@@ -203,8 +202,8 @@ export function AnatomyBodyMap({
               className={cn(
                 "cursor-pointer transition-all duration-200",
                 selectedZone === "epigastric" || selectedZone === "abdomen"
-                  ? "fill-amber-soft stroke-amber stroke-[2.5]"
-                  : "fill-white stroke-ink-muted stroke-[1.5] hover:stroke-olive hover:fill-olive-soft"
+                  ? "fill-amber-100 stroke-[#FB923C] stroke-[2.5]"
+                  : "fill-white stroke-[#374151]/40 stroke-[1.5] hover:stroke-[#1D2A8F] hover:fill-[#1D2A8F]/10"
               )}
               onClick={() => onSelectRegion?.("abdomen")}
               onMouseEnter={() => setHoveredRegion("abdomen")}
@@ -214,7 +213,7 @@ export function AnatomyBodyMap({
               d="M94 84 L56 126 L44 184 M146 84 L184 126 L196 184"
               className={cn(
                 "cursor-pointer transition-all",
-                selectedZone === "arms" ? "stroke-coral stroke-[2.5]" : "stroke-ink-muted stroke-[1.5] hover:stroke-olive"
+                selectedZone === "arms" ? "stroke-[#C2410C] stroke-[2.5]" : "stroke-[#374151]/40 stroke-[1.5] hover:stroke-[#1D2A8F]"
               )}
               onClick={() => onSelectRegion?.("arms")}
               onMouseEnter={() => setHoveredRegion("arms")}
@@ -224,7 +223,7 @@ export function AnatomyBodyMap({
               d="M102 206 L96 266 L92 324 M138 206 L144 266 L148 324"
               className={cn(
                 "cursor-pointer transition-all",
-                selectedZone === "legs" ? "stroke-coral stroke-[2.5]" : "stroke-ink-muted stroke-[1.5] hover:stroke-olive"
+                selectedZone === "legs" ? "stroke-[#C2410C] stroke-[2.5]" : "stroke-[#374151]/40 stroke-[1.5] hover:stroke-[#1D2A8F]"
               )}
               onClick={() => onSelectRegion?.("legs")}
               onMouseEnter={() => setHoveredRegion("legs")}
@@ -234,32 +233,35 @@ export function AnatomyBodyMap({
 
         {/* Symptoms Drilldown (7 cols) */}
         <div className="md:col-span-7 space-y-3">
-          <p className="label-eyebrow">Common Symptoms in {meta.name}:</p>
+          <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#374151]/70">
+            Common Symptoms in {meta.name}:
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {meta.commonSymptoms.map((symptom) => (
               <button
                 key={symptom}
+                type="button"
                 onClick={() => onSelectRegion?.(selectedZone, symptom)}
-                className="flex items-center gap-2 rounded-2xl border border-line bg-paper p-3 text-left transition-all hover:border-olive hover:bg-olive-soft group shadow-xs"
+                className="flex items-center gap-2 rounded-[10px] border border-[#FDEBD0] bg-white p-3 text-left transition-all hover:border-[#1D2A8F] hover:bg-[#FDFBF7] group shadow-xs cursor-pointer"
               >
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-oat text-ink text-xs font-bold group-hover:bg-olive group-hover:text-white transition-colors">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#FDFBF7] border border-[#FDEBD0] text-[#374151] text-xs font-bold group-hover:bg-[#1D2A8F] group-hover:text-white transition-colors">
                   +
                 </span>
-                <span className="text-xs font-semibold text-ink group-hover:text-olive-deep">
+                <span className="text-xs font-semibold text-[#374151] group-hover:text-[#1D2A8F]">
                   {symptom}
                 </span>
               </button>
             ))}
           </div>
 
-          <div className="rounded-2xl border border-line/80 bg-oat/50 p-3 mt-3">
+          <div className="rounded-[10px] border border-[#FDEBD0] bg-[#FDFBF7] p-3 mt-3">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-ink">Severity score:</span>
-              <span className="font-bold text-coral">{painScore} / 10</span>
+              <span className="font-semibold text-[#374151]">Assessed Pain Severity:</span>
+              <span className="font-extrabold text-[#C2410C]">{painScore} / 10</span>
             </div>
-            <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-line">
+            <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-[#FDEBD0]">
               <div
-                className="h-full bg-olive rounded-full"
+                className="h-full bg-[#1D2A8F] rounded-full transition-all"
                 style={{ width: `${(painScore / 10) * 100}%` }}
               />
             </div>

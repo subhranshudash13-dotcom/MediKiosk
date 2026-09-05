@@ -78,24 +78,27 @@ async def unified_test_ui():
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MediKiosk — AI Clinical Intake & Document Intelligence</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #0284c7;
-            --primary-dark: #0369a1;
-            --bg: #0b1329;
-            --card: #152238;
-            --card-border: #233554;
-            --text: #f8fafc;
-            --text-muted: #94a3b8;
-            --accent-green: #10b981;
-            --accent-red: #ef4444;
-            --accent-yellow: #f59e0b;
-            --accent-purple: #8b5cf6;
+            --primary: #4B3158;
+            --primary-dark: #3B2446;
+            --primary-light: #614070;
+            --accent-terracotta: #C86B4A;
+            --accent-terracotta-dark: #B05637;
+            --bg: #FBF8F2;
+            --card: #FFFFFF;
+            --card-border: #E9E2DC;
+            --text: #25232A;
+            --text-muted: #756F73;
+            --accent-olive: #74805A;
+            --accent-rose: #E8D6D4;
+            --accent-saffron: #D9A441;
+            --surface-subtle: #F5F0E8;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', system-ui, sans-serif;
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
@@ -103,49 +106,61 @@ async def unified_test_ui():
             display: flex;
             flex-direction: column;
             align-items: center;
+            -webkit-font-smoothing: antialiased;
         }
         header {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
             max-width: 1200px;
             width: 100%;
         }
-        h1 { font-size: 28px; font-weight: 800; color: #38bdf8; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .subtitle { color: var(--text-muted); font-size: 14px; margin-top: 6px; }
+        h1 { 
+            font-family: 'DM Sans', sans-serif;
+            font-size: 28px; 
+            font-weight: 800; 
+            color: var(--primary); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 10px; 
+            letter-spacing: -0.02em;
+        }
+        .subtitle { color: var(--text-muted); font-size: 13.5px; margin-top: 6px; font-weight: 500; }
         
         /* Navigation Tabs */
         .nav-tabs {
             display: flex;
-            gap: 12px;
-            margin-top: 16px;
+            gap: 10px;
+            margin-top: 18px;
             justify-content: center;
         }
         .tab-btn {
-            background: #1e293b;
+            background: #FFFFFF;
             border: 1px solid var(--card-border);
             color: var(--text-muted);
-            padding: 10px 22px;
-            border-radius: 9999px;
+            padding: 9px 20px;
+            border-radius: 20px;
             font-weight: 600;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
             transition: all 0.2s;
             display: flex;
             align-items: center;
             gap: 8px;
+            box-shadow: 0 1px 2px rgba(37,35,42,0.03);
         }
         .tab-btn.active {
-            background: #0284c7;
-            color: white;
-            border-color: #38bdf8;
-            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
+            background: var(--primary);
+            color: #FFFFFF;
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(75, 49, 88, 0.2);
         }
         .tab-badge {
-            background: #10b981;
+            background: var(--accent-olive);
             color: white;
             font-size: 10px;
-            padding: 2px 8px;
-            border-radius: 9999px;
+            padding: 2px 7px;
+            border-radius: 12px;
             font-weight: 700;
         }
 
@@ -166,16 +181,18 @@ async def unified_test_ui():
         .card {
             background: var(--card);
             border: 1px solid var(--card-border);
-            border-radius: 16px;
+            border-radius: 12px;
             padding: 22px;
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.4);
+            box-shadow: 0 1px 4px rgba(37,35,42,0.04);
             display: flex;
             flex-direction: column;
             gap: 16px;
         }
         .card-header {
+            font-family: 'DM Sans', sans-serif;
             font-size: 16px;
             font-weight: 700;
+            color: var(--primary);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -185,17 +202,17 @@ async def unified_test_ui():
 
         /* Document Drop Zone */
         .drop-zone {
-            border: 2px dashed #38bdf8;
-            background: rgba(56, 189, 248, 0.05);
-            border-radius: 14px;
-            padding: 28px 16px;
+            border: 2px dashed #D8CECA;
+            background: #FDFBF8;
+            border-radius: 12px;
+            padding: 26px 16px;
             text-align: center;
             cursor: pointer;
             transition: all 0.2s;
         }
         .drop-zone:hover {
-            background: rgba(56, 189, 248, 0.12);
-            border-color: #0284c7;
+            background: #F8F3ED;
+            border-color: var(--primary);
         }
         .preset-buttons {
             display: flex;
@@ -204,26 +221,26 @@ async def unified_test_ui():
             margin-top: 8px;
         }
         .preset-btn {
-            background: #1e293b;
+            background: #FBF8F2;
             border: 1px solid var(--card-border);
-            color: #cbd5e1;
-            padding: 8px 14px;
-            border-radius: 8px;
+            color: var(--text);
+            padding: 7px 12px;
+            border-radius: 6px;
             font-size: 12px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.15s;
         }
         .preset-btn:hover {
-            background: #334155;
-            color: white;
-            border-color: #38bdf8;
+            background: var(--accent-rose);
+            color: var(--primary);
+            border-color: var(--primary);
         }
         .preview-img {
             max-width: 100%;
             max-height: 220px;
             object-fit: contain;
-            border-radius: 10px;
+            border-radius: 8px;
             border: 1px solid var(--card-border);
             display: none;
             margin: 10px auto;
@@ -231,119 +248,111 @@ async def unified_test_ui():
 
         /* What This Document Is For Banner */
         .intent-banner {
-            background: linear-gradient(135deg, rgba(2, 132, 199, 0.15), rgba(139, 92, 246, 0.15));
-            border: 1px solid rgba(56, 189, 248, 0.4);
-            border-radius: 14px;
+            background: #FBF8F2;
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
             padding: 16px;
         }
         .intent-tag {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: #38bdf8;
+            letter-spacing: 0.08em;
+            color: var(--accent-terracotta);
             margin-bottom: 4px;
             display: flex;
             align-items: center;
             gap: 6px;
         }
         .intent-title {
-            font-size: 18px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 17px;
             font-weight: 700;
-            color: #ffffff;
+            color: var(--primary);
         }
         .intent-desc {
             font-size: 13px;
-            color: #cbd5e1;
+            color: var(--text);
             margin-top: 6px;
             line-height: 1.5;
         }
         .intent-action {
             margin-top: 10px;
             padding-top: 8px;
-            border-top: 1px solid rgba(255,255,255,0.1);
+            border-top: 1px solid var(--card-border);
             font-size: 12px;
-            color: #34d399;
+            color: var(--accent-olive);
             font-weight: 600;
         }
 
         /* Entity list items */
         .med-card {
-            background: #0f172a;
+            background: #FFFFFF;
             border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 14px;
+            border-radius: 8px;
+            padding: 12px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 5px;
         }
         .med-title {
             display: flex;
             justify-content: space-between;
-            font-size: 14px;
+            font-size: 13.5px;
             font-weight: 700;
-            color: #f8fafc;
+            color: var(--text);
         }
         .med-freq {
-            color: #38bdf8;
+            color: var(--accent-terracotta);
             font-weight: 600;
             font-size: 12px;
         }
-        .med-purpose {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.25);
-            color: #6ee7b7;
-            padding: 6px 10px;
-            border-radius: 8px;
-            font-size: 12px;
-            line-height: 1.4;
-        }
         .med-class {
             font-size: 11px;
-            color: #94a3b8;
+            color: var(--text-muted);
             font-weight: 500;
         }
 
         .lab-card {
-            background: #0f172a;
+            background: #FFFFFF;
             border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 14px;
+            border-radius: 8px;
+            padding: 12px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 5px;
         }
         .lab-title {
             display: flex;
             justify-content: space-between;
             font-size: 13px;
             font-weight: 700;
-            color: #f8fafc;
+            color: var(--text);
         }
         .lab-val {
             font-family: monospace;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
         }
         .flag-CRITICAL_HIGH {
-            color: #ef4444;
-            background: rgba(239, 68, 68, 0.15);
+            color: #C86B4A;
+            background: #FDF0EA;
             padding: 2px 8px;
-            border-radius: 6px;
-            border: 1px solid #ef4444;
+            border-radius: 4px;
+            border: 1px solid #C86B4A;
         }
         .flag-ELEVATED {
-            color: #f59e0b;
-            background: rgba(245, 158, 11, 0.15);
+            color: #D9A441;
+            background: #FEF7EB;
             padding: 2px 8px;
-            border-radius: 6px;
-            border: 1px solid #f59e0b;
+            border-radius: 4px;
+            border: 1px solid #D9A441;
         }
         .flag-NORMAL {
-            color: #10b981;
-            background: rgba(16, 185, 129, 0.15);
+            color: #74805A;
+            background: #F0F3EB;
             padding: 2px 8px;
-            border-radius: 6px;
+            border-radius: 4px;
         }
 
         /* Voice Chat Styles */
@@ -353,37 +362,40 @@ async def unified_test_ui():
             display: flex;
             flex-direction: column;
             gap: 12px;
-            padding: 8px;
-            background: rgba(15, 23, 42, 0.6);
-            border-radius: 12px;
+            padding: 12px;
+            background: #FBF8F2;
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
         }
         .message {
             max-width: 85%;
-            padding: 12px 16px;
-            border-radius: 12px;
-            font-size: 14px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 13.5px;
             line-height: 1.5;
         }
         .patient-msg {
             align-self: flex-end;
-            background: #0284c7;
+            background: var(--primary);
             color: white;
             border-bottom-right-radius: 2px;
         }
         .bot-msg {
             align-self: flex-start;
-            background: #334155;
-            color: #f1f5f9;
+            background: #FFFFFF;
+            color: var(--text);
             border-bottom-left-radius: 2px;
-            border-left: 3px solid #38bdf8;
+            border-left: 3px solid var(--accent-terracotta);
+            box-shadow: 0 1px 2px rgba(37,35,42,0.03);
         }
         .btn-primary {
-            padding: 12px 20px;
+            padding: 11px 18px;
             background: var(--primary);
             color: white;
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
             font-weight: 600;
+            font-size: 13px;
             cursor: pointer;
             transition: all 0.2s;
             display: flex;
@@ -393,10 +405,10 @@ async def unified_test_ui():
         }
         .btn-primary:hover { background: var(--primary-dark); }
         .btn-record {
-            background: #ef4444;
-            padding: 16px;
-            font-size: 15px;
-            border-radius: 12px;
+            background: var(--accent-terracotta);
+            padding: 14px;
+            font-size: 14px;
+            border-radius: 20px;
             color: white;
             border: none;
             cursor: pointer;
@@ -405,12 +417,13 @@ async def unified_test_ui():
             align-items: center;
             justify-content: center;
             gap: 10px;
+            transition: background 0.2s;
         }
         .btn-record.recording {
             animation: pulse 1s infinite alternate;
-            background: #b91c1c;
+            background: var(--accent-terracotta-dark);
         }
-        @keyframes pulse { from { opacity: 1; } to { opacity: 0.6; } }
+        @keyframes pulse { from { opacity: 1; } to { opacity: 0.7; } }
 
         /* Timeline Items */
         .timeline-box {
@@ -418,31 +431,31 @@ async def unified_test_ui():
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
         }
         .timeline-node {
-            background: #0f172a;
+            background: #FFFFFF;
             border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 12px 16px;
-            border-left: 4px solid #38bdf8;
+            border-radius: 8px;
+            padding: 12px 14px;
+            border-left: 4px solid var(--primary);
         }
         .timeline-header {
             display: flex;
             justify-content: space-between;
             font-size: 11px;
-            color: #94a3b8;
+            color: var(--text-muted);
             font-weight: 600;
         }
         .timeline-title {
-            font-size: 14px;
+            font-size: 13.5px;
             font-weight: 700;
-            color: #f8fafc;
+            color: var(--text);
             margin-top: 4px;
         }
         .timeline-detail {
             font-size: 12px;
-            color: #cbd5e1;
+            color: var(--text-muted);
             margin-top: 4px;
             line-height: 1.4;
         }
@@ -780,34 +793,60 @@ async def unified_test_ui():
             input.value = "";
             appendMessage(text, 'patient-msg');
 
-            const resp = await fetch('/api/v1/ai/dialogue', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    session_id: voiceSessionId,
-                    user_utterance: text,
-                    language_code: document.getElementById('langSelect').value,
-                    synthesize_audio: true
-                })
-            });
-            const data = await resp.json();
-            handleVoiceResponse(data);
+            try {
+                const resp = await fetch('/api/v1/ai/chat-intake', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: voiceSessionId,
+                        transcript: text,
+                        language_code: document.getElementById('langSelect').value,
+                        synthesize_audio: true
+                    })
+                });
+                if (!resp.ok) throw new Error("Server response error: " + resp.status);
+                const data = await resp.json();
+                handleVoiceResponse(data);
+            } catch (err) {
+                console.error("Send text error:", err);
+                appendMessage("⚠️ Connection error: " + err.message, "bot-msg");
+            }
         }
 
         function handleVoiceResponse(data) {
-            appendMessage(data.assistant_utterance, 'bot-msg');
+            if (!data) return;
+
+            // If voice turn transcribed speech, update patient placeholder
+            const transcript = data.user_transcript || (data.clinical_state && data.clinical_state.raw_transcripts && data.clinical_state.raw_transcripts.slice(-1)[0]);
+            if (transcript) {
+                const patientMsgs = document.querySelectorAll(".patient-msg");
+                if (patientMsgs.length > 0) {
+                    const lastMsg = patientMsgs[patientMsgs.length - 1];
+                    if (lastMsg.innerHTML.includes("Processing Spoken Voice Recording")) {
+                        lastMsg.innerHTML = `🗣️ <strong>"${transcript}"</strong>`;
+                    }
+                }
+            }
+
+            const botText = data.spoken_response || data.assistant_utterance || data.spoken_text || "आपकी तकलीफ़ नोट कर ली गई है।";
+            appendMessage(botText, 'bot-msg');
 
             // Play TTS audio if available
             if (data.audio_base64) {
-                const snd = new Audio("data:audio/mp3;base64," + data.audio_base64);
-                snd.play().catch(e => console.log("Audio play error:", e));
+                const audioSrc = data.audio_base64.startsWith("data:") 
+                    ? data.audio_base64 
+                    : ("data:audio/mp3;base64," + data.audio_base64);
+                const snd = new Audio(audioSrc);
+                snd.play().catch(e => console.log("Audio play notice:", e));
             }
 
             // Red flag box
             const rfBox = document.getElementById("redFlagBox");
-            if (data.red_flags && data.red_flags.length > 0) {
+            if (data.red_flag_triggered || (data.red_flags && data.red_flags.length > 0)) {
                 rfBox.style.display = "block";
-                rfBox.innerHTML = "🚨 <strong>EMERGENCY ALERT:</strong> " + data.red_flags.join(", ");
+                const flags = (data.clinical_state && data.clinical_state.red_flags) || [];
+                const flagMsg = flags.length > 0 ? flags.map(f => f.recommended_action || f.flag_type).join("; ") : "Physician priority alert triggered.";
+                rfBox.innerHTML = "🚨 <strong>EMERGENCY ALERT:</strong> " + flagMsg;
             } else {
                 rfBox.style.display = "none";
             }
@@ -815,13 +854,18 @@ async def unified_test_ui():
             // Quick replies
             const qrBox = document.getElementById("quickReplies");
             if (data.quick_replies && data.quick_replies.length > 0) {
-                qrBox.innerHTML = data.quick_replies.map(r =>
-                    `<button class="preset-btn" onclick="sendQuickReply('${r}')">${r}</button>`
-                ).join("");
+                qrBox.innerHTML = data.quick_replies.map(r => {
+                    const escaped = r.replace(/'/g, "\\'");
+                    return `<button class="preset-btn" onclick="sendQuickReply('${escaped}')">${r}</button>`;
+                }).join("");
+            } else {
+                qrBox.innerHTML = "";
             }
 
             // Preview JSON
-            document.getElementById("jsonPreview").textContent = JSON.stringify(data.clinical_state, null, 2);
+            if (data.clinical_state) {
+                document.getElementById("jsonPreview").textContent = JSON.stringify(data.clinical_state, null, 2);
+            }
 
             // Gauge
             const s = (data.clinical_state && data.clinical_state.socrates) || {};
@@ -853,33 +897,56 @@ async def unified_test_ui():
                     alert("Microphone not supported on this browser.");
                     return;
                 }
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
-                audioChunks = [];
-                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-                mediaRecorder.onstop = async () => {
-                    const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
-                    const formData = new FormData();
-                    formData.append("file", audioBlob, "speech.wav");
-                    formData.append("session_id", voiceSessionId);
-                    formData.append("language_code", document.getElementById('langSelect').value);
-                    formData.append("synthesize_audio", "true");
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") 
+                        ? "audio/webm;codecs=opus" 
+                        : (MediaRecorder.isTypeSupported("audio/ogg;codecs=opus") ? "audio/ogg;codecs=opus" : "");
+                    mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = e => {
+                        if (e.data && e.data.size > 0) audioChunks.push(e.data);
+                    };
+                    mediaRecorder.onstop = async () => {
+                        const actualType = mediaRecorder.mimeType || "audio/webm";
+                        const ext = actualType.includes("ogg") ? "ogg" : (actualType.includes("wav") ? "wav" : "webm");
+                        const audioBlob = new Blob(audioChunks, { type: actualType });
+                        const formData = new FormData();
+                        formData.append("file", audioBlob, "speech." + ext);
+                        formData.append("session_id", voiceSessionId);
+                        formData.append("language_code", document.getElementById('langSelect').value);
+                        formData.append("synthesize_audio", "true");
 
-                    appendMessage("🎙️ [Audio Recording Sent...]", "patient-msg");
+                        appendMessage("🎙️ <em>[Processing Spoken Voice Recording...]</em>", "patient-msg");
 
-                    const resp = await fetch("/api/v1/ai/voice-intake", {
-                        method: "POST",
-                        body: formData
-                    });
-                    const data = await resp.json();
-                    handleVoiceResponse(data);
-                };
-                mediaRecorder.start();
-                isRecording = true;
-                btn.classList.add("recording");
-                btn.textContent = "⏹️ Stop Recording (Click when finished)";
+                        try {
+                            const resp = await fetch("/api/v1/ai/voice-intake", {
+                                method: "POST",
+                                body: formData
+                            });
+                            if (!resp.ok) throw new Error("Server response status " + resp.status);
+                            const data = await resp.json();
+                            handleVoiceResponse(data);
+                        } catch (err) {
+                            console.error("Voice intake error:", err);
+                            appendMessage("⚠️ Voice intake error: " + err.message, "bot-msg");
+                        }
+                    };
+                    mediaRecorder.start();
+                    isRecording = true;
+                    btn.classList.add("recording");
+                    btn.textContent = "⏹️ Stop Recording (Click when finished)";
+                } catch (err) {
+                    console.error("Mic access error:", err);
+                    alert("Could not access microphone: " + err.message);
+                }
             } else {
-                mediaRecorder.stop();
+                if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                    mediaRecorder.stop();
+                    if (mediaRecorder.stream) {
+                        mediaRecorder.stream.getTracks().forEach(t => t.stop());
+                    }
+                }
                 isRecording = false;
                 btn.classList.remove("recording");
                 btn.textContent = "🎙️ Push-to-Talk (Record Spoken Voice)";

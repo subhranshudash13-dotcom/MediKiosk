@@ -98,6 +98,38 @@ class AIOrchestratorService:
         Transcript -> Language Switch Check -> Emergency Scan -> Entity Extraction -> State Update -> Dialogue Response -> TTS.
         """
         state = self.get_or_create_session(session_id, language=language_code or "hi")
+        # Handle empty/inaudible transcript
+        if not transcript or not transcript.strip():
+            lang = state.language
+            if lang == "hi" or "hindi" in lang or "hinglish" in lang:
+                fallback_msg = "आपकी आवाज़ स्पष्ट सुनाई नहीं दी। कृपया माइक्रोफ़ोन के पास आकर दोबारा बताएं — आपको क्या तकलीफ़ है?"
+                fallback_opts = ["छाती में दर्द है", "पेट में दर्द है", "बुखार और खांसी है"]
+            elif lang == "te":
+                fallback_msg = "మీ స్వరం స్పష్టంగా వినబడలేదు. దయచేసి మైక్రోఫోన్ దగ్గరకు వచ్చి మళ్లీ చెప్పండి — మీకు ఏమి సమస్య ఉంది?"
+                fallback_opts = ["ఛాతీలో నొప్పి ఉంది", "కడుపు నొప్పి ఉంది", "జ్వరం మరియు దగ్గు ఉంది"]
+            else:
+                fallback_msg = "I couldn't hear you clearly. Please speak into the microphone and describe your symptoms."
+                fallback_opts = ["Chest pain", "Stomach pain", "Fever and cough"]
+
+            audio_base64 = None
+            if synthesize_audio:
+                try:
+                    audio_base64 = await tts_service.synthesize_speech_base64(text=fallback_msg, language_code=lang)
+                except Exception as e:
+                    logger.error(f"TTS synthesis error: {e}")
+
+            return DialogueTurnResponse(
+                session_id=state.session_id,
+                spoken_response=fallback_msg,
+                language_code=lang,
+                user_transcript="",
+                audio_base64=audio_base64,
+                clinical_state=state,
+                red_flag_triggered=False,
+                is_intake_complete=state.is_triage_complete,
+                quick_replies=fallback_opts
+            )
+
         state.turn_count += 1
         state.raw_transcripts.append(transcript)
         history = self.conversation_histories.setdefault(state.session_id, [])
@@ -138,7 +170,7 @@ class AIOrchestratorService:
             extracted=extracted,
             conversation_history=history
         )
-        spoken_response = dialogue_output["spoken_response"]
+        spoken_response = dialogue_output.get("spoken_response", "आपकी तकलीफ़ नोट कर ली गई है।")
         quick_replies = dialogue_output.get("quick_replies", [])
 
         # 6. Update Conversation History
@@ -160,6 +192,7 @@ class AIOrchestratorService:
             session_id=state.session_id,
             spoken_response=spoken_response,
             language_code=state.language,
+            user_transcript=transcript,
             audio_base64=audio_base64,
             clinical_state=state,
             red_flag_triggered=bool(red_flag and red_flag.is_emergency),

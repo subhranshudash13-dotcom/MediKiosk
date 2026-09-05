@@ -2,33 +2,39 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowRight } from "lucide-react";
+import {
+  HeartPulse,
+  Mic,
+  Stethoscope,
+  FileText,
+  ShieldCheck,
+  ArrowRight,
+  Activity
+} from "lucide-react";
+import { Logo } from "@/components/brand/Logo";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { href: "/", label: "Overview" },
-  { href: "/patient", label: "Patient" },
-  { href: "/doctor", label: "Doctor" },
-  { href: "/records", label: "Records" },
-  { href: "/system", label: "System" },
+  { href: "/", label: "Overview", icon: Activity },
+  { href: "/kiosk", label: "Patient Kiosk", icon: Mic },
+  { href: "/doctor", label: "Doctor Cockpit", icon: Stethoscope },
+  { href: "/documents", label: "Document Studio", icon: FileText },
+  { href: "/abha", label: "ABHA & Consent", icon: ShieldCheck },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground selection:bg-mint selection:text-forest">
+    <div className="flex min-h-screen bg-[#FBF8F2] text-[#25232A] selection:bg-[#E8D6D4] selection:text-[#4B3158]">
       {/* =========================================================================
-          LEFT SIDEBAR (Living Clinical Navigation)
+          LEFT SIDEBAR (Deep Aubergine #4B3158)
           ========================================================================= */}
-      <aside className="hidden lg:flex w-64 flex-col justify-between border-r border-ink/5 bg-background p-6 shrink-0 min-h-screen sticky top-0">
-        <div className="space-y-12">
+      <aside className="hidden lg:flex w-64 flex-col justify-between bg-[#4B3158] text-white p-5 shrink-0 min-h-screen sticky top-0 shadow-subtle border-r border-[#3B2446]">
+        <div className="space-y-8">
           {/* Logo / Brand */}
-          <div className="px-2 pt-2">
-            <h1 className="font-display text-2xl font-bold tracking-tight text-forest">MEDIKIOSK</h1>
-            <p className="text-xs font-medium tracking-widest text-ink/50 uppercase mt-1">
-              Clinical Care
-            </p>
+          <div className="px-2 pt-1">
+            <Logo variant="light" href="/" />
           </div>
 
           {/* Navigation Links */}
@@ -36,19 +42,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {NAV_ITEMS.map((item) => {
               const isActive =
                 pathname === item.href ||
-                (item.href === "/patient" && pathname === "/kiosk");
+                (item.href === "/kiosk" && pathname === "/patient");
+              const Icon = item.icon;
 
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 rounded-data px-4 py-3 text-[13px] font-semibold transition-all duration-300",
+                    "flex items-center gap-3 rounded-[8px] px-3.5 py-2.5 text-xs font-medium transition-colors",
                     isActive
-                      ? "bg-mint/40 text-forest"
-                      : "text-ink/60 hover:bg-ink/5 hover:text-ink"
+                      ? "bg-white/15 text-white font-semibold"
+                      : "text-white/70 hover:bg-white/10 hover:text-white"
                   )}
                 >
+                  <Icon className={cn("w-4 h-4", isActive ? "text-[#E8D6D4]" : "text-white/60")} />
                   <span>{item.label}</span>
                 </Link>
               );
@@ -56,47 +64,44 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
         </div>
 
-        {/* Bottom System Telemetry */}
-        <div className="space-y-5 px-2 pb-4">
-          <div className="flex items-center gap-2">
-            <div className="relative flex h-3 w-3 items-center justify-center">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-coral opacity-40" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-coral" />
+        {/* Bottom System Telemetry & Start Kiosk Action */}
+        <div className="space-y-4 px-1 pb-2">
+          <div className="flex items-center gap-2 px-2">
+            <div className="relative flex h-2.5 w-2.5 items-center justify-center">
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#74805A]" />
             </div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-ink/50">
-              SYSTEM / OPERATIONAL
+            <p className="text-[10px] font-medium uppercase tracking-wider text-white/60">
+              ABDM System Active
             </p>
           </div>
           
           <Link
-            href="/patient"
-            className="group flex w-full items-center justify-between rounded-control border border-ink/10 bg-background px-4 py-2.5 text-xs font-bold text-forest transition-all duration-150 hover:bg-forest hover:text-white hover:border-forest"
+            href="/kiosk"
+            className="group flex w-full items-center justify-between rounded-[22px] bg-[#C86B4A] hover:bg-[#B05637] text-white px-4 py-2.5 text-xs font-medium transition-colors shadow-subtle"
           >
-            <span>Start Kiosk</span>
-            <ArrowRight className="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-1" />
+            <span>Start Patient Intake</span>
+            <ArrowRight className="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-0.5" />
           </Link>
         </div>
       </aside>
 
       {/* =========================================================================
-          MAIN CONTENT AREA
+          MAIN CONTENT AREA (Warm Ivory #FBF8F2)
           ========================================================================= */}
       <div className="flex flex-1 flex-col overflow-x-hidden min-w-0">
         {/* Mobile Header */}
-        <header className="lg:hidden sticky top-0 z-40 flex h-16 items-center justify-between border-b border-ink/5 bg-background/95 px-6 backdrop-blur-sm">
-          <div>
-            <h1 className="font-display text-xl font-bold tracking-tight text-forest">MEDIKIOSK</h1>
-          </div>
+        <header className="lg:hidden sticky top-0 z-40 flex h-14 items-center justify-between border-b border-[#E9E2DC] bg-[#4B3158] text-white px-4">
+          <Logo variant="light" href="/" />
           <Link
-            href="/patient"
-            className="group flex items-center justify-center rounded-control bg-forest px-4 py-2 text-xs font-bold text-white"
+            href="/kiosk"
+            className="flex items-center justify-center rounded-[22px] bg-[#C86B4A] px-3 py-1 text-xs font-medium text-white"
           >
             <span>Start Kiosk</span>
           </Link>
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 w-full mx-auto relative">
+        <main className="flex-1 w-full mx-auto relative bg-[#FBF8F2]">
           {children}
         </main>
       </div>

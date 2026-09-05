@@ -1,0 +1,527 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="100%" height="100%" fill="none">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&amp;display=swap');
+      text { font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; }
+    </style>
+    <!-- Soft Drop Shadows -->
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#1D2A8F" flood-opacity="0.06" />
+    </filter>
+    <filter id="brainGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#0284C7" flood-opacity="0.2" />
+    </filter>
+  </defs>
+
+  <!-- Slide Canvas Background -->
+  <rect width="1600" height="900" fill="#FFFFFF" />
+  <rect x="12" y="12" width="1576" height="876" rx="16" fill="#FFFFFF" stroke="#1D2A8F" stroke-width="3" />
+
+  <!-- =========================================================================
+       TOP HEADER
+       ========================================================================= -->
+  <!-- Left: Team & Platform Logo -->
+  <g transform="translate(40, 32)">
+    <path d="M 18 7 A 4 4 0 0 1 22 3 L 26 3 A 4 4 0 0 1 30 7 L 30 18 L 41 18 A 4 4 0 0 1 45 22 L 45 26 A 4 4 0 0 1 41 30 L 30 30 L 30 41 A 4 4 0 0 1 26 45 L 22 45 A 4 4 0 0 1 18 41 L 18 30 L 7 30 A 4 4 0 0 1 3 26 L 3 22 A 4 4 0 0 1 7 18 L 18 18 Z" fill="#1D2A8F" />
+    <path d="M 4 24 L 16 24 L 19 21 L 23 10 L 27 38 L 31 16 L 34 24 L 44 24" stroke="#C2410C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+    <text x="56" y="24" font-size="20" font-weight="800" fill="#1D2A8F">Medi<tspan fill="#C2410C">Kiosk</tspan></text>
+    <text x="57" y="38" font-size="9" font-weight="700" letter-spacing="0.14em" fill="#756F73">TEAM MEDIMINDS</text>
+  </g>
+
+  <!-- Center Title -->
+  <text x="800" y="62" font-size="32" font-weight="900" letter-spacing="0.04em" fill="#1D2A8F" text-anchor="middle">
+    TECHNICAL ARCHITECTURE &amp; APPROACH
+  </text>
+  <text x="800" y="84" font-size="12" font-weight="600" letter-spacing="0.08em" fill="#756F73" text-anchor="middle">
+    AI-POWERED MULTIMODAL POINT-OF-ENTRY CLINICAL INTAKE &amp; TRIAGE SYSTEM
+  </text>
+
+  <!-- Right: National Digital Health Badge -->
+  <g transform="translate(1380, 28)">
+    <rect width="180" height="54" rx="10" fill="#FDFBF7" stroke="#FDEBD0" stroke-width="1.5" />
+    <circle cx="26" cy="27" r="14" fill="#10B981" fill-opacity="0.15" />
+    <path d="M 20 27 L 24 31 L 32 23" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+    <text x="48" y="24" font-size="11" font-weight="800" fill="#1D2A8F">ABDM &amp; FHIR R4</text>
+    <text x="48" y="38" font-size="9" font-weight="600" fill="#756F73">NHA COMPLIANT</text>
+  </g>
+
+  <!-- =========================================================================
+       MAIN ARCHITECTURE ZONES (LEFT 4 COLUMNS: X=40 to X=1180)
+       ========================================================================= -->
+
+  <!-- ZONE 1: Users & External Services (W=240, X=40) -->
+  <g transform="translate(40, 110)">
+    <!-- Zone Container -->
+    <rect width="250" height="660" rx="14" fill="#F4F8FC" stroke="#BFDBFE" stroke-width="1.5" />
+    <!-- Zone Header -->
+    <rect width="250" height="46" rx="14" fill="#E0EDFB" />
+    <rect y="32" width="250" height="14" fill="#E0EDFB" />
+    <text x="125" y="22" font-size="13" font-weight="800" fill="#1D4ED8" text-anchor="middle">Zone 1</text>
+    <text x="125" y="36" font-size="11" font-weight="700" fill="#1E3A8A" text-anchor="middle">Users &amp; External Services</text>
+
+    <!-- Cloud: Third-Party External APIs -->
+    <g transform="translate(18, 65)">
+      <rect width="214" height="170" rx="16" fill="#FFFFFF" stroke="#93C5FD" stroke-width="1.5" filter="url(#cardShadow)" />
+      <text x="107" y="24" font-size="11" font-weight="800" fill="#1E40AF" text-anchor="middle">Third-Party &amp; Govt APIs</text>
+      
+      <!-- Sub-Pills -->
+      <rect x="14" y="36" width="88" height="38" rx="8" fill="#EFF6FF" stroke="#BFDBFE" />
+      <text x="58" y="52" font-size="9.5" font-weight="800" fill="#1E3A8A" text-anchor="middle">Bhashini AI</text>
+      <text x="58" y="64" font-size="8" font-weight="600" fill="#60A5FA" text-anchor="middle">Indic ASR / TTS</text>
+
+      <rect x="112" y="36" width="88" height="38" rx="8" fill="#EFF6FF" stroke="#BFDBFE" />
+      <text x="156" y="52" font-size="9.5" font-weight="800" fill="#1E3A8A" text-anchor="middle">Gemini Pro</text>
+      <text x="156" y="64" font-size="8" font-weight="600" fill="#60A5FA" text-anchor="middle">Clinical LLM</text>
+
+      <rect x="14" y="82" width="186" height="36" rx="8" fill="#ECFDF5" stroke="#A7F3D0" />
+      <text x="107" y="97" font-size="9.5" font-weight="800" fill="#065F46" text-anchor="middle">ABDM / NHA Health Grid</text>
+      <text x="107" y="109" font-size="8" font-weight="600" fill="#059669" text-anchor="middle">ABHA M1/M2/M3 &amp; Consent Manager</text>
+
+      <rect x="14" y="124" width="186" height="34" rx="8" fill="#FFF7ED" stroke="#FED7AA" />
+      <text x="107" y="139" font-size="9.5" font-weight="800" fill="#9A3412" text-anchor="middle">Hospital HIMS / EMR Grid</text>
+      <text x="107" y="150" font-size="8" font-weight="600" fill="#EA580C" text-anchor="middle">OPD Queue &amp; Doctor Workstation</text>
+    </g>
+
+    <!-- User Actors Cards -->
+    <g transform="translate(18, 255)">
+      <!-- Patient Card -->
+      <rect width="214" height="115" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.2" filter="url(#cardShadow)" />
+      <circle cx="34" cy="40" r="16" fill="#EFF6FF" />
+      <!-- Patient Icon SVG -->
+      <path d="M 34 32 A 5 5 0 1 0 34 22 A 5 5 0 1 0 34 32 Z M 24 48 C 24 43 28 40 34 40 C 40 40 44 43 44 48 Z" fill="#1D4ED8" />
+      <text x="60" y="34" font-size="11" font-weight="800" fill="#1E293B">Patient / Relative</text>
+      <text x="60" y="48" font-size="9.5" font-weight="600" fill="#64748B">Vernacular Voice / Touch</text>
+      <rect x="14" y="68" width="186" height="34" rx="6" fill="#F8FAFC" border="1" />
+      <text x="107" y="82" font-size="8.5" font-weight="600" fill="#475569" text-anchor="middle">Speaks Hindi/Indic, touches body map,</text>
+      <text x="107" y="94" font-size="8.5" font-weight="600" fill="#475569" text-anchor="middle">scans prior paper prescriptions</text>
+    </g>
+
+    <g transform="translate(18, 385)">
+      <!-- Doctor Card -->
+      <rect width="214" height="115" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.2" filter="url(#cardShadow)" />
+      <circle cx="34" cy="40" r="16" fill="#ECFDF5" />
+      <!-- Doctor Stethoscope Icon SVG -->
+      <path d="M 34 32 A 5 5 0 1 0 34 22 A 5 5 0 1 0 34 32 Z M 24 48 C 24 43 28 40 34 40 C 40 40 44 43 44 48 Z" fill="#059669" />
+      <text x="60" y="34" font-size="11" font-weight="800" fill="#1E293B">Attending Physician</text>
+      <text x="60" y="48" font-size="9.5" font-weight="600" fill="#059669">Doctor Cockpit EMR</text>
+      <rect x="14" y="68" width="186" height="34" rx="6" fill="#F8FAFC" border="1" />
+      <text x="107" y="82" font-size="8.5" font-weight="600" fill="#475569" text-anchor="middle">Reviews pre-populated SOAP note,</text>
+      <text x="107" y="94" font-size="8.5" font-weight="600" fill="#475569" text-anchor="middle">past Rx timeline &amp; confirms triage</text>
+    </g>
+
+    <g transform="translate(18, 515)">
+      <!-- OPD Staff / Nurse Card -->
+      <rect width="214" height="115" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.2" filter="url(#cardShadow)" />
+      <circle cx="34" cy="40" r="16" fill="#FFF7ED" />
+      <path d="M 34 32 A 5 5 0 1 0 34 22 A 5 5 0 1 0 34 32 Z M 24 48 C 24 43 28 40 34 40 C 40 40 44 43 44 48 Z" fill="#EA580C" />
+      <text x="60" y="34" font-size="11" font-weight="800" fill="#1E293B">OPD Staff / Nurse</text>
+      <text x="60" y="48" font-size="9.5" font-weight="600" fill="#EA580C">ABHA &amp; Token Desk</text>
+      <rect x="14" y="68" width="186" height="34" rx="6" fill="#F8FAFC" border="1" />
+      <text x="107" y="82" font-size="8.5" font-weight="600" fill="#475569" text-anchor="middle">Scans QR token, verifies vitals,</text>
+      <text x="107" y="94" font-size="8.5" font-weight="600" fill="#475569" text-anchor="middle">assists emergency redirection</text>
+    </g>
+  </g>
+
+  <!-- ZONE 2: Frontend Presentation Layer (W=260, X=305) -->
+  <g transform="translate(305, 110)">
+    <rect width="265" height="660" rx="14" fill="#F0FDF4" stroke="#BBF7D0" stroke-width="1.5" />
+    <rect width="265" height="46" rx="14" fill="#DCFCE7" />
+    <rect y="32" width="265" height="14" fill="#DCFCE7" />
+    <text x="132" y="22" font-size="13" font-weight="800" fill="#15803D" text-anchor="middle">Zone 2</text>
+    <text x="132" y="36" font-size="11" font-weight="700" fill="#166534" text-anchor="middle">Frontend (Presentation Layer)</text>
+
+    <!-- Main Container Card -->
+    <g transform="translate(14, 60)">
+      <rect width="237" height="575" rx="14" fill="#FFFFFF" stroke="#86EFAC" stroke-width="1.5" filter="url(#cardShadow)" />
+      
+      <!-- Tech Badge Header -->
+      <rect x="12" y="12" width="213" height="30" rx="6" fill="#F0FDF4" stroke="#BBF7D0" />
+      <text x="118" y="31" font-size="10.5" font-weight="800" fill="#15803D" text-anchor="middle">
+        Next.js 15 &amp; Tailwind CSS / WebAudio
+      </text>
+
+      <!-- Sub-module 1: Patient Voice Kiosk -->
+      <g transform="translate(12, 52)">
+        <rect width="213" height="110" rx="10" fill="#F8FAFC" stroke="#E2E8F0" />
+        <rect x="8" y="8" width="28" height="28" rx="6" fill="#1D2A8F" />
+        <path d="M 22 17 A 3 3 0 0 0 16 17 L 16 22 A 3 3 0 0 0 22 22 Z M 13 20 A 6 6 0 0 0 25 20 M 19 26 L 19 30" stroke="#FB923C" stroke-width="2" stroke-linecap="round" fill="none" />
+        <text x="44" y="22" font-size="11" font-weight="800" fill="#1E293B">Patient Kiosk Station</text>
+        <text x="44" y="34" font-size="9" font-weight="600" fill="#64748B">Touch &amp; Voice Dialect Intake</text>
+        
+        <text x="12" y="58" font-size="8.5" font-weight="700" fill="#1D2A8F">• Indic Voice Waveform (Push-to-Talk)</text>
+        <text x="12" y="72" font-size="8.5" font-weight="700" fill="#1D2A8F">• Interactive Anatomical Body Map</text>
+        <text x="12" y="86" font-size="8.5" font-weight="700" fill="#1D2A8F">• Wong-Baker 0-10 Pain Gauge</text>
+        <text x="12" y="100" font-size="8.5" font-weight="700" fill="#1D2A8F">• Multilingual Dialogue Stream (8 Dialects)</text>
+      </g>
+
+      <!-- Sub-module 2: Prescription Scanner Studio -->
+      <g transform="translate(12, 172)">
+        <rect width="213" height="100" rx="10" fill="#F8FAFC" stroke="#E2E8F0" />
+        <rect x="8" y="8" width="28" height="28" rx="6" fill="#C2410C" />
+        <path d="M 16 14 L 26 14 L 28 20 L 16 20 Z M 16 23 L 28 23 M 16 27 L 24 27" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" fill="none" />
+        <text x="44" y="22" font-size="11" font-weight="800" fill="#1E293B">Prescription &amp; Lab Studio</text>
+        <text x="44" y="34" font-size="9" font-weight="600" fill="#C2410C">Multimodal Vision OCR</text>
+
+        <text x="12" y="58" font-size="8.5" font-weight="700" fill="#334155">• Drag-and-Drop Image &amp; Camera Scan</text>
+        <text x="12" y="72" font-size="8.5" font-weight="700" fill="#334155">• Drug Dosage &amp; Timing Entity Visualizer</text>
+        <text x="12" y="86" font-size="8.5" font-weight="700" fill="#334155">• Abnormal Lab Biomarker Badging</text>
+      </g>
+
+      <!-- Sub-module 3: Doctor Cockpit Dashboard -->
+      <g transform="translate(12, 282)">
+        <rect width="213" height="110" rx="10" fill="#F8FAFC" stroke="#E2E8F0" />
+        <rect x="8" y="8" width="28" height="28" rx="6" fill="#0F766E" />
+        <path d="M 16 16 L 22 28 L 28 16" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+        <text x="44" y="22" font-size="11" font-weight="800" fill="#1E293B">Doctor Cockpit EMR</text>
+        <text x="44" y="34" font-size="9" font-weight="600" fill="#0F766E">Clinical Workstation</text>
+
+        <text x="12" y="58" font-size="8.5" font-weight="700" fill="#334155">• Real-time Live Patient Triage Queue</text>
+        <text x="12" y="72" font-size="8.5" font-weight="700" fill="#334155">• Pre-populated SOCRATES SOAP Notes</text>
+        <text x="12" y="86" font-size="8.5" font-weight="700" fill="#334155">• Differential Diagnosis Suggestions</text>
+        <text x="12" y="100" font-size="8.5" font-weight="700" fill="#334155">• Digital Prescription Rx Formulator</text>
+      </g>
+
+      <!-- Sub-module 4: ABHA Consent & Token Slip -->
+      <g transform="translate(12, 402)">
+        <rect width="213" height="85" rx="10" fill="#F8FAFC" stroke="#E2E8F0" />
+        <rect x="8" y="8" width="28" height="28" rx="6" fill="#1E3A8A" />
+        <path d="M 22 14 L 16 18 L 16 24 C 16 28 22 31 22 31 C 22 31 28 28 28 24 L 28 18 Z" stroke="#FFFFFF" stroke-width="2" fill="none" />
+        <text x="44" y="22" font-size="11" font-weight="800" fill="#1E293B">ABHA &amp; Token Generator</text>
+        <text x="44" y="34" font-size="9" font-weight="600" fill="#1E3A8A">OPD Entry Slip</text>
+
+        <text x="12" y="56" font-size="8.5" font-weight="700" fill="#334155">• Printable QR Token with Priority Badge</text>
+        <text x="12" y="70" font-size="8.5" font-weight="700" fill="#334155">• DPDP Act 2023 Explicit Consent Toggle</text>
+      </g>
+
+      <!-- Live WebSocket State Sync Banner -->
+      <rect x="12" y="498" width="213" height="42" rx="8" fill="#FEF3C7" stroke="#FDE68A" />
+      <circle cx="26" cy="519" r="4" fill="#D97706" />
+      <text x="38" y="515" font-size="9.5" font-weight="800" fill="#92400E">Zustand State Store</text>
+      <text x="38" y="529" font-size="8" font-weight="600" fill="#B45309">Instant Doctor Queue Push &amp; Sync</text>
+    </g>
+  </g>
+
+  <!-- ZONE 3: Backend Application Layer (W=290, X=585) -->
+  <g transform="translate(585, 110)">
+    <rect width="290" height="660" rx="14" fill="#FFFBEB" stroke="#FDE68A" stroke-width="1.5" />
+    <rect width="290" height="46" rx="14" fill="#FEF3C7" />
+    <rect y="32" width="290" height="14" fill="#FEF3C7" />
+    <text x="145" y="22" font-size="13" font-weight="800" fill="#B45309" text-anchor="middle">Zone 3</text>
+    <text x="145" y="36" font-size="11" font-weight="700" fill="#92400E" text-anchor="middle">Backend (Application Layer)</text>
+
+    <!-- Backend Server Card -->
+    <g transform="translate(14, 60)">
+      <rect width="262" height="575" rx="14" fill="#FFFFFF" stroke="#FCD34D" stroke-width="1.5" filter="url(#cardShadow)" />
+      
+      <!-- Tech Badge Header -->
+      <rect x="12" y="12" width="238" height="30" rx="6" fill="#FFFBEB" stroke="#FDE68A" />
+      <text x="131" y="31" font-size="10.5" font-weight="800" fill="#B45309" text-anchor="middle">
+        FastAPI / Python 3.11 / Uvicorn Server
+      </text>
+
+      <!-- API Gateway & Middleware -->
+      <g transform="translate(12, 50)">
+        <rect width="238" height="52" rx="8" fill="#F3E8FF" stroke="#D8B4FE" />
+        <text x="119" y="22" font-size="10" font-weight="800" fill="#6B21A8" text-anchor="middle">API Gateway &amp; Middleware</text>
+        <text x="119" y="38" font-size="8.5" font-weight="600" fill="#7E22CE" text-anchor="middle">CORS, JWT Auth, Session Manager, Rate Limiter</text>
+      </g>
+
+      <!-- Service 1: Voice Intake & Indic Audio Router -->
+      <g transform="translate(12, 110)">
+        <rect width="238" height="66" rx="8" fill="#F8FAFC" stroke="#E2E8F0" />
+        <text x="14" y="20" font-size="10" font-weight="800" fill="#1E293B">Voice Intake Service</text>
+        <text x="14" y="34" font-size="8.5" font-weight="600" fill="#64748B">Endpoint: /api/v1/ai/voice-intake</text>
+        <text x="14" y="48" font-size="8" font-weight="600" fill="#475569">• Multipart WAV ingestion &amp; dialect detection</text>
+        <text x="14" y="59" font-size="8" font-weight="600" fill="#475569">• Ephemeral in-memory audio buffering (DPDP)</text>
+      </g>
+
+      <!-- Service 2: SOCRATES & Triage Processor -->
+      <g transform="translate(12, 184)">
+        <rect width="238" height="74" rx="8" fill="#F8FAFC" stroke="#E2E8F0" />
+        <text x="14" y="20" font-size="10" font-weight="800" fill="#1E293B">SOCRATES &amp; Triage Engine</text>
+        <text x="14" y="34" font-size="8.5" font-weight="600" fill="#64748B">Endpoint: /api/v1/ai/chat-intake</text>
+        <text x="14" y="48" font-size="8" font-weight="600" fill="#475569">• 8-factor clinical dimension extractor</text>
+        <text x="14" y="59" font-size="8" font-weight="600" fill="#475569">• Red-flag emergency &amp; ESI rule evaluation</text>
+        <text x="14" y="70" font-size="8" font-weight="600" fill="#475569">• Conversational follow-up question generator</text>
+      </g>
+
+      <!-- Service 3: Multimodal Document & Vision OCR -->
+      <g transform="translate(12, 266)">
+        <rect width="238" height="66" rx="8" fill="#F8FAFC" stroke="#E2E8F0" />
+        <text x="14" y="20" font-size="10" font-weight="800" fill="#1E293B">Document OCR Pipeline</text>
+        <text x="14" y="34" font-size="8.5" font-weight="600" fill="#64748B">Endpoint: /api/v1/documents/upload</text>
+        <text x="14" y="48" font-size="8" font-weight="600" fill="#475569">• Optical entity extraction &amp; handwriting parsing</text>
+        <text x="14" y="59" font-size="8" font-weight="600" fill="#475569">• Pharmacological purpose classifier</text>
+      </g>
+
+      <!-- Service 4: ABDM & FHIR Adapter -->
+      <g transform="translate(12, 340)">
+        <rect width="238" height="66" rx="8" fill="#F8FAFC" stroke="#E2E8F0" />
+        <text x="14" y="20" font-size="10" font-weight="800" fill="#1E293B">ABDM &amp; FHIR R4 Adapter</text>
+        <text x="14" y="34" font-size="8.5" font-weight="600" fill="#64748B">Endpoint: /api/v1/abdm/consent</text>
+        <text x="14" y="48" font-size="8" font-weight="600" fill="#475569">• FHIR DiagnosticReport &amp; Bundle serializer</text>
+        <text x="14" y="59" font-size="8" font-weight="600" fill="#475569">• ABHA OTP validation &amp; Consent artifact logger</text>
+      </g>
+
+      <!-- Service 5: Queue & WebSocket Broadcaster -->
+      <g transform="translate(12, 414)">
+        <rect width="238" height="66" rx="8" fill="#F8FAFC" stroke="#E2E8F0" />
+        <text x="14" y="20" font-size="10" font-weight="800" fill="#1E293B">Live Queue &amp; Notification Hub</text>
+        <text x="14" y="34" font-size="8.5" font-weight="600" fill="#64748B">Endpoint: /ws/doctor-queue</text>
+        <text x="14" y="48" font-size="8" font-weight="600" fill="#475569">• Real-time WebSocket doctor queue dispatcher</text>
+        <text x="14" y="59" font-size="8" font-weight="600" fill="#475569">• High-priority emergency audio chime trigger</text>
+      </g>
+
+      <!-- Database & Cache -->
+      <g transform="translate(12, 488)">
+        <rect width="238" height="66" rx="8" fill="#EFF6FF" stroke="#BFDBFE" />
+        <text x="14" y="20" font-size="10" font-weight="800" fill="#1E40AF">Persistence &amp; Cache Store</text>
+        <text x="14" y="34" font-size="8.5" font-weight="600" fill="#3B82F6">SQLite / PostgreSQL + In-Memory Session Cache</text>
+        <text x="14" y="48" font-size="8" font-weight="600" fill="#1E3A8A">• Encrypted patient sessions &amp; clinical timeline</text>
+        <text x="14" y="59" font-size="8" font-weight="600" fill="#1E3A8A">• Audit log ledger for DPDP compliance</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- ZONE 4: Data & Intelligence Layer / The Brain (W=290, X=890) -->
+  <g transform="translate(890, 110)">
+    <rect width="290" height="660" rx="14" fill="#F0FDFA" stroke="#99F6E4" stroke-width="1.5" />
+    <rect width="290" height="46" rx="14" fill="#CCFBF1" />
+    <rect y="32" width="290" height="14" fill="#CCFBF1" />
+    <text x="145" y="22" font-size="13" font-weight="800" fill="#0F766E" text-anchor="middle">Zone 4</text>
+    <text x="145" y="36" font-size="11" font-weight="700" fill="#115E59" text-anchor="middle">Data &amp; Intelligence Layer (The "Brain")</text>
+
+    <!-- Brain Container Card -->
+    <g transform="translate(14, 60)">
+      <rect width="262" height="575" rx="16" fill="#0284C7" stroke="#38BDF8" stroke-width="2" filter="url(#brainGlow)" />
+      
+      <!-- Brain Title & Icon -->
+      <circle cx="131" cy="40" r="22" fill="#FFFFFF" />
+      <!-- Brain Icon SVG -->
+      <path d="M 124 35 C 121 35 119 38 119 41 C 119 44 122 46 124 47 C 124 51 128 53 131 53 C 134 53 138 51 138 47 C 140 46 143 44 143 41 C 143 38 141 35 138 35" stroke="#0284C7" stroke-width="2.5" stroke-linecap="round" fill="none" />
+      <text x="131" y="78" font-size="12" font-weight="900" fill="#FFFFFF" text-anchor="middle">
+        AI/ML Clinical Intelligence Engine
+      </text>
+      <text x="131" y="92" font-size="9" font-weight="600" fill="#BAE6FD" text-anchor="middle">
+        Gemini 1.5 Pro · Bhashini Indic ASR · TrOCR
+      </text>
+
+      <!-- Brain Sub-Model 1: Vernacular Dialect NLU -->
+      <g transform="translate(14, 106)">
+        <rect width="234" height="74" rx="10" fill="#FFFFFF" />
+        <text x="14" y="20" font-size="10.5" font-weight="800" fill="#0369A1">Indic Speech &amp; Dialect NLU</text>
+        <text x="14" y="34" font-size="8.5" font-weight="600" fill="#0284C7">Bhashini Acoustic &amp; Medical Translation</text>
+        <text x="14" y="48" font-size="8" font-weight="600" fill="#475569">• Maps rural colloquialisms to SNOMED-CT</text>
+        <text x="14" y="60" font-size="8" font-weight="600" fill="#475569">• Background acoustic noise cancellation</text>
+      </g>
+
+      <!-- Brain Sub-Model 2: SOCRATES Entity Extractor -->
+      <g transform="translate(14, 190)">
+        <rect width="234" height="84" rx="10" fill="#FFFFFF" />
+        <text x="14" y="20" font-size="10.5" font-weight="800" fill="#0369A1">SOCRATES Clinical Extractor</text>
+        <text x="14" y="34" font-size="8.5" font-weight="600" fill="#0284C7">Gemini 1.5 Structured Few-Shot Prompting</text>
+        <text x="14" y="48" font-size="8" font-weight="600" fill="#475569">• Extracts Site, Onset, Character, Radiation</text>
+        <text x="14" y="60" font-size="8" font-weight="600" fill="#475569">• Calculates 0-10 Wong-Baker pain severity</text>
+        <text x="14" y="72" font-size="8" font-weight="600" fill="#475569">• Zero-hallucination grounded confidence</text>
+      </g>
+
+      <!-- Brain Sub-Model 3: Emergency Red-Flag & ESI Model -->
+      <g transform="translate(14, 284)">
+        <rect width="234" height="78" rx="10" fill="#FFFFFF" />
+        <text x="14" y="20" font-size="10.5" font-weight="800" fill="#C2410C">Emergency Red-Flag Classifier</text>
+        <text x="14" y="34" font-size="8.5" font-weight="600" fill="#EA580C">Manchester Triage &amp; ESI Levels 1-5</text>
+        <text x="14" y="48" font-size="8" font-weight="600" fill="#475569">• Identifies acute coronary &amp; sepsis triggers</text>
+        <text x="14" y="60" font-size="8" font-weight="600" fill="#475569">• Instant &lt;15s critical triage escalation</text>
+      </g>
+
+      <!-- Brain Sub-Model 4: Prescription Vision OCR -->
+      <g transform="translate(14, 372)">
+        <rect width="234" height="82" rx="10" fill="#FFFFFF" />
+        <text x="14" y="20" font-size="10.5" font-weight="800" fill="#0369A1">Prescription Vision OCR</text>
+        <text x="14" y="34" font-size="8.5" font-weight="600" fill="#0284C7">Gemini Multimodal Vision + LayoutLM</text>
+        <text x="14" y="48" font-size="8" font-weight="600" fill="#475569">• Handwritten doctor script deciphering</text>
+        <text x="14" y="60" font-size="8" font-weight="600" fill="#475569">• Drug indication &amp; dosage frequency mapping</text>
+        <text x="14" y="72" font-size="8" font-weight="600" fill="#475569">• "What is this drug for?" clinical intent</text>
+      </g>
+
+      <!-- Brain Sub-Model 5: Differential & SOAP Generator -->
+      <g transform="translate(14, 464)">
+        <rect width="234" height="84" rx="10" fill="#FFFFFF" />
+        <text x="14" y="20" font-size="10.5" font-weight="800" fill="#0369A1">Physician SOAP &amp; Differential AI</text>
+        <text x="14" y="34" font-size="8.5" font-weight="600" fill="#0284C7">Clinical Decision Support System</text>
+        <text x="14" y="48" font-size="8" font-weight="600" fill="#475569">• Generates pre-consultation HPI narrative</text>
+        <text x="14" y="60" font-size="8" font-weight="600" fill="#475569">• Ranks top 3 differential diagnoses</text>
+        <text x="14" y="72" font-size="8" font-weight="600" fill="#475569">• Formats standard FHIR Encounter resource</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- =========================================================================
+       DATA FLOW ARROWS (BETWEEN ZONES)
+       ========================================================================= -->
+  <!-- Zone 1 <-> Zone 2 HTTP / Audio -->
+  <g stroke="#94A3B8" stroke-width="2" stroke-linecap="round">
+    <path d="M 232 300 L 305 300" marker-end="url(#arrow)" />
+    <path d="M 232 430 L 305 430" marker-end="url(#arrow)" />
+    <path d="M 232 560 L 305 560" marker-end="url(#arrow)" />
+  </g>
+
+  <!-- Zone 2 <-> Zone 3 REST / WebSocket -->
+  <g stroke="#94A3B8" stroke-width="2" stroke-linecap="round">
+    <path d="M 570 200 L 585 200" />
+    <path d="M 570 330 L 585 330" />
+    <path d="M 570 460 L 585 460" />
+  </g>
+
+  <!-- Zone 3 <-> Zone 4 Inference Pipeline -->
+  <g stroke="#0284C7" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="4 3">
+    <path d="M 875 220 L 890 220" />
+    <path d="M 875 320 L 890 320" />
+    <path d="M 875 420 L 890 420" />
+  </g>
+
+  <!-- =========================================================================
+       RIGHT SIDEBAR: IMPLEMENTATION PROCESS (W=370, X=1190)
+       ========================================================================= -->
+  <g transform="translate(1195, 110)">
+    <!-- Sidebar Container -->
+    <rect width="365" height="660" rx="14" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#cardShadow)" />
+    
+    <!-- Sidebar Header with Icon -->
+    <g transform="translate(20, 20)">
+      <circle cx="16" cy="14" r="14" fill="#FEF2F2" />
+      <path d="M 16 8 L 18 12 L 22 14 L 18 16 L 16 20 L 14 16 L 10 14 L 14 12 Z" fill="#DC2626" />
+      <text x="40" y="20" font-size="18" font-weight="900" fill="#DC2626">Implementation Process</text>
+    </g>
+
+    <!-- Connected Step Pipeline (Vertical Snake Chain) -->
+    <g transform="translate(24, 70)">
+      <!-- Central Linking Vertical Line -->
+      <line x1="28" y1="20" x2="28" y2="520" stroke="#CBD5E1" stroke-width="3.5" stroke-dasharray="6 4" />
+
+      <!-- STEP 1: Patient Registration & Language Select -->
+      <g transform="translate(0, 0)">
+        <circle cx="28" cy="28" r="24" fill="#1D2A8F" stroke="#FFFFFF" stroke-width="3" />
+        <path d="M 28 20 A 4 4 0 1 0 28 12 A 4 4 0 1 0 28 20 Z M 20 34 C 20 29 24 26 28 26 C 32 26 36 29 36 34 Z" fill="#FFFFFF" />
+        <text x="68" y="22" font-size="12" font-weight="800" fill="#1E293B">1. Patient Entry &amp; Language</text>
+        <text x="68" y="36" font-size="9.5" font-weight="600" fill="#64748B">Selects Indic vernacular (Hindi, etc.),</text>
+        <text x="68" y="48" font-size="9.5" font-weight="600" fill="#64748B">enters name &amp; verifies ABHA ID.</text>
+      </g>
+
+      <!-- STEP 2: Spoken Complaint & Body Map -->
+      <g transform="translate(0, 95)">
+        <circle cx="28" cy="28" r="24" fill="#0284C7" stroke="#FFFFFF" stroke-width="3" />
+        <path d="M 28 18 A 3 3 0 0 0 22 18 L 22 25 A 3 3 0 0 0 28 25 Z M 19 22 A 6 6 0 0 0 31 22 M 25 30 L 25 34" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" fill="none" />
+        <text x="68" y="22" font-size="12" font-weight="800" fill="#1E293B">2. Spoken Turn &amp; Body Map</text>
+        <text x="68" y="36" font-size="9.5" font-weight="600" fill="#64748B">Push-to-talk records spoken audio;</text>
+        <text x="68" y="48" font-size="9.5" font-weight="600" fill="#64748B">patient touches pain region on SVG map.</text>
+      </g>
+
+      <!-- STEP 3: Prescription & Lab OCR -->
+      <g transform="translate(0, 190)">
+        <circle cx="28" cy="28" r="24" fill="#C2410C" stroke="#FFFFFF" stroke-width="3" />
+        <path d="M 22 18 L 34 18 L 34 38 L 22 38 Z M 25 24 L 31 24 M 25 29 L 31 29" stroke="#FFFFFF" stroke-width="2" fill="none" />
+        <text x="68" y="22" font-size="12" font-weight="800" fill="#1E293B">3. Prescription &amp; Lab OCR</text>
+        <text x="68" y="36" font-size="9.5" font-weight="600" fill="#64748B">Kiosk camera captures paper Rx slips;</text>
+        <text x="68" y="48" font-size="9.5" font-weight="600" fill="#64748B">extracts drug names, dose &amp; purpose.</text>
+      </g>
+
+      <!-- STEP 4: AI SOCRATES & ESI Triage -->
+      <g transform="translate(0, 285)">
+        <circle cx="28" cy="28" r="24" fill="#D97706" stroke="#FFFFFF" stroke-width="3" />
+        <path d="M 28 18 L 31 24 L 37 25 L 33 29 L 34 35 L 28 32 L 22 35 L 23 29 L 19 25 L 25 24 Z" fill="#FFFFFF" />
+        <text x="68" y="22" font-size="12" font-weight="800" fill="#1E293B">4. Clinical SOCRATES &amp; ESI</text>
+        <text x="68" y="36" font-size="9.5" font-weight="600" fill="#64748B">AI structures HPI, checks red flags,</text>
+        <text x="68" y="48" font-size="9.5" font-weight="600" fill="#64748B">and scores ESI Triage Priority (1-5).</text>
+      </g>
+
+      <!-- STEP 5: Digital Token & Queue Dispatch -->
+      <g transform="translate(0, 380)">
+        <circle cx="28" cy="28" r="24" fill="#059669" stroke="#FFFFFF" stroke-width="3" />
+        <path d="M 22 28 L 26 32 L 34 24" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+        <text x="68" y="22" font-size="12" font-weight="800" fill="#1E293B">5. OPD Token &amp; Queue Push</text>
+        <text x="68" y="36" font-size="9.5" font-weight="600" fill="#64748B">Issues QR token slip with room number;</text>
+        <text x="68" y="48" font-size="9.5" font-weight="600" fill="#64748B">dispatches patient to Doctor Cockpit.</text>
+      </g>
+
+      <!-- STEP 6: Doctor Consult & ABDM Sync -->
+      <g transform="translate(0, 475)">
+        <circle cx="28" cy="28" r="24" fill="#7C3AED" stroke="#FFFFFF" stroke-width="3" />
+        <path d="M 24 22 L 32 22 M 28 18 L 28 36 M 22 36 L 34 36" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" fill="none" />
+        <text x="68" y="22" font-size="12" font-weight="800" fill="#1E293B">6. Consultation &amp; ABDM Sync</text>
+        <text x="68" y="36" font-size="9.5" font-weight="600" fill="#64748B">Doctor validates pre-filled SOAP note;</text>
+        <text x="68" y="48" font-size="9.5" font-weight="600" fill="#64748B">auto-syncs FHIR bundle to ABHA locker.</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- =========================================================================
+       BOTTOM BAR: COMPONENTS & TECHNOLOGY STACK (Y=785)
+       ========================================================================= -->
+  <g transform="translate(40, 785)">
+    <!-- Container -->
+    <rect width="1520" height="85" rx="12" fill="#FDFBF7" stroke="#FDEBD0" stroke-width="1.5" />
+
+    <!-- Left Header Box -->
+    <g transform="translate(20, 16)">
+      <circle cx="22" cy="26" r="16" fill="#1D2A8F" fill-opacity="0.1" />
+      <!-- Gear / Tech Icon -->
+      <path d="M 22 18 L 24 22 L 28 22 L 25 25 L 26 29 L 22 26 L 18 29 L 19 25 L 16 22 L 20 22 Z" fill="#1D2A8F" />
+      <text x="48" y="22" font-size="12" font-weight="800" fill="#1D2A8F">Components /</text>
+      <text x="48" y="36" font-size="11" font-weight="800" fill="#1D2A8F">Technology Stack</text>
+    </g>
+
+    <!-- Tech Badges Strip -->
+    <g transform="translate(240, 18)">
+      <!-- Next.js -->
+      <rect x="0" y="0" width="115" height="50" rx="8" fill="#FFFFFF" stroke="#E2E8F0" />
+      <text x="57" y="22" font-size="10.5" font-weight="800" fill="#0F172A" text-anchor="middle">Next.js 15</text>
+      <text x="57" y="36" font-size="8" font-weight="600" fill="#64748B" text-anchor="middle">App Router / React</text>
+
+      <!-- Tailwind CSS -->
+      <rect x="125" y="0" width="115" height="50" rx="8" fill="#FFFFFF" stroke="#E2E8F0" />
+      <text x="182" y="22" font-size="10.5" font-weight="800" fill="#0284C7" text-anchor="middle">Tailwind CSS</text>
+      <text x="182" y="36" font-size="8" font-weight="600" fill="#64748B" text-anchor="middle">Design Tokens / UI</text>
+
+      <!-- FastAPI -->
+      <rect x="250" y="0" width="115" height="50" rx="8" fill="#FFFFFF" stroke="#E2E8F0" />
+      <text x="307" y="22" font-size="10.5" font-weight="800" fill="#0F766E" text-anchor="middle">FastAPI</text>
+      <text x="307" y="36" font-size="8" font-weight="600" fill="#64748B" text-anchor="middle">Python Backend API</text>
+
+      <!-- Python 3.11 -->
+      <rect x="375" y="0" width="115" height="50" rx="8" fill="#FFFFFF" stroke="#E2E8F0" />
+      <text x="432" y="22" font-size="10.5" font-weight="800" fill="#3B82F6" text-anchor="middle">Python 3.11</text>
+      <text x="432" y="36" font-size="8" font-weight="600" fill="#64748B" text-anchor="middle">Core Clinical Runtime</text>
+
+      <!-- Bhashini AI -->
+      <rect x="500" y="0" width="115" height="50" rx="8" fill="#FFFFFF" stroke="#E2E8F0" />
+      <text x="557" y="22" font-size="10.5" font-weight="800" fill="#EA580C" text-anchor="middle">Bhashini AI</text>
+      <text x="557" y="36" font-size="8" font-weight="600" fill="#64748B" text-anchor="middle">Indic ASR / Dialects</text>
+
+      <!-- Gemini Pro -->
+      <rect x="625" y="0" width="125" height="50" rx="8" fill="#FFFFFF" stroke="#E2E8F0" />
+      <text x="687" y="22" font-size="10.5" font-weight="800" fill="#7C3AED" text-anchor="middle">Gemini 1.5 Pro</text>
+      <text x="687" y="36" font-size="8" font-weight="600" fill="#64748B" text-anchor="middle">Few-Shot SOCRATES</text>
+
+      <!-- Vision OCR -->
+      <rect x="760" y="0" width="115" height="50" rx="8" fill="#FFFFFF" stroke="#E2E8F0" />
+      <text x="817" y="22" font-size="10.5" font-weight="800" fill="#C2410C" text-anchor="middle">Vision OCR</text>
+      <text x="817" y="36" font-size="8" font-weight="600" fill="#64748B" text-anchor="middle">Prescription TrOCR</text>
+
+      <!-- HL7 FHIR R4 -->
+      <rect x="885" y="0" width="120" height="50" rx="8" fill="#FFFFFF" stroke="#E2E8F0" />
+      <text x="945" y="22" font-size="10.5" font-weight="800" fill="#DC2626" text-anchor="middle">HL7 FHIR R4</text>
+      <text x="945" y="36" font-size="8" font-weight="600" fill="#64748B" text-anchor="middle">Health Interoperability</text>
+
+      <!-- ABDM Gateway -->
+      <rect x="1015" y="0" width="120" height="50" rx="8" fill="#FFFFFF" stroke="#E2E8F0" />
+      <text x="1075" y="22" font-size="10.5" font-weight="800" fill="#059669" text-anchor="middle">ABDM (NHA)</text>
+      <text x="1075" y="36" font-size="8" font-weight="600" fill="#64748B" text-anchor="middle">ABHA M1/M2/M3</text>
+
+      <!-- SQLite / DB -->
+      <rect x="1145" y="0" width="115" height="50" rx="8" fill="#FFFFFF" stroke="#E2E8F0" />
+      <text x="1202" y="22" font-size="10.5" font-weight="800" fill="#475569" text-anchor="middle">SQLite / SQL</text>
+      <text x="1202" y="36" font-size="8" font-weight="600" fill="#64748B" text-anchor="middle">Audit Ledger &amp; EHR</text>
+    </g>
+  </g>
+</svg>
