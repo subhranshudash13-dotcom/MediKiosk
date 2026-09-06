@@ -352,8 +352,8 @@ class DocumentOCRService:
                     "confidence": 96.0
                 })
 
-        # If no specific drug matched (e.g. generic sample upload), provide realistic prescription set
-        if not medications and ("prescription" in lower_input or "rx" in lower_input or "doc" in lower_input or True):
+        # If no specific drug matched (e.g. generic sample upload), only provide preset if explicitly a prescription sample
+        if not medications and ("prescription" in lower_input or "rx" in lower_input or "sample" in lower_input):
             medications = [
                 {
                     "name": "Amlodipine Besylate",
@@ -394,7 +394,7 @@ class DocumentOCRService:
             ]
 
         # Check for lab tests in input or provide standard lab findings
-        if "hba1c" in lower_input or "sugar" in lower_input or "diabetes" in lower_input or "lab" in lower_input:
+        if "hba1c" in lower_input or "sugar" in lower_input or "diabetes" in lower_input or "sample_lab" in lower_input or "lab_report" in lower_input:
             labs.append({
                 "test_name": "Glycated Hemoglobin (HbA1c)",
                 "value": "9.2",
@@ -403,74 +403,50 @@ class DocumentOCRService:
                 "clinical_purpose": "Measures 3-month glycemic stability to evaluate diabetes control and microvascular risk."
             })
             labs.append({
-                "test_name": "Fasting Blood Sugar (FBS)",
+                "test_name": "Fasting Blood Glucose",
                 "value": "178",
                 "unit": "mg/dL",
                 "reference_range": "70 - 100 mg/dL",
-                "clinical_purpose": "Assesses basal glucose homeostasis and nocturnal liver glucose output."
-            })
-        if "creatinine" in lower_input or "kidney" in lower_input or "renal" in lower_input:
-            labs.append({
-                "test_name": "Serum Creatinine",
-                "value": "2.4",
-                "unit": "mg/dL",
-                "reference_range": "0.6 - 1.2 mg/dL",
-                "clinical_purpose": "Biomarker of glomerular filtration rate (GFR) to monitor for nephrotoxicity and diabetic kidney disease."
-            })
-            labs.append({
-                "test_name": "Blood Urea",
-                "value": "58",
-                "unit": "mg/dL",
-                "reference_range": "15 - 45 mg/dL",
-                "clinical_purpose": "Evaluates renal nitrogenous waste excretion and hydration balance."
-            })
-        if not labs and ("lab" in lower_input or "report" in lower_input or "test" in lower_input):
-            labs.append({
-                "test_name": "Glycated Hemoglobin (HbA1c)",
-                "value": "8.8",
-                "unit": "%",
-                "reference_range": "< 5.7%",
-                "clinical_purpose": "Monitors 3-month glycemic management in outpatient diabetes follow-up."
-            })
-            labs.append({
-                "test_name": "Total Cholesterol",
-                "value": "242",
-                "unit": "mg/dL",
-                "reference_range": "< 200 mg/dL",
-                "clinical_purpose": "Assesses atherogenic lipid burden and calculates atherosclerotic cardiovascular disease (ASCVD) risk."
+                "clinical_purpose": "Measures baseline metabolic glucose level after an 8-hour overnight fast."
             })
 
-        # Diagnoses
-        diagnoses.append({
-            "condition": "Essential Hypertension",
-            "icd10_code": "I10",
-            "condition_type": "chronic",
-            "notes": "Requires ongoing vascular pressure monitoring"
-        })
-        diagnoses.append({
-            "condition": "Type 2 Diabetes Mellitus",
-            "icd10_code": "E11.9",
-            "condition_type": "chronic",
-            "notes": "Suboptimal glycemic control indicated by elevated glycated hemoglobin"
-        })
+        if medications or labs:
+            diagnoses.append({
+                "condition": "Essential Hypertension",
+                "icd10_code": "I10",
+                "condition_type": "chronic",
+                "notes": "Requires ongoing vascular pressure monitoring"
+            })
+            diagnoses.append({
+                "condition": "Type 2 Diabetes Mellitus",
+                "icd10_code": "E11.9",
+                "condition_type": "chronic",
+                "notes": "Suboptimal glycemic control indicated by elevated glycated hemoglobin"
+            })
+            vitals.append({"vital_name": "Blood Pressure", "value": "148/92", "unit": "mmHg"})
+            vitals.append({"vital_name": "Pulse", "value": "82", "unit": "bpm"})
 
-        # Vitals
-        vitals.append({"vital_name": "Blood Pressure", "value": "148/92", "unit": "mmHg"})
-        vitals.append({"vital_name": "Pulse", "value": "82", "unit": "bpm"})
-
-        is_lab = "lab" in lower_input or "report" in lower_input
-        doc_type_name = "lab_report" if is_lab else "prescription"
-        doc_purpose = "Diagnostic Metabolic & Glycemic Investigation" if is_lab else "Outpatient Hypertension & Diabetes Pharmacotherapy Management"
-        clinical_intent = (
-            "This document was ordered to evaluate renal clearance and long-term glycemic homeostasis in a patient with multi-year diabetic risk."
-            if is_lab else
-            "This document is an active clinical prescription issued to achieve target blood pressure reduction (<130/80 mmHg), enhance insulin sensitivity, and protect the gastric mucosa."
-        )
-        action_plan = (
-            "1. Address elevated HbA1c and creatinine immediately; 2. Consider nephrology consultation for eGFR estimation; 3. Adjust antidiabetic dosage."
-            if is_lab else
-            "1. Verify adherence to morning Amlodipine; 2. Titrate Metformin based on latest postprandial levels; 3. Schedule renal function monitoring in 4 weeks."
-        )
+        if not medications and not labs:
+            doc_type_name = "other"
+            doc_purpose = "Unrecognized Clinical Document / No Data Detected"
+            clinical_intent = "No valid medications or lab values detected in the uploaded image. Please upload a clear prescription or enter details manually."
+            action_plan = "Manual clinical review required. Verify physical paper prescription with patient."
+            raw_summary = "Unrecognized document: no prescription medications or laboratory results detected."
+        else:
+            is_lab = "lab" in lower_input or "report" in lower_input
+            doc_type_name = "lab_report" if is_lab else "prescription"
+            doc_purpose = "Diagnostic Metabolic & Glycemic Investigation" if is_lab else "Outpatient Hypertension & Diabetes Pharmacotherapy Management"
+            clinical_intent = (
+                "This document was ordered to evaluate renal clearance and long-term glycemic homeostasis in a patient with multi-year diabetic risk."
+                if is_lab else
+                "This document is an active clinical prescription issued to achieve target blood pressure reduction (<130/80 mmHg), enhance insulin sensitivity, and protect the gastric mucosa."
+            )
+            action_plan = (
+                "1. Address elevated HbA1c and creatinine immediately; 2. Consider nephrology consultation for eGFR estimation; 3. Adjust antidiabetic dosage."
+                if is_lab else
+                "1. Verify adherence to morning Amlodipine; 2. Titrate Metformin based on latest postprandial levels; 3. Schedule renal function monitoring in 4 weeks."
+            )
+            raw_summary = "Extracted outpatient prescription regimen for hypertension and glycemic management."
 
         return {
             "document_type": doc_type_name,
@@ -478,13 +454,13 @@ class DocumentOCRService:
             "clinical_intent": clinical_intent,
             "physician_action_plan": action_plan,
             "document_date": str(date.today()),
-            "doctor_name": "Dr. S. K. Verma, MD (Medicine)",
-            "facility_name": "Tertiary Apex Hospital OPD - Unit II",
+            "doctor_name": "Dr. S. K. Verma, MD (Medicine)" if (medications or labs) else "Not Specified",
+            "facility_name": "Tertiary Apex Hospital OPD - Unit II" if (medications or labs) else "Local Facility",
             "diagnoses": diagnoses,
             "medications": medications,
             "labs": labs,
             "vitals": vitals,
-            "raw_summary": "Extracted outpatient prescription regimen for hypertension and glycemic management."
+            "raw_summary": raw_summary
         }
 
     async def _extract_with_groq_text(self, document_text: str) -> Optional[Dict[str, Any]]:

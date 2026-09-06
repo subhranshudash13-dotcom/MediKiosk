@@ -16,6 +16,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/documents", tags=["Document AI & Historical Timeline"])
 
 
+ALLOWED_MIME_TYPES = {
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/jpg",
+    "application/pdf",
+}
+MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024  # 15 MB
+
+
 @router.post("/upload", response_model=MedicalDocument)
 async def upload_medical_document(
     file: UploadFile = File(...),
@@ -24,17 +34,47 @@ async def upload_medical_document(
 ):
     """
     Upload a medical prescription, lab report, or discharge summary for OCR + NER extraction.
+    Enforces strict 15MB size limit and allowed MIME types (JPEG, PNG, WEBP, PDF).
     Automatically evaluates lab values against clinical reference ranges and syncs to patient timeline.
     """
+    # 1. Validate content type
+    content_type = (file.content_type or "").lower()
+    filename = file.filename or "medical_document.jpg"
+    ext = ("." + filename.rsplit(".", 1)[-1].lower()) if "." in filename else ""
+    
+    valid_ext = ext in {".jpg", ".jpeg", ".png", ".webp", ".pdf"}
+    valid_mime = content_type in ALLOWED_MIME_TYPES or not content_type
+
+    if not valid_mime and not valid_ext:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported document format '{content_type or ext}'. Only JPEG, PNG, WEBP, and PDF are permitted."
+        )
+
+    # 2. Read and validate size
     try:
         content = await file.read()
-        filename = file.filename or "medical_document.jpg"
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read uploaded file: {str(e)}")
+
+    if not content or len(content) == 0:
+        raise HTTPException(status_code=400, detail="Uploaded document file is empty.")
+
+    if len(content) > MAX_FILE_SIZE_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Document exceeds maximum permitted size of 15MB (file size: {len(content) / (1024*1024):.2f}MB)."
+        )
+
+    try:
         doc = await ocr_service.process_document(content, filename=filename, patient_id=patient_id)
         
         if auto_sync_timeline:
             timeline_service.sync_document_to_timeline(doc)
             
         return doc
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error processing uploaded document: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to process document: {str(e)}")

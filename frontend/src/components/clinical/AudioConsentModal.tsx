@@ -31,16 +31,52 @@ export function AudioConsentModal({
   const [isPlaying, setIsPlaying] = useState(false);
   const setConsent = useKioskStore((state) => state.setConsent);
 
+  // Stop any active speech if modal unmounts or closes
+  React.useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
   if (!isOpen) return null;
 
   const playConsentAudio = () => {
-    setIsPlaying(true);
-    setTimeout(() => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      
+      const consentText = language === "hi"
+        ? "आपकी स्वास्थ्य जानकारी केवल डॉक्टर के परामर्श के लिए सुरक्षित रूप से साझा की जाएगी। क्या आप सहमति देते हैं?"
+        : "Your health information will be securely shared only with your consulting doctor. Do you consent?";
+
+      const utterance = new SpeechSynthesisUtterance(consentText);
+      utterance.lang = language === "hi" ? "hi-IN" : "en-IN";
+      utterance.rate = 0.95;
+
+      // Select natural Hindi/Indian English voice if available
+      const voices = window.speechSynthesis.getVoices();
+      const preferredVoice = voices.find((v) =>
+        v.lang.toLowerCase().includes(language === "hi" ? "hi" : "en-in")
+      );
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+      }
+
+      setIsPlaying(true);
+      utterance.onend = () => setIsPlaying(false);
+      utterance.onerror = () => setIsPlaying(false);
+
+      window.speechSynthesis.speak(utterance);
+    } else {
       setIsPlaying(false);
-    }, 3200);
+    }
   };
 
   const handleGrant = (type: "GRANTED_ONCE" | "GRANTED_HOSPITAL") => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
     setConsent(true, type);
     onConfirmConsent(type);
     onClose();

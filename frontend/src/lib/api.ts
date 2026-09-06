@@ -97,4 +97,28 @@ export const KioskAPI = {
     const res = await apiClient.get(`/abdm/linked-records/${encodeURIComponent(abhaId)}`);
     return res.data;
   },
+
+  // 5. Doctor Cockpit & Closed Loop
+  getDoctorQueue: async (status?: string) => {
+    const url = status ? `/clinical/queue?status=${status}` : "/clinical/queue";
+    const res = await apiClient.get(url);
+    return res.data;
+  },
+  seedDemoQueue: async () => {
+    const res = await apiClient.post("/clinical/seed-demo");
+    return res.data;
+  },
+  approveConsultation: async (sessionId: string, payload: {
+    provisional_diagnosis?: string;
+    clinical_notes?: string;
+    prescribed_medications?: any[];
+    doctor_name?: string;
+  }) => {
+    const res = await apiClient.patch(`/clinical/session/${sessionId}/approve`, payload);
+    return res.data;
+  },
+  getAuditEvents: async (limit: number = 50) => {
+    const res = await apiClient.get(`/clinical/events?limit=${limit}`);
+    return res.data;
+  },
 };

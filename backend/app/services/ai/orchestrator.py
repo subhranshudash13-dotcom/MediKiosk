@@ -155,7 +155,8 @@ class AIOrchestratorService:
         extracted, spoken_response, quick_replies = await fast_ai_pipeline.execute_turn(
             transcript=transcript,
             state=state,
-            language=state.language
+            language=state.language,
+            session_id=session_id
         )
 
         # 3. Update Clinical Intake State
@@ -183,6 +184,105 @@ class AIOrchestratorService:
 
         turn_duration_ms = round((time.time() - turn_start) * 1000, 1)
         logger.info(f"Voice Agent Turn completed in {turn_duration_ms}ms (Completeness: {completeness*100}%)")
+
+        # 7. Persist updated clinical state in-place to MongoDB & Redis (Tier 1 & Tier 2)
+        try:
+            from app.core.database import get_database
+            from app.core.redis_client import get_redis
+            from app.services.clinical.event_logger import event_logger
+            from datetime import datetime, timezone
+            import json
+
+            db = get_database()
+            now_iso = datetime.now(timezone.utc).isoformat()
+            
+            # Determine status & triage level
+            is_emergency = bool(red_flag and red_flag.is_emergency)
+            triage_level = "EMERGENCY" if is_emergency else ("URGENT" if completeness > 0.6 else "ROUTINE")
+            new_status = "ready_for_doctor" if (state.is_triage_complete or state.turn_count >= 1) else "in_progress"
+            
+            # History coverage map
+            coverage_map = {
+                "onset": bool(state.socrates.onset or state.socrates.duration_days),
+                "location": bool(state.socrates.site),
+                "character": bool(state.socrates.character),
+                "severity": bool(state.socrates.severity_score),
+                "radiation": bool(state.socrates.radiation),
+                "aggravating": bool(state.socrates.exacerbating_relieving),
+                "relieving": bool(state.socrates.exacerbating_relieving),
+                "associated": bool(state.associated_symptoms or state.socrates.associations),
+                "pastHistory": bool(state.past_history),
+                "medications": bool(state.current_medications),
+            }
+
+            # Evidence node for this voice turn
+            evidence_node = {
+                "id": f"ev-{uuid.uuid4().hex[:6]}",
+                "timeframe": "Today",
+                "title": f"Patient Narration (Turn {state.turn_count})",
+                "detail": transcript,
+                "sourceType": "VOICE",
+                "sourceBadge": "🎙️ Voice Statement",
+                "sourceSnippet": f'"{transcript}"',
+                "metadata": {
+                    "language": state.language,
+                    "confidence": round(completeness, 2),
+                    "audioDurationMs": turn_duration_ms
+                }
+            }
+
+            update_fields = {
+                "status": new_status,
+                "triage_level": triage_level,
+                "chief_complaint": state.chief_complaints[0] if state.chief_complaints else transcript[:80],
+                "chief_complaints": state.chief_complaints,
+                "socrates": state.socrates.model_dump(),
+                "associated_symptoms": state.associated_symptoms,
+                "past_history": state.past_history,
+                "current_medications": state.current_medications,
+                "allergies": state.allergies,
+                "red_flags": [rf.model_dump() for rf in state.red_flags],
+                "turn_count": state.turn_count,
+                "history_completeness": int(round(completeness * 100)),
+                "history_coverage": coverage_map,
+                "updated_at": now_iso,
+            }
+
+            await db["sessions"].update_one(
+                {"session_id": state.session_id},
+                {
+                    "$set": update_fields,
+                    "$push": {
+                        "raw_transcripts": transcript,
+                        "evidence_timeline": evidence_node
+                    }
+                },
+                upsert=True
+            )
+
+            # Log red-flag event if triggered
+            if is_emergency and red_flag:
+                await event_logger.log_event(
+                    event_type="RED_FLAG_TRIGGER",
+                    session_id=state.session_id,
+                    severity="CRITICAL",
+                    details={
+                        "flag_type": red_flag.flag_type,
+                        "trigger_text": red_flag.trigger_text,
+                        "action": red_flag.recommended_action
+                    }
+                )
+
+            # Sync lightweight session state into Redis
+            redis = get_redis()
+            await redis.set(
+                f"session:{state.session_id}",
+                json.dumps(update_fields, default=str),
+                ex=86400
+            )
+
+        except Exception as e:
+            logger.warning(f"Failed to sync turn to MongoDB/Redis: {e}")
 
         return DialogueTurnResponse(
             session_id=state.session_id,

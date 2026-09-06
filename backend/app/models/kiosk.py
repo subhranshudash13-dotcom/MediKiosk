@@ -10,7 +10,11 @@ class KioskLanguage(BaseModel):
 
 class KioskSession(BaseModel):
     session_id: str
+    token: Optional[str] = None
     patient_id: Optional[str] = None
+    patient_name: Optional[str] = None
+    age: Optional[int] = None
+    gender: Optional[str] = None
     abha_id: Optional[str] = None
     language: str = "hi"
     mode: str = "allopathy"  # "allopathy" | "ayush"

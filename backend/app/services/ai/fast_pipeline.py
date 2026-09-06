@@ -10,6 +10,7 @@ import asyncio
 import json
 import logging
 import re
+import time
 from typing import Dict, Any, Optional, Tuple, List
 from groq import AsyncGroq
 try:
@@ -28,6 +29,7 @@ from app.services.ai.schemas import (
 from app.services.ai.clinical_nlu_model import clinical_nlu
 from app.services.ai.safety_guardrails import safety_guardrails
 from app.services.ai.prompts import CLINICAL_INTAKE_SYSTEM_PROMPT
+from app.services.clinical.event_logger import event_logger
 
 logger = logging.getLogger(__name__)
 
@@ -75,11 +77,25 @@ def clean_json(text: str) -> str:
 
 
 class FastAIPipelineService:
-    """Unified Single-Pass AI Pipeline for Sub-Second Voice Turn Processing."""
+    """Unified Single-Pass AI Pipeline with Concurrency Throttling and Circuit Breaking."""
 
     def __init__(self):
         self._groq_client: Optional[AsyncGroq] = None
         self._openai_client: Optional[AsyncOpenAI] = None
+        self._consecutive_failures: int = 0
+        self._circuit_open_until: float = 0.0
+        self._session_semaphores: Dict[str, asyncio.Semaphore] = {}
+
+    def _get_semaphore(self, session_id: str) -> asyncio.Semaphore:
+        """Enforces max 2 concurrent AI calls per kiosk session."""
+        if session_id not in self._session_semaphores:
+            self._session_semaphores[session_id] = asyncio.Semaphore(2)
+        return self._session_semaphores[session_id]
+
+    @property
+    def is_circuit_open(self) -> bool:
+        """Returns True if circuit is currently tripped open to protect backend."""
+        return time.time() < self._circuit_open_until
 
     @property
     def groq_client(self) -> Optional[AsyncGroq]:
@@ -97,13 +113,18 @@ class FastAIPipelineService:
         self,
         transcript: str,
         state: ClinicalIntakeState,
-        language: str = "hi"
+        language: str = "hi",
+        session_id: Optional[str] = None
     ) -> Tuple[ExtractionPayload, str, List[str]]:
         """
         Executes single unified turn:
         Runs local NLU baseline in < 3ms, then races with ultra-fast cloud LLM (timeout 800ms).
+        Enforces concurrency limit (2 calls/session) and circuit-breaker protection.
         Returns: (extracted_payload, spoken_response, quick_replies)
         """
+        sid = session_id or state.session_id or "ANONYMOUS"
+        sem = self._get_semaphore(sid)
+
         # Step 1: Run trained Local Clinical NLU (< 3ms)
         local_extraction = clinical_nlu.extract_slots_fast(transcript, current_state=state.model_dump())
         local_dialogue = clinical_nlu.generate_dialogue_fast(transcript, state, local_extraction, language=language)
@@ -115,21 +136,61 @@ class FastAIPipelineService:
         if local_dialogue.get("is_emergency"):
             return local_extraction, local_spoken, local_replies
 
-        # Step 2: Try Fast Cloud LLM Race (Target < 800ms)
+        # Check Circuit Breaker: If open, bypass cloud LLM directly to sub-3ms local engine
+        if self.is_circuit_open:
+            logger.warning("FastAIPipeline: Circuit breaker OPEN. Directing traffic to high-speed local NLU.")
+            return local_extraction, local_spoken, local_replies
+
+        # Step 2: Try Fast Cloud LLM Race (Target < 800ms) within session concurrency cap
         try:
-            llm_result = await asyncio.wait_for(
-                self._single_pass_cloud_llm(transcript, state, language),
-                timeout=0.85
-            )
-            if llm_result:
-                extracted, spoken, replies = llm_result
-                if spoken and len(spoken.strip()) > 5:
-                    sanitized_spoken = safety_guardrails.sanitize_model_output(spoken, language=language)
-                    return extracted, sanitized_spoken, replies or local_replies
+            async with sem:
+                llm_result = await asyncio.wait_for(
+                    self._single_pass_cloud_llm(transcript, state, language),
+                    timeout=0.85
+                )
+                if llm_result:
+                    extracted, spoken, replies = llm_result
+                    if spoken and len(spoken.strip()) > 5:
+                        # Success - reset circuit breaker failures
+                        if self._consecutive_failures > 0:
+                            self._consecutive_failures = 0
+                            await event_logger.log_event(
+                                event_type="CIRCUIT_BREAKER_RESET",
+                                session_id=sid,
+                                details={"status": "healthy", "service": "Groq/OpenAI"},
+                                severity="INFO"
+                            )
+                        sanitized_spoken = safety_guardrails.sanitize_model_output(spoken, language=language)
+                        return extracted, sanitized_spoken, replies or local_replies
         except asyncio.TimeoutError:
-            logger.info("FastAIPipeline: Cloud LLM timed out (>850ms), seamlessly using trained local NLU.")
+            self._consecutive_failures += 1
+            logger.info(f"FastAIPipeline: Cloud LLM timed out (>850ms, count={self._consecutive_failures}), using local NLU.")
+            await event_logger.log_event(
+                event_type="AI_FALLBACK_TIMEOUT",
+                session_id=sid,
+                details={"timeout_ms": 850, "consecutive_failures": self._consecutive_failures},
+                severity="WARNING"
+            )
         except Exception as e:
+            self._consecutive_failures += 1
             logger.debug(f"FastAIPipeline: Cloud LLM fallback triggered: {e}")
+            await event_logger.log_event(
+                event_type="AI_FALLBACK_ERROR",
+                session_id=sid,
+                details={"error": str(e), "consecutive_failures": self._consecutive_failures},
+                severity="WARNING"
+            )
+
+        # Check if we need to trip the circuit breaker
+        if self._consecutive_failures >= 3:
+            self._circuit_open_until = time.time() + 30.0  # Open for 30s
+            logger.error(f"FastAIPipeline: Circuit breaker TRIPPED! 3 consecutive failures. Open for 30s.")
+            await event_logger.log_event(
+                event_type="CIRCUIT_BREAKER_TRIPPED",
+                session_id=sid,
+                details={"failures": self._consecutive_failures, "open_seconds": 30},
+                severity="ERROR"
+            )
 
         # Fallback to high-speed local NLU output
         return local_extraction, local_spoken, local_replies

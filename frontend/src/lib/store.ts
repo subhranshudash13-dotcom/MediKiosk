@@ -428,6 +428,7 @@ interface KioskStoreState {
   setIntakeMode: (mode: "PATIENT" | "CAREGIVER", relation?: string) => void;
   setConsent: (granted: boolean, type?: "GRANTED_ONCE" | "GRANTED_HOSPITAL") => void;
   resetKiosk: () => void;
+  setDoctorQueue: (queue: PatientQueueItem[]) => void;
   pushPatientToQueue: (patient: PatientQueueItem) => void;
 }
 
@@ -437,7 +438,7 @@ export const useKioskStore = create<KioskStoreState>((set) => ({
   isRecording: false,
   transcript: "",
   entities: [],
-  doctorQueue: DEFAULT_DOCTOR_QUEUE,
+  doctorQueue: [], // Reads live from MongoDB at runtime; empty by default
   intakeMode: "PATIENT",
   caregiverRelation: "",
   consentGranted: true,
@@ -461,6 +462,7 @@ export const useKioskStore = create<KioskStoreState>((set) => ({
       intakeMode: "PATIENT",
       caregiverRelation: "",
     }),
+  setDoctorQueue: (doctorQueue) => set({ doctorQueue }),
   pushPatientToQueue: (newPatient) =>
     set((state) => ({
       doctorQueue: [newPatient, ...state.doctorQueue.filter((p) => p.id !== newPatient.id)],

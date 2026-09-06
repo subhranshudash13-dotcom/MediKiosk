@@ -47,12 +47,61 @@ app.add_middleware(
 @app.get("/health", tags=["System"])
 @app.get(f"{settings.API_V1_STR}/health", tags=["System"])
 async def healthcheck():
-    """Healthcheck endpoint for Kubernetes, Docker, and frontend probes."""
+    """Live diagnostic healthcheck endpoint pinging MongoDB, Redis, and AI Pipeline."""
+    import time
+    from datetime import datetime, timezone
+    from app.core.database import get_database, db_manager
+    from app.core.redis_client import get_redis, redis_manager
+    from app.services.ai.fast_pipeline import fast_ai_pipeline
+    from app.services.ai.clinical_nlu_model import clinical_nlu
+
+    services: dict = {}
+    is_healthy = True
+
+    # 1. MongoDB Health & Ping
+    t0 = time.time()
+    try:
+        db = get_database()
+        ping_res = await db.command("ping")
+        mongo_latency_ms = round((time.time() - t0) * 1000, 2)
+        services["mongodb"] = {
+            "status": "connected" if ping_res.get("ok") else "degraded",
+            "latency_ms": mongo_latency_ms,
+            "mode": "live" if db_manager.is_live_mongo else "resilient_embedded",
+        }
+    except Exception as e:
+        is_healthy = False
+        services["mongodb"] = {"status": "error", "error": str(e)}
+
+    # 2. Redis Cache Health & Ping
+    t0 = time.time()
+    try:
+        r = get_redis()
+        ping_ok = await r.ping()
+        redis_latency_ms = round((time.time() - t0) * 1000, 2)
+        services["redis"] = {
+            "status": "connected" if ping_ok else "degraded",
+            "latency_ms": redis_latency_ms,
+            "mode": "live" if redis_manager.is_live_redis else "resilient_embedded",
+        }
+    except Exception as e:
+        services["redis"] = {"status": "error", "error": str(e)}
+
+    # 3. AI Pipeline & Safety Telemetry
+    services["ai_pipeline"] = {
+        "local_nlu": "ready",
+        "groq_configured": bool(settings.GROQ_API_KEY),
+        "circuit_breaker": "OPEN (Tripped)" if fast_ai_pipeline.is_circuit_open else "CLOSED (Normal)",
+        "consecutive_failures": fast_ai_pipeline._consecutive_failures,
+    }
+
     return {
-        "status": "healthy",
+        "status": "healthy" if is_healthy else "degraded",
         "service": settings.PROJECT_NAME,
         "version": settings.VERSION,
         "environment": settings.ENVIRONMENT,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "services": services,
     }
 
 

@@ -26,9 +26,11 @@ class ExtractedSOCRATES(BaseModel):
 class ClinicalIntakeState(BaseModel):
     """Live state of the clinical consultation intake."""
     session_id: str
+    mode: str = "allopathy"  # "allopathy" | "ayush"
     language: str = "hi"  # "hi" | "te" | "en" | "hinglish"
     chief_complaints: List[str] = Field(default_factory=list)
     socrates: ExtractedSOCRATES = Field(default_factory=ExtractedSOCRATES)
+    ayush: Optional[Dict[str, Any]] = None  # Prakriti, Vikriti, Agni, Koshtha
     associated_symptoms: List[str] = Field(default_factory=list)
     past_history: List[str] = Field(default_factory=list)
     current_medications: List[str] = Field(default_factory=list)

@@ -33,16 +33,44 @@ import {
   Info
 } from "lucide-react";
 import { useKioskStore, PatientQueueItem } from "@/lib/store";
+import { KioskAPI } from "@/lib/api";
 import { Doctor30SecondView } from "@/components/doctor/Doctor30SecondView";
 import { ClinicalStoryboard } from "@/components/clinical/ClinicalStoryboard";
 import { HistoryCompletenessEngine } from "@/components/clinical/HistoryCompletenessEngine";
 
 export default function DoctorDashboard() {
   const doctorQueue = useKioskStore((state) => state.doctorQueue);
-  const [selectedPatient, setSelectedPatient] = useState<PatientQueueItem>(doctorQueue[0]);
+  const setDoctorQueue = useKioskStore((state) => state.setDoctorQueue);
+  const [selectedPatient, setSelectedPatient] = useState<PatientQueueItem | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterLevel, setFilterLevel] = useState<string>("ALL");
   const [activeTab, setActiveTab] = useState<"storyboard" | "summary" | "timeline" | "fhir">("storyboard");
+  const [isLoadingQueue, setIsLoadingQueue] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
+
+  // Live Queue Fetching from MongoDB
+  const loadQueue = async () => {
+    try {
+      setIsLoadingQueue(true);
+      const data = await KioskAPI.getDoctorQueue();
+      if (data && Array.isArray(data)) {
+        setDoctorQueue(data);
+        if (data.length > 0 && !selectedPatient) {
+          setSelectedPatient(data[0]);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load doctor queue from MongoDB:", err);
+    } finally {
+      setIsLoadingQueue(false);
+    }
+  };
+
+  useEffect(() => {
+    loadQueue();
+    const interval = setInterval(loadQueue, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   // If queue changes (e.g. new intake submitted), ensure selected patient is valid
   useEffect(() => {
@@ -50,6 +78,18 @@ export default function DoctorDashboard() {
       setSelectedPatient(doctorQueue[0]);
     }
   }, [doctorQueue, selectedPatient]);
+
+  const handleSeedDemo = async () => {
+    try {
+      setIsSeeding(true);
+      await KioskAPI.seedDemoQueue();
+      await loadQueue();
+    } catch (err) {
+      console.error("Seed failed:", err);
+    } finally {
+      setIsSeeding(false);
+    }
+  };
 
   // Physician Prescription State
   const [provisionalDiagnosis, setProvisionalDiagnosis] = useState(
@@ -101,9 +141,23 @@ export default function DoctorDashboard() {
     }
   };
 
-  const handleApproveAndPush = () => {
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 4000);
+  const handleApproveAndPush = async () => {
+    const current = selectedPatient || doctorQueue[0];
+    if (!current) return;
+    try {
+      setIsSaved(true);
+      await KioskAPI.approveConsultation(current.id, {
+        provisional_diagnosis: provisionalDiagnosis,
+        clinical_notes: clinicalNotes,
+        prescribed_medications: prescribedDrugs,
+        doctor_name: "Dr. S. K. Mukherjee"
+      });
+      await loadQueue();
+      setTimeout(() => setIsSaved(false), 3500);
+    } catch (err) {
+      console.error("Consultation approval PATCH failed:", err);
+      setTimeout(() => setIsSaved(false), 3500);
+    }
   };
 
   const currentPatient = selectedPatient || doctorQueue[0];
@@ -160,9 +214,30 @@ export default function DoctorDashboard() {
                 <Clock className="w-4 h-4 text-[#1D2A8F]" />
                 <h2 className="font-heading font-bold text-sm text-[#374151]">Pre-Consultation OPD Queue</h2>
               </div>
-              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#1D2A8F]/10 text-[#1D2A8F]">
-                {filteredQueue.length} Active
-              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={loadQueue}
+                  disabled={isLoadingQueue}
+                  title="Refresh Queue from MongoDB"
+                  className="p-1 rounded-md border border-[#FDEBD0] text-[#374151]/70 hover:text-[#1D2A8F] hover:bg-[#FDFBF7] transition-colors cursor-pointer text-xs"
+                >
+                  <Clock className={`w-3.5 h-3.5 ${isLoadingQueue ? "animate-spin" : ""}`} />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSeedDemo}
+                  disabled={isSeeding}
+                  title="Seed Benchmark Demo Patients into MongoDB"
+                  className="px-2 py-0.5 rounded-full border border-[#FDEBD0] bg-[#FDFBF7] text-[#1D2A8F] font-bold text-[10px] hover:bg-white transition-colors cursor-pointer flex items-center gap-1"
+                >
+                  <Sparkles className="w-2.5 h-2.5 text-[#FB923C]" />
+                  <span>{isSeeding ? "Seeding..." : "Seed"}</span>
+                </button>
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#1D2A8F]/10 text-[#1D2A8F]">
+                  {filteredQueue.length}
+                </span>
+              </div>
             </div>
 
             {/* Search Input */}
@@ -197,66 +272,85 @@ export default function DoctorDashboard() {
 
             {/* Queue List */}
             <div className="space-y-2.5 max-h-[calc(100vh-320px)] overflow-y-auto pr-1">
-              {filteredQueue.map((item) => {
-                const isSelected = currentPatient?.id === item.id;
-                const isEmergency = item.triageLevel === "EMERGENCY";
-                const isUrgent = item.triageLevel === "URGENT";
-
-                return (
-                  <div
-                    key={item.id}
-                    onClick={() => handleSelectPatient(item)}
-                    className={`p-3.5 rounded-[12px] border transition-all cursor-pointer text-left relative ${
-                      isSelected
-                        ? "bg-[#FDFBF7] border-[#1D2A8F] shadow-xs ring-1 ring-[#1D2A8F]"
-                        : "bg-white border-[#FDEBD0] hover:border-[#1D2A8F]/40 hover:bg-[#FDFBF7]"
-                    }`}
+              {filteredQueue.length === 0 ? (
+                <div className="p-5 text-center bg-[#FDFBF7] rounded-xl border border-dashed border-[#FDEBD0] space-y-3 my-1">
+                  <User className="w-8 h-8 text-[#1D2A8F]/40 mx-auto" />
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-[#374151]">No patients in queue</p>
+                    <p className="text-[11px] text-[#374151]/60">Patients who complete kiosk triage appear here live.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSeedDemo}
+                    disabled={isSeeding}
+                    className="w-full py-2 px-3 rounded-lg bg-[#1D2A8F] text-white text-xs font-bold hover:bg-[#1D2A8F]/90 transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-xs px-2 py-0.5 rounded-full bg-[#FDFBF7] border border-[#FDEBD0] text-[#1D2A8F]">
-                          {item.token}
+                    <Sparkles className="w-3.5 h-3.5 text-[#FB923C]" />
+                    {isSeeding ? "Seeding Benchmark..." : "Seed Benchmark Patients"}
+                  </button>
+                </div>
+              ) : (
+                filteredQueue.map((item) => {
+                  const isSelected = currentPatient?.id === item.id;
+                  const isEmergency = item.triageLevel === "EMERGENCY";
+                  const isUrgent = item.triageLevel === "URGENT";
+
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => handleSelectPatient(item)}
+                      className={`p-3.5 rounded-[12px] border transition-all cursor-pointer text-left relative ${
+                        isSelected
+                          ? "bg-[#FDFBF7] border-[#1D2A8F] shadow-xs ring-1 ring-[#1D2A8F]"
+                          : "bg-white border-[#FDEBD0] hover:border-[#1D2A8F]/40 hover:bg-[#FDFBF7]"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-xs px-2 py-0.5 rounded-full bg-[#FDFBF7] border border-[#FDEBD0] text-[#1D2A8F]">
+                            {item.token}
+                          </span>
+                          <h4 className="font-heading font-bold text-xs text-[#374151]">
+                            {item.name} <span className="text-[#374151]/60 font-normal text-[11px]">({item.age}{item.gender.charAt(0)})</span>
+                          </h4>
+                        </div>
+
+                        <span
+                          className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                            isEmergency
+                              ? "bg-red-50 text-[#C2410C] border border-red-200"
+                              : isUrgent
+                              ? "bg-amber-50 text-amber-800 border border-amber-200"
+                              : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          }`}
+                        >
+                          {item.triageLevel}
                         </span>
-                        <h4 className="font-heading font-bold text-xs text-[#374151]">
-                          {item.name} <span className="text-[#374151]/60 font-normal text-[11px]">({item.age}{item.gender.charAt(0)})</span>
-                        </h4>
                       </div>
 
-                      <span
-                        className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                          isEmergency
-                            ? "bg-red-50 text-[#C2410C] border border-red-200"
-                            : isUrgent
-                            ? "bg-amber-50 text-amber-800 border border-amber-200"
-                            : "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                        }`}
-                      >
-                        {item.triageLevel}
-                      </span>
-                    </div>
+                      <p className="text-xs text-[#374151]/80 line-clamp-2 leading-relaxed mb-2">
+                        {item.chiefComplaint}
+                      </p>
 
-                    <p className="text-xs text-[#374151]/80 line-clamp-2 leading-relaxed mb-2">
-                      {item.chiefComplaint}
-                    </p>
-
-                    <div className="flex items-center justify-between text-[11px] text-[#374151]/70 pt-2 border-t border-[#FDEBD0]/80">
-                      <span className="flex items-center gap-1 font-mono">
-                        <ShieldCheck className="w-3 h-3 text-[#1D2A8F]" />
-                        {item.abhaId}
-                      </span>
-                      <span className="text-[10px] font-bold text-emerald-700">
-                        {item.historyCompleteness}% Story
-                      </span>
+                      <div className="flex items-center justify-between text-[11px] text-[#374151]/70 pt-2 border-t border-[#FDEBD0]/80">
+                        <span className="flex items-center gap-1 font-mono">
+                          <ShieldCheck className="w-3 h-3 text-[#1D2A8F]" />
+                          {item.abhaId}
+                        </span>
+                        <span className="text-[10px] font-bold text-emerald-700">
+                          {item.historyCompleteness}% Story
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
 
         {/* RIGHT COLUMN: Comprehensive Clinical Dossier (8 Cols) */}
-        {currentPatient && (
+        {currentPatient ? (
           <div className="lg:col-span-8 space-y-6 text-left">
             {/* 1. ⭐ SIGNATURE DOCTOR 30-SECOND RAPID VIEW CARD */}
             <Doctor30SecondView
@@ -617,6 +711,29 @@ export default function DoctorDashboard() {
                 </button>
               </div>
             </div>
+          </div>
+        ) : (
+          <div className="lg:col-span-8 flex flex-col items-center justify-center min-h-[480px] bg-white rounded-2xl border border-[#FDEBD0] p-8 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-[#1D2A8F]/10 flex items-center justify-center text-[#1D2A8F]">
+              <FileText className="w-8 h-8" />
+            </div>
+            <div className="max-w-md space-y-2">
+              <h3 className="font-heading font-bold text-lg text-[#374151]">No Patient Selected</h3>
+              <p className="text-xs text-[#374151]/70 leading-relaxed">
+                Select a patient from the active triage queue on the left to inspect their 30-Second Rapid View, Clinical Storyboard, SOCRATES symptom progression, and verified FHIR R4 dossier.
+              </p>
+            </div>
+            {filteredQueue.length === 0 && (
+              <button
+                type="button"
+                onClick={handleSeedDemo}
+                disabled={isSeeding}
+                className="py-2.5 px-5 rounded-xl bg-[#1D2A8F] text-white text-xs font-bold hover:bg-[#1D2A8F]/90 transition-all shadow-sm flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                <Sparkles className="w-4 h-4 text-[#FB923C]" />
+                {isSeeding ? "Populating Benchmark Cases..." : "Populate 3 Benchmark Demo Patients"}
+              </button>
+            )}
           </div>
         )}
       </main>

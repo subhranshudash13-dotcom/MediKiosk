@@ -1,9 +1,12 @@
 import io
 import base64
+import hashlib
 import logging
 import asyncio
 from typing import Optional, Dict
 import edge_tts
+
+from app.core.redis_client import get_redis
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +33,7 @@ VOICE_MAP = {
 
 
 class TTSService:
-    """Zero-cost, natural neural Text-to-Speech service for Indian languages with instant caching."""
+    """Zero-cost, natural neural Text-to-Speech service for Indian languages with instant Redis caching."""
 
     def __init__(self):
         # In-memory LRU cache for audio base64 representations
@@ -44,7 +47,7 @@ class TTSService:
         gender: str = "female"
     ) -> bytes:
         """
-        Synthesizes text into high quality MP3 audio bytes with a tight 1.2s timeout.
+        Synthesizes text into high quality MP3 audio bytes with a tight 4.0s timeout.
         """
         if not text or not text.strip():
             return b""
@@ -73,14 +76,28 @@ class TTSService:
             return b""
 
     async def synthesize_speech_base64(self, text: str, language_code: str = "hi") -> str:
-        """Returns synthesized audio as base64 data URI with instant cache lookup."""
+        """Returns synthesized audio as base64 data URI with two-tier (Memory + Redis) cache lookup."""
         if not text or not text.strip():
             return ""
 
         cache_key = f"{language_code}:{text.strip()}"
+        # 1. Tier 1: In-memory LRU
         if cache_key in self._cache:
             return self._cache[cache_key]
 
+        # 2. Tier 2: Persistent Redis cache
+        hash_digest = hashlib.md5(cache_key.encode("utf-8")).hexdigest()
+        redis_key = f"tts:{language_code}:{hash_digest}"
+        try:
+            redis = get_redis()
+            cached_audio = await redis.get(redis_key)
+            if cached_audio:
+                self._cache[cache_key] = cached_audio
+                return cached_audio
+        except Exception as e:
+            logger.debug(f"TTSService: Redis cache read failed ({e})")
+
+        # 3. Cache miss: Synthesize neural speech
         audio_bytes = await self.synthesize_speech(text, language_code=language_code)
         if not audio_bytes:
             return ""
@@ -88,11 +105,17 @@ class TTSService:
         encoded = base64.b64encode(audio_bytes).decode("utf-8")
         result = f"data:audio/mp3;base64,{encoded}"
 
-        # Maintain cache bounds
+        # Maintain in-memory cache bounds
         if len(self._cache) >= self._max_cache_size:
-            # Pop oldest item
             self._cache.pop(next(iter(self._cache)))
         self._cache[cache_key] = result
+
+        # Save to Redis with 24-hour expiration
+        try:
+            redis = get_redis()
+            await redis.set(redis_key, result, ex=86400)
+        except Exception as e:
+            logger.debug(f"TTSService: Redis cache set failed ({e})")
 
         return result
 
