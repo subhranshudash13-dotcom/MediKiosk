@@ -103,6 +103,16 @@ REFERENCE_RANGES_DB: Dict[str, Dict[str, Any]] = {
         "range_display": "1.5 - 4.5 lakh/cumm",
         "aliases": ["platelet count", "platelets", "plt"]
     },
+    "serum_potassium": {
+        "canonical_name": "Serum Potassium",
+        "unit": "mEq/L",
+        "normal_low": 3.5,
+        "normal_high": 5.0,
+        "critical_high": 6.0,
+        "critical_low": 2.8,
+        "range_display": "3.5 - 5.0 mEq/L",
+        "aliases": ["serum potassium", "potassium", "k+", "s. potassium"]
+    },
 }
 
 

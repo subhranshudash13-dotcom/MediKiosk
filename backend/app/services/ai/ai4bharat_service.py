@@ -204,5 +204,14 @@ class AI4BharatBhashiniService:
         # Fallback to high-speed cached neural TTS
         return await tts_service.synthesize_speech_base64(text, language_code=language_code)
 
+    async def translate_indic_text(self, text: str, source_lang: str = "en", target_lang: str = "hi") -> str:
+        """Alias for translate_code_switched_text."""
+        return await self.translate_code_switched_text(text, source_lang=source_lang, target_lang=target_lang)
+
+    async def transcribe_indic_audio(self, audio_bytes: bytes, source_lang: str = "hi") -> str:
+        """Transcribes audio and returns transcription text string."""
+        transcript, _, _ = await self.transcribe_speech(audio_bytes, language_code=source_lang)
+        return transcript
+
 
 ai4bharat_service = AI4BharatBhashiniService()

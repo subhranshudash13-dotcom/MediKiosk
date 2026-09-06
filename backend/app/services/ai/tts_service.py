@@ -63,7 +63,7 @@ class TTSService:
                     if chunk["type"] == "audio":
                         audio_buffer.write(chunk["data"])
             
-            await asyncio.wait_for(_stream(), timeout=1.5)
+            await asyncio.wait_for(_stream(), timeout=4.0)
             return audio_buffer.getvalue()
         except asyncio.TimeoutError:
             logger.warning(f"TTSService: Timeout synthesizing speech for '{text[:25]}...'")

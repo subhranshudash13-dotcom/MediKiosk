@@ -17,19 +17,24 @@ RED_FLAG_PATTERNS = [
     },
     {
         "type": "STROKE_NEUROLOGICAL",
-        "pattern": r"(face\s*droop|slurred\s*speech|ek\s*taraf\s*kamzori|sudden\s*numbness|loss\s*of\s*consciousness|behosh|convulsion|daura|seizure|syncope|बेहोश|दौरा|लकवा|सुन्न|लटपटा|जीभ\s*लटपटा|चेहरे|ముఖం\s*వంకర|మూర్ఛ|సున్న|தலசுத்து)",
+        "pattern": r"(face\s*droop|facial\s*droop|loss\s*of\s*speech|slurred\s*speech|speech\s*loss|ek\s*taraf\s*kamzori|sudden\s*numbness|loss\s*of\s*consciousness|behosh|convulsion|daura|seizure|syncope|बेहोश|दौरा|लकवा|सुन्न|लटपटा|जीभ\s*लटपटा|चेहरे|ముఖం\s*వంకర|మూర్ఛ|సున్న|தலசுத்து)",
         "action": "Code Stroke / Neuro Priority: Immediate Neurological Examination Required.",
     },
     {
         "type": "SEVERE_TRAUMA_BLEEDING",
-        "pattern": r"(heavy\s*bleed|khoon\s*behta|accident|severe\s*head\s*injury|sar\s*pe\s*chot|head\s*trauma|active\s*bleeding|खून\s*बह|चोट|रक्तस्राव|రక్తస్రావం|రక్తం|இரத்தம்|রক্ত)",
+        "pattern": r"(heavy\s*bleed|uncontrolled\s*bleed|coughing\s*up\s*(bright\s*red\s*)?blood|hemoptysis|khoon\s*behta|accident|severe\s*head\s*injury|sar\s*pe\s*chot|head\s*trauma|active\s*bleeding|खून\s*बह|चोट|रक्तस्राव|రక్తస్రావం|రక్తం|இரத்தம்|রক্ত)",
         "action": "Trauma Triage: Hemorrhage Control & Wound Evaluation.",
+    },
+    {
+        "type": "ANAPHYLAXIS",
+        "pattern": r"(anaphylax|swelling\s*of\s*lips|throat\s*swelling|throat\s*closing|severe\s*allergic)",
+        "action": "Immediate Emergency: Suspected Anaphylaxis / Airway Compromise.",
     }
 ]
 
 # Forbidden Prescription / Diagnostic Keywords to Guard Against AI Overreach
 FORBIDDEN_PRESCRIPTION_PATTERNS = [
-    r"\b(take|le\s*lijiye|teesukondi)\s+\d+\s*(mg|ml|tablets?|goli)\b",
+    r"\b(take|taking|start\s*taking|prescribe|le\s*lijiye|teesukondi)\b.*?\b\d+\s*(?:mg|ml|tablets?|capsules?|goli)\b",
     r"\b(prescribe|recommended\s*dosage|prescription)\b",
     r"\b(you\s*definitely\s*have|aapko\s*pakka|meeku\s*khandithamga)\s+(cancer|tuberculosis|typhoid|heart\s*attack)\b",
 ]

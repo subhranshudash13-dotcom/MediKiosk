@@ -387,6 +387,55 @@ class ClinicalNLUModel:
                 return ["Score 8/10 (Severe)", "Score 5/10 (Moderate)", "Score 3/10 (Mild)"]
             return ["Constant pain", "Associated with nausea", "Worse on exertion"]
 
+    def predict(self, text: str, language_code: str = "en") -> Dict[str, Any]:
+        """
+        Unified high-level NLU inference:
+        Scans red flags, matches nearest clinical intent, and extracts structured clinical entities.
+        """
+        if not text:
+            return {"intent": "general", "confidence": 0.0, "is_emergency": False, "red_flag_type": None, "entities": {}}
+
+        # 1. Emergency Red-Flag Scan
+        red_flag = safety_guardrails.scan_red_flags(text)
+        is_emergency = red_flag is not None and red_flag.is_emergency
+        flag_type = red_flag.flag_type if red_flag else None
+
+        # 2. Semantic Intent Matching
+        scenario, similarity = self.find_nearest_scenario(text)
+        intent = scenario.get("chief_complaint", "clinical_inquiry") if scenario else "clinical_inquiry"
+
+        # 3. Structured Slot Extraction
+        extracted = self.extract_slots_fast(text)
+        
+        entities = {
+            "symptoms": extracted.associated_symptoms or ([scenario.get("chief_complaint")] if scenario else []),
+            "duration_days": extracted.duration_days,
+            "severity": extracted.severity_score,
+            "time_course": extracted.time_course,
+            "site": extracted.site,
+            "medications": [m.name for m in extracted.current_medications] if extracted.current_medications else []
+        }
+
+        # Check for explicitly mentioned symptoms or drugs in text
+        text_lower = text.lower()
+        if "fever" in text_lower and "fever" not in [s.lower() for s in entities["symptoms"]]:
+            entities["symptoms"].append("fever")
+        if "headache" in text_lower and "headache" not in [s.lower() for s in entities["symptoms"]]:
+            entities["symptoms"].append("headache")
+        if "cough" in text_lower and "cough" not in [s.lower() for s in entities["symptoms"]]:
+            entities["symptoms"].append("cough")
+        if "paracetamol" in text_lower and "paracetamol" not in [m.lower() for m in entities["medications"]]:
+            entities["medications"].append("Paracetamol")
+
+        return {
+            "intent": intent,
+            "confidence": round(max(0.75, similarity), 2) if scenario else 0.8,
+            "is_emergency": is_emergency,
+            "red_flag_type": flag_type,
+            "entities": entities,
+            "scenario": scenario
+        }
+
 
 # Global trained instance
 clinical_nlu = ClinicalNLUModel()
