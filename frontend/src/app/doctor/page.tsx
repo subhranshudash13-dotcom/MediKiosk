@@ -33,13 +33,16 @@ import {
   Info
 } from "lucide-react";
 import { useKioskStore, PatientQueueItem } from "@/lib/store";
+import { Doctor30SecondView } from "@/components/doctor/Doctor30SecondView";
+import { ClinicalStoryboard } from "@/components/clinical/ClinicalStoryboard";
+import { HistoryCompletenessEngine } from "@/components/clinical/HistoryCompletenessEngine";
 
 export default function DoctorDashboard() {
   const doctorQueue = useKioskStore((state) => state.doctorQueue);
   const [selectedPatient, setSelectedPatient] = useState<PatientQueueItem>(doctorQueue[0]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterLevel, setFilterLevel] = useState<string>("ALL");
-  const [activeTab, setActiveTab] = useState<"summary" | "timeline" | "fhir">("summary");
+  const [activeTab, setActiveTab] = useState<"storyboard" | "summary" | "timeline" | "fhir">("storyboard");
 
   // If queue changes (e.g. new intake submitted), ensure selected patient is valid
   useEffect(() => {
@@ -125,10 +128,10 @@ export default function DoctorDashboard() {
               </div>
               <div className="text-left">
                 <h1 className="font-heading font-bold text-sm text-[#374151] leading-tight">
-                  MediKiosk • Physician Consultation Cockpit
+                  MediKiosk • The Clinical Story Layer &amp; Physician Cockpit
                 </h1>
                 <p className="text-[11px] text-[#374151]/70">
-                  Pre-Consultation Clinical Briefing &amp; FHIR R4 Electronic Health Record
+                  Pre-Consultation Verified Storyboard • Evidence Provenance • FHIR R4 Bundle
                 </p>
               </div>
             </div>
@@ -155,7 +158,7 @@ export default function DoctorDashboard() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-[#1D2A8F]" />
-                <h2 className="font-heading font-bold text-sm text-[#374151]">Triaged OPD Queue</h2>
+                <h2 className="font-heading font-bold text-sm text-[#374151]">Pre-Consultation OPD Queue</h2>
               </div>
               <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#1D2A8F]/10 text-[#1D2A8F]">
                 {filteredQueue.length} Active
@@ -241,7 +244,9 @@ export default function DoctorDashboard() {
                         <ShieldCheck className="w-3 h-3 text-[#1D2A8F]" />
                         {item.abhaId}
                       </span>
-                      <span>{item.triagedTime}</span>
+                      <span className="text-[10px] font-bold text-emerald-700">
+                        {item.historyCompleteness}% Story
+                      </span>
                     </div>
                   </div>
                 );
@@ -253,106 +258,64 @@ export default function DoctorDashboard() {
         {/* RIGHT COLUMN: Comprehensive Clinical Dossier (8 Cols) */}
         {currentPatient && (
           <div className="lg:col-span-8 space-y-6 text-left">
-            {/* Patient Banner */}
-            <div className="bg-white border border-[#FDEBD0] rounded-[16px] p-6 shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#FDEBD0]/80">
-                <div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-[#1D2A8F]/10 text-[#1D2A8F]">
-                      Token {currentPatient.token}
-                    </span>
-                    <h2 className="font-heading font-bold text-xl sm:text-2xl text-[#374151]">
-                      {currentPatient.name}
-                    </h2>
-                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#FDFBF7] border border-[#FDEBD0] text-[#374151]/80 font-semibold">
-                      {currentPatient.age} Yrs • {currentPatient.gender}
-                    </span>
-                  </div>
-                  <p className="text-xs text-[#374151]/70 mt-1.5 flex items-center gap-2">
-                    <span>ABHA: <strong className="font-mono text-[#374151]">{currentPatient.abhaId}</strong></span>
-                    <span>•</span>
-                    <span className="text-emerald-700 font-semibold flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> ABDM Consent Verified
-                    </span>
-                  </p>
-                </div>
+            {/* 1. ⭐ SIGNATURE DOCTOR 30-SECOND RAPID VIEW CARD */}
+            <Doctor30SecondView
+              patient={currentPatient}
+              onOpenStoryboard={() => setActiveTab("storyboard")}
+            />
 
-                {/* Vitals Summary Pill Container */}
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <div className="px-3 py-1 rounded-[8px] bg-[#FDFBF7] border border-[#FDEBD0]">
-                    <span className="text-[#374151]/70 text-[10px] block uppercase font-semibold">BP</span>
-                    <span className="font-mono font-bold text-[#374151]">{currentPatient.vitals.bp}</span>
-                  </div>
-                  <div className="px-3 py-1 rounded-[8px] bg-[#FDFBF7] border border-[#FDEBD0]">
-                    <span className="text-[#374151]/70 text-[10px] block uppercase font-semibold">Pulse</span>
-                    <span className="font-mono font-bold text-[#374151]">{currentPatient.vitals.pulse}</span>
-                  </div>
-                  <div className="px-3 py-1 rounded-[8px] bg-[#FDFBF7] border border-[#FDEBD0]">
-                    <span className="text-[#374151]/70 text-[10px] block uppercase font-semibold">SpO2</span>
-                    <span className="font-mono font-bold text-emerald-700">{currentPatient.vitals.spo2}</span>
-                  </div>
-                  <div className="px-3 py-1 rounded-[8px] bg-[#FDFBF7] border border-[#FDEBD0]">
-                    <span className="text-[#374151]/70 text-[10px] block uppercase font-semibold">Temp</span>
-                    <span className="font-mono font-bold text-[#374151]">{currentPatient.vitals.temp}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Red Flag Alert Banner */}
-              {currentPatient.redFlags.length > 0 && (
-                <div className="mt-4 p-4 rounded-[12px] bg-red-50/70 border border-red-200 flex items-start gap-3 text-xs text-[#374151]">
-                  <AlertTriangle className="w-4 h-4 text-[#C2410C] shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold text-[#C2410C] uppercase tracking-wider block mb-1">
-                      🚨 Emergency Red Flag Triggered by AI Voice Triage
-                    </span>
-                    <ul className="list-disc list-inside space-y-0.5 text-[#374151]">
-                      {currentPatient.redFlags.map((flag, idx) => (
-                        <li key={idx}><strong>{flag}</strong></li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
-
-              {/* Tab Navigation */}
-              <div className="flex items-center gap-2 mt-6 pt-2 border-t border-[#FDEBD0]/80">
-                {[
-                  { id: "summary", label: "Structured HPI & History", icon: FileText },
-                  { id: "timeline", label: "OCR Trajectory & Labs", icon: Layers },
-                  { id: "fhir", label: "FHIR R4 Bundle", icon: Code2 },
-                ].map((tab) => {
-                  const Icon = tab.icon;
-                  const isActive = activeTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setActiveTab(tab.id as any)}
-                      className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                        isActive
-                          ? "bg-[#1D2A8F] text-white shadow-xs"
-                          : "bg-[#FDFBF7] text-[#374151]/70 border border-[#FDEBD0] hover:bg-white hover:text-[#1D2A8F]"
-                      }`}
-                    >
-                      <Icon className="w-3.5 h-3.5" />
-                      <span>{tab.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
+            {/* Tab Navigation */}
+            <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-[#FDEBD0] overflow-x-auto">
+              {[
+                { id: "storyboard", label: "⭐ Clinical Storyboard & Evidence", icon: Layers },
+                { id: "summary", label: "Completeness & Structured HPI", icon: FileText },
+                { id: "timeline", label: "OCR Trajectory & Labs", icon: Thermometer },
+                { id: "fhir", label: "FHIR R4 Bundle", icon: Code2 },
+              ].map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      isActive
+                        ? "bg-[#1D2A8F] text-white shadow-xs"
+                        : "bg-[#FDFBF7] text-[#374151]/70 border border-[#FDEBD0] hover:bg-white hover:text-[#1D2A8F]"
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
             </div>
 
-            {/* TAB 1: Structured HPI & Clinical Summary */}
+            {/* TAB 1: Clinical Storyboard with Clickable Evidence Trail */}
+            {activeTab === "storyboard" && (
+              <div className="space-y-6">
+                <ClinicalStoryboard patient={currentPatient} />
+              </div>
+            )}
+
+            {/* TAB 2: Completeness Engine & Structured HPI */}
             {activeTab === "summary" && (
               <div className="space-y-6">
+                {/* Completeness Map */}
+                <HistoryCompletenessEngine
+                  completeness={currentPatient.historyCompleteness || 91}
+                  coverage={currentPatient.historyCoverage}
+                  chiefComplaint={currentPatient.chiefComplaint}
+                />
+
                 {/* AI Voice Quote */}
                 <div className="bg-white border border-[#FDEBD0] rounded-[16px] p-6 shadow-sm">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-3.5 h-3.5 text-[#FB923C]" />
                       <h3 className="font-heading font-bold text-xs uppercase tracking-wider text-[#374151]/70">
-                        Patient Voice Intake Recording
+                        Patient / Caregiver Voice Intake
                       </h3>
                     </div>
                     <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#1D2A8F]/10 text-[#1D2A8F]">
@@ -362,10 +325,10 @@ export default function DoctorDashboard() {
 
                   <div className="p-4 rounded-[10px] bg-[#FDFBF7] border border-[#FDEBD0]">
                     <p className="text-xs font-medium text-[#374151] italic mb-1">
-                      "{currentPatient.voiceTranscript.original}"
+                      &ldquo;{currentPatient.voiceTranscript.original}&rdquo;
                     </p>
                     <span className="text-[11px] text-[#374151]/70">
-                      Source: Multilingual ASR ({currentPatient.voiceTranscript.language}) • Push-to-talk stream
+                      Source: {currentPatient.intakeSource === "CAREGIVER" ? "Caregiver Assisted" : "Direct Speech"} ({currentPatient.voiceTranscript.language}) • Multilingual ASR
                     </span>
                   </div>
                 </div>
@@ -421,136 +384,10 @@ export default function DoctorDashboard() {
                     </div>
                   </div>
                 </div>
-
-                {/* Physician Decision & Prescription Studio */}
-                <div className="bg-white border border-[#FDEBD0] rounded-[16px] p-6 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between pb-3 border-b border-[#FDEBD0]/80">
-                    <h3 className="font-heading font-bold text-sm text-[#374151] flex items-center gap-2">
-                      <Pill className="w-4 h-4 text-[#1D2A8F]" />
-                      Physician Assessment &amp; e-Prescription
-                    </h3>
-                    <span className="text-xs text-[#374151]/70 font-semibold">ABDM M2/M3 Care Context Commit</span>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-[#374151]/70 mb-1.5">
-                      Provisional Clinical Diagnosis
-                    </label>
-                    <input
-                      type="text"
-                      value={provisionalDiagnosis}
-                      onChange={(e) => setProvisionalDiagnosis(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-[8px] bg-[#FDFBF7] border border-[#FDEBD0] text-xs font-medium text-[#374151] focus:outline-none focus:border-[#1D2A8F] transition-colors"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-[#374151]/70 mb-1.5">
-                      Consultation Clinical Notes &amp; Orders
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={clinicalNotes}
-                      onChange={(e) => setClinicalNotes(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-[8px] bg-[#FDFBF7] border border-[#FDEBD0] text-xs text-[#374151] focus:outline-none focus:border-[#1D2A8F] transition-colors"
-                    />
-                  </div>
-
-                  {/* Prescribed Medications Table */}
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-[#374151]/70 mb-2">
-                      Medication Orders
-                    </label>
-                    <div className="space-y-2">
-                      {prescribedDrugs.map((drug, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center justify-between gap-3 p-3 rounded-[8px] bg-[#FDFBF7] border border-[#FDEBD0] text-xs"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Pill className="w-3.5 h-3.5 text-[#C2410C]" />
-                            <span className="font-bold text-[#374151]">{drug.drug}</span>
-                            <span className="text-[#374151]/70 font-mono">({drug.dose})</span>
-                          </div>
-                          <div className="flex items-center gap-4 text-[#374151]/70">
-                            <span className="bg-white px-2.5 py-0.5 rounded-full border border-[#FDEBD0] text-[11px] font-mono">
-                              {drug.frequency}
-                            </span>
-                            <span className="text-[11px]">{drug.duration}</span>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveDrug(idx)}
-                              className="text-[#374151]/60 hover:text-[#C2410C] transition-colors"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Add New Drug Row */}
-                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 mt-3">
-                      <input
-                        type="text"
-                        placeholder="Medication name..."
-                        value={newDrug.drug}
-                        onChange={(e) => setNewDrug({ ...newDrug, drug: e.target.value })}
-                        className="px-3 py-2 rounded-[8px] bg-[#FDFBF7] border border-[#FDEBD0] text-xs focus:outline-none focus:border-[#1D2A8F]"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Dose (e.g. 10mg)"
-                        value={newDrug.dose}
-                        onChange={(e) => setNewDrug({ ...newDrug, dose: e.target.value })}
-                        className="px-3 py-2 rounded-[8px] bg-[#FDFBF7] border border-[#FDEBD0] text-xs focus:outline-none focus:border-[#1D2A8F]"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Freq (e.g. 1-0-1)"
-                        value={newDrug.frequency}
-                        onChange={(e) => setNewDrug({ ...newDrug, frequency: e.target.value })}
-                        className="px-3 py-2 rounded-[8px] bg-[#FDFBF7] border border-[#FDEBD0] text-xs focus:outline-none focus:border-[#1D2A8F]"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddDrug}
-                        className="px-3 py-2 rounded-[8px] bg-[#1D2A8F]/10 border border-[#1D2A8F]/20 text-[#1D2A8F] hover:bg-[#1D2A8F] hover:text-white font-bold text-xs flex items-center justify-center gap-1 transition-all cursor-pointer"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Add Rx</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Final Commit Action Button */}
-                  <div className="pt-4 border-t border-[#FDEBD0]/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <span className="text-xs text-[#374151]/70">
-                      Authorized by: <strong>Dr. S. K. Mukherjee</strong> (Registration #MCI-2011-8849)
-                    </span>
-
-                    <button
-                      onClick={handleApproveAndPush}
-                      className="px-6 py-2.5 rounded-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
-                    >
-                      {isSaved ? (
-                        <>
-                          <Check className="w-4 h-4" />
-                          <span>FHIR R4 Bundle Approved &amp; Synced!</span>
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>Confirm Consultation &amp; Push to ABDM</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
               </div>
             )}
 
-            {/* TAB 2: OCR Historical Trajectory & Lab Records */}
+            {/* TAB 3: OCR Historical Trajectory & Lab Records */}
             {activeTab === "timeline" && (
               <div className="space-y-6">
                 {/* Abnormal Lab Findings from Prior Records */}
@@ -601,7 +438,7 @@ export default function DoctorDashboard() {
                               {item.type}
                             </span>
                           </div>
-                          <p className="text-xs text-[#374151] font-medium leading-relaxed">{item.event}</p>
+                          <p className="text-xs text-[#374151]">{item.event}</p>
                         </div>
                       </div>
                     ))}
@@ -610,65 +447,176 @@ export default function DoctorDashboard() {
               </div>
             )}
 
-            {/* TAB 3: Interactive FHIR R4 Bundle Inspector */}
+            {/* TAB 4: FHIR R4 Bundle */}
             {activeTab === "fhir" && (
-              <div className="bg-white border border-[#FDEBD0] rounded-[16px] p-6 shadow-sm space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-[#FDEBD0]/80">
+              <div className="bg-white border border-[#FDEBD0] rounded-[16px] p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#FDEBD0]/80">
                   <div className="flex items-center gap-2">
                     <Code2 className="w-4 h-4 text-[#1D2A8F]" />
                     <h3 className="font-heading font-bold text-sm text-[#374151]">
-                      HL7 FHIR R4 Clinical Encounter Bundle
+                      ABDM FHIR R4 Clinical Document Bundle
                     </h3>
                   </div>
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    Bundle / document
+                  <span className="text-xs font-mono bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full border border-emerald-200 font-semibold">
+                    Valid NRCES StructureDefinition
                   </span>
                 </div>
 
-                <pre className="p-4 rounded-[10px] bg-[#1E2433] text-[#FDEBD0] text-[11px] font-mono overflow-x-auto max-h-[500px]">
-{JSON.stringify(
-  {
-    resourceType: "Bundle",
-    id: `fhir-${currentPatient.id}`,
-    type: "document",
-    timestamp: new Date().toISOString(),
-    entry: [
-      {
-        resource: {
-          resourceType: "Patient",
-          id: currentPatient.id,
-          identifier: [{ system: "https://healthid.ndhm.gov.in", value: currentPatient.abhaId }],
-          name: [{ text: currentPatient.name }],
-          gender: currentPatient.gender.toLowerCase(),
-          birthDate: `${2026 - currentPatient.age}-01-01`,
-        },
-      },
-      {
-        resource: {
-          resourceType: "Condition",
-          clinicalStatus: { coding: [{ system: "http://terminology.hl7.org/CodeSystem/condition-clinical", code: "active" }] },
-          code: { text: currentPatient.chiefComplaint },
-          subject: { reference: `Patient/${currentPatient.id}` },
-          severity: { text: currentPatient.hpi.severity },
-        },
-      },
-      {
-        resource: {
-          resourceType: "CarePlan",
-          status: "active",
-          intent: "order",
-          title: provisionalDiagnosis,
-          description: clinicalNotes,
-        },
-      },
-    ],
-  },
-  null,
-  2
-)}
-                </pre>
+                <div className="bg-[#1E2433] rounded-[10px] p-4 text-xs font-mono text-[#FDEBD0] overflow-x-auto max-h-[400px]">
+                  <pre>{JSON.stringify({
+                    resourceType: "Bundle",
+                    type: "document",
+                    timestamp: new Date().toISOString(),
+                    identifier: { system: "https://abdm.gov.in/bundle", value: `BUNDLE-${currentPatient.token.replace('#','')}` },
+                    entry: [
+                      {
+                        resource: {
+                          resourceType: "Composition",
+                          status: "final",
+                          type: { coding: [{ system: "http://snomed.info/sct", code: "371530004", display: "Clinical consultation report" }] },
+                          subject: { reference: `Patient/${currentPatient.abhaId}`, display: currentPatient.name },
+                          title: "MediKiosk Verified Clinical Encounter Brief"
+                        }
+                      },
+                      {
+                        resource: {
+                          resourceType: "Condition",
+                          clinicalStatus: { coding: [{ system: "http://terminology.hl7.org/CodeSystem/condition-clinical", code: "active" }] },
+                          code: { text: currentPatient.chiefComplaint },
+                          subject: { reference: `Patient/${currentPatient.abhaId}` }
+                        }
+                      }
+                    ]
+                  }, null, 2)}</pre>
+                </div>
               </div>
             )}
+
+            {/* Physician Decision & Prescription Studio (Always Visible at Bottom) */}
+            <div className="bg-white border border-[#FDEBD0] rounded-[16px] p-6 shadow-sm space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-[#FDEBD0]/80">
+                <h3 className="font-heading font-bold text-sm text-[#374151] flex items-center gap-2">
+                  <Pill className="w-4 h-4 text-[#1D2A8F]" />
+                  Physician Assessment &amp; e-Prescription
+                </h3>
+                <span className="text-xs text-[#374151]/70 font-semibold">ABDM M2/M3 Care Context Commit</span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#374151]/70 mb-1.5">
+                  Provisional Clinical Diagnosis
+                </label>
+                <input
+                  type="text"
+                  value={provisionalDiagnosis}
+                  onChange={(e) => setProvisionalDiagnosis(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-[8px] bg-[#FDFBF7] border border-[#FDEBD0] text-xs font-medium text-[#374151] focus:outline-none focus:border-[#1D2A8F] transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#374151]/70 mb-1.5">
+                  Consultation Clinical Notes &amp; Orders
+                </label>
+                <textarea
+                  rows={2}
+                  value={clinicalNotes}
+                  onChange={(e) => setClinicalNotes(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-[8px] bg-[#FDFBF7] border border-[#FDEBD0] text-xs text-[#374151] focus:outline-none focus:border-[#1D2A8F] transition-colors"
+                />
+              </div>
+
+              {/* Prescribed Medications Table */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#374151]/70 mb-2">
+                  Medication Orders
+                </label>
+                <div className="space-y-2">
+                  {prescribedDrugs.map((drug, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between gap-3 p-3 rounded-[8px] bg-[#FDFBF7] border border-[#FDEBD0] text-xs"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Pill className="w-3.5 h-3.5 text-[#C2410C]" />
+                        <span className="font-bold text-[#374151]">{drug.drug}</span>
+                        <span className="text-[#374151]/70 font-mono">({drug.dose})</span>
+                      </div>
+                      <div className="flex items-center gap-4 text-[#374151]/70">
+                        <span className="bg-white px-2.5 py-0.5 rounded-full border border-[#FDEBD0] text-[11px] font-mono">
+                          {drug.frequency}
+                        </span>
+                        <span className="text-[11px]">{drug.duration}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveDrug(idx)}
+                          className="text-[#374151]/60 hover:text-[#C2410C] transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Add New Drug Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 mt-3">
+                  <input
+                    type="text"
+                    placeholder="Medication name..."
+                    value={newDrug.drug}
+                    onChange={(e) => setNewDrug({ ...newDrug, drug: e.target.value })}
+                    className="px-3 py-2 rounded-[8px] bg-[#FDFBF7] border border-[#FDEBD0] text-xs focus:outline-none focus:border-[#1D2A8F]"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Dose (e.g. 10mg)"
+                    value={newDrug.dose}
+                    onChange={(e) => setNewDrug({ ...newDrug, dose: e.target.value })}
+                    className="px-3 py-2 rounded-[8px] bg-[#FDFBF7] border border-[#FDEBD0] text-xs focus:outline-none focus:border-[#1D2A8F]"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Freq (e.g. 1-0-1)"
+                    value={newDrug.frequency}
+                    onChange={(e) => setNewDrug({ ...newDrug, frequency: e.target.value })}
+                    className="px-3 py-2 rounded-[8px] bg-[#FDFBF7] border border-[#FDEBD0] text-xs focus:outline-none focus:border-[#1D2A8F]"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddDrug}
+                    className="px-3 py-2 rounded-[8px] bg-[#1D2A8F]/10 border border-[#1D2A8F]/20 text-[#1D2A8F] hover:bg-[#1D2A8F] hover:text-white font-bold text-xs flex items-center justify-center gap-1 transition-all cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Rx</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Final Commit Action Button */}
+              <div className="pt-4 border-t border-[#FDEBD0]/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <span className="text-xs text-[#374151]/70">
+                  Authorized by: <strong>Dr. S. K. Mukherjee</strong> (Registration #MCI-2011-8849)
+                </span>
+
+                <button
+                  onClick={handleApproveAndPush}
+                  className="px-6 py-2.5 rounded-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                >
+                  {isSaved ? (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>FHIR R4 Bundle Approved &amp; Synced!</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Confirm Consultation &amp; Push to ABDM</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </main>

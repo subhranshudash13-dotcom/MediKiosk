@@ -3,26 +3,26 @@ from typing import List, Optional, Tuple
 from app.services.ai.schemas import RedFlagAlert, ExtractedSOCRATES, ExtractionPayload
 
 
-# Deterministic Red Flag Regex Patterns for Emergency Medical Triage (Multilingual: English, Hindi, Hinglish, Telugu)
+# Deterministic Red Flag Regex Patterns for Emergency Medical Triage (Multilingual: Hindi, Telugu, Tamil, Bengali, Marathi, English)
 RED_FLAG_PATTERNS = [
     {
         "type": "CARDIOVASCULAR_ACUTE",
-        "pattern": r"(chest\s*pain|seene\s*mein\s*dard|chhati\s*me\s*dard|left\s*arm|jaw\s*pain|crushing\s*pressure|radiat(ing|es)\s*to\s*(arm|jaw|back)|chhati\s*lo\s*noppi|सीने\s*में\s*दर्द|छाती\s*में\s*दर्द|बाएं\s*हाथ|छाती\s*నొప్పి)",
+        "pattern": r"(chest\s*pain|seene\s*mein\s*dard|chhati\s*me\s*dard|left\s*arm|jaw\s*pain|crushing\s*pressure|tight\s*pressure|pressure\s*(in|on)?\s*(my\s*)?chest|tight(ness)?\s*(in|on)?\s*(my\s*)?chest|radiat(ing|es)?\s*to\s*(my\s*)?(arm|jaw|back|shoulder)|chhati\s*lo\s*noppi|గుండెల్లో|గుండె|సీనే|सीने\s*में\s*दर्द|छाती\s*में\s*दर्द|बाएं\s*हाथ|छाती\s*నొప్పి|నెంజில்|நெஞ்சில்|বুকের\s*ব্যথা|छातीत)",
         "action": "Immediate Emergency Triage: Potential Acute Coronary Syndrome. Alert Attending Medical Officer.",
     },
     {
         "type": "RESPIRATORY_DISTRESS",
-        "pattern": r"(cannot\s*breathe|saans|gasping|gale\s*me\s*dum|oosiri\s*aadatam\s*ledu|shortness\s*of\s*breath|stridor|सांस|दम\s*घुट|శ్వాస)",
+        "pattern": r"(cannot\s*breathe|saans|gasping|gale\s*me\s*dum|oosiri\s*aadatam\s*ledu|shortness\s*of\s*breath|stridor|सांस|दम\s*घुट|శ్వాస|మూச்சு|শ্বাস|ശ്വാസം)",
         "action": "Urgent Oxygen & Airway Assessment: Acute Respiratory Distress.",
     },
     {
         "type": "STROKE_NEUROLOGICAL",
-        "pattern": r"(face\s*droop|slurred\s*speech|ek\s*taraf\s*kamzori|sudden\s*numbness|loss\s*of\s*consciousness|behosh|convulsion|daura|बेहोश|दौरा|लकवा|ముఖం\s*వంకర)",
+        "pattern": r"(face\s*droop|slurred\s*speech|ek\s*taraf\s*kamzori|sudden\s*numbness|loss\s*of\s*consciousness|behosh|convulsion|daura|seizure|syncope|बेहोश|दौरा|लकवा|सुन्न|लटपटा|जीभ\s*लटपटा|चेहरे|ముఖం\s*వంకర|మూర్ఛ|సున్న|தலசுத்து)",
         "action": "Code Stroke / Neuro Priority: Immediate Neurological Examination Required.",
     },
     {
         "type": "SEVERE_TRAUMA_BLEEDING",
-        "pattern": r"(heavy\s*bleed|khoon\s*behta|accident|severe\s*head\s*injury|sar\s*pe\s*chot|खून\s*बह|चोट|रक्तस्राव|రక్తస్రావం)",
+        "pattern": r"(heavy\s*bleed|khoon\s*behta|accident|severe\s*head\s*injury|sar\s*pe\s*chot|head\s*trauma|active\s*bleeding|खून\s*बह|चोट|रक्तस्राव|రక్తస్రావం|రక్తం|இரத்தம்|রক্ত)",
         "action": "Trauma Triage: Hemorrhage Control & Wound Evaluation.",
     }
 ]
@@ -40,6 +40,8 @@ class SafetyGuardrailsService:
 
     def scan_red_flags(self, transcript: str) -> Optional[RedFlagAlert]:
         """Scans input speech transcript for acute medical emergencies deterministically."""
+        if not transcript:
+            return None
         cleaned_text = transcript.lower()
         for alert_def in RED_FLAG_PATTERNS:
             if re.search(alert_def["pattern"], cleaned_text, re.IGNORECASE):
@@ -55,7 +57,6 @@ class SafetyGuardrailsService:
         """Ensures the LLM never accidentally prescribes medications or claims diagnoses."""
         for pattern in FORBIDDEN_PRESCRIPTION_PATTERNS:
             if re.search(pattern, response_text, re.IGNORECASE):
-                # Fallback safe medical phrasing
                 if language == "hi":
                     return "मैं आपकी पूरी जानकारी डॉक्टर साहब के लिए नोट कर रहा हूँ। वह कुछ ही देर में आपका परीक्षण करके सही दवा और सलाह देंगे।"
                 elif language == "te":
@@ -65,10 +66,7 @@ class SafetyGuardrailsService:
         return response_text
 
     def validate_extraction(self, extraction: ExtractionPayload) -> Tuple[bool, List[str]]:
-        """
-        Validates extracted clinical payload against logical bounds.
-        Returns (is_valid, validation_errors).
-        """
+        """Validates extracted clinical payload against logical bounds."""
         errors = []
         if extraction.duration_days is not None and extraction.duration_days < 0:
             errors.append("Duration days cannot be negative.")

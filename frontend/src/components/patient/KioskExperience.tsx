@@ -18,7 +18,11 @@ import {
   Volume2,
   Sparkles,
   HeartPulse,
-  ChevronLeft
+  ChevronLeft,
+  User,
+  Users,
+  Lock,
+  Layers
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { VoiceWaveform, useAudioLevel } from "@/components/visualization/VoiceWaveform";
@@ -27,7 +31,8 @@ import { SocratesRadar, SocratesData } from "@/components/visualization/Socrates
 import { ClinicalPainGauge } from "@/components/visualization/ClinicalPainGauge";
 import { PrescriptionScanner } from "@/components/visualization/PrescriptionScanner";
 import { ClinicalTriageToken } from "@/components/visualization/ClinicalTriageToken";
-import { useKioskStore, PatientQueueItem } from "@/lib/store";
+import { AudioConsentModal } from "@/components/clinical/AudioConsentModal";
+import { useKioskStore, PatientQueueItem, EvidenceTimelineItem } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
@@ -43,7 +48,7 @@ const INDIC_LANGUAGES = [
 ];
 
 const KIOSK_STEPS = [
-  { id: "language", label: "1. Language", icon: Languages },
+  { id: "language", label: "1. Language & Mode", icon: Languages },
   { id: "voice", label: "2. Voice & Body Map", icon: Mic },
   { id: "pain", label: "3. Pain Score", icon: Activity },
   { id: "scanner", label: "4. Prescription OCR", icon: FileText },
@@ -57,10 +62,15 @@ export function KioskExperience() {
     isRecording,
     transcript,
     entities,
+    intakeMode,
+    caregiverRelation,
+    consentGranted,
+    consentType,
     setLanguage,
     setRecording,
     setTranscript,
-    addEntities,
+    setIntakeMode,
+    setConsent,
     resetKiosk,
     pushPatientToQueue
   } = useKioskStore();
@@ -70,6 +80,12 @@ export function KioskExperience() {
   const [patientAge, setPatientAge] = useState<number>(28);
   const [patientGender, setPatientGender] = useState<string>("Female");
   const [patientAbha, setPatientAbha] = useState<string>("91-4567-8901-2345");
+  const [isConsentModalOpen, setIsConsentModalOpen] = useState(false);
+  const [scannedMedications, setScannedMedications] = useState<Array<{ drug: string; dose: string; frequency: string }>>([
+    { drug: "Tab Paracetamol", dose: "650 mg", frequency: "1-0-1" },
+    { drug: "Cap Pantoprazole", dose: "40 mg", frequency: "1-0-0 (Empty Stomach)" }
+  ]);
+
   const [aiSpokenResponse, setAiSpokenResponse] = useState<string>(
     "Good morning. I am your clinical intake assistant. Tell us what brings you here today — where does it hurt, and how long has it been?"
   );
@@ -146,44 +162,26 @@ export function KioskExperience() {
         setRedFlag(true);
         setRedFlagDetail(state.red_flags[0].action_required || "Immediate physician alert triggered.");
       }
-
-      const extractedList: any[] = [];
-      if (state.chief_complaints && state.chief_complaints.length > 0) {
-        extractedList.push({
-          id: "e-chief",
-          label: "Chief Complaint",
-          value: state.chief_complaints.join(", "),
-          source: "voice",
-        });
-      }
-      const s = state.socrates;
-      if (s) {
-        if (s.site) extractedList.push({ id: "e-site", label: "Location", value: s.site, source: "voice" });
-        if (s.onset) extractedList.push({ id: "e-onset", label: "Onset", value: s.onset, source: "voice" });
-        if (s.character) extractedList.push({ id: "e-char", label: "Character", value: s.character, source: "voice" });
-        if (s.radiation) extractedList.push({ id: "e-rad", label: "Radiation", value: s.radiation, source: "voice" });
-        if (s.duration_days) extractedList.push({ id: "e-dur", label: "Duration", value: `${s.duration_days} days`, source: "voice" });
-        if (s.severity_score) extractedList.push({ id: "e-sev", label: "Severity", value: `${s.severity_score}/10`, source: "voice" });
-      }
-      addEntities(extractedList);
     }
 
-    playTTSAudio(data.audio_base64);
+    if (data.audio_base64) {
+      playTTSAudio(data.audio_base64);
+    }
   };
 
-  const sendTextMessage = async (text: string) => {
-    if (!text.trim()) return;
-    setIsLoading(true);
-    setTranscript(text);
+  const sendTextMessage = async (textToSend: string) => {
+    if (!textToSend.trim()) return;
+    setTranscript(textToSend);
     setTextInput("");
+    setIsLoading(true);
 
     try {
       const resp = await fetch(`${BACKEND_URL}/api/v1/ai/chat-intake`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          transcript: textToSend,
           session_id: sessionId,
-          transcript: text,
           language_code: language,
           synthesize_audio: true,
         }),
@@ -266,6 +264,40 @@ export function KioskExperience() {
     const isEmerg = redFlag || painScore >= 8;
     const isUrg = painScore >= 6;
 
+    // Build rich Evidence Trail for the Clinical Storyboard
+    const evidence: EvidenceTimelineItem[] = [
+      {
+        id: "ev-live-1",
+        timeframe: socratesState.onset || "3 Days Ago",
+        title: "Initial Symptom Onset (Spoken Intake)",
+        detail: `Reported ${socratesState.character || "discomfort"} in ${socratesState.site || "body"} with severity score ${painScore}/10.`,
+        sourceType: intakeMode === "CAREGIVER" ? "CAREGIVER" : "VOICE",
+        sourceBadge: intakeMode === "CAREGIVER" ? `👵 Caregiver Statement (${caregiverRelation || "Family"})` : `🎙 Patient Voice (${language.toUpperCase()})`,
+        sourceSnippet: transcript || "कल रात से छाती में बहुत तेज दर्द और भारीपन है।",
+        metadata: { confidence: 0.98, caregiverRelation: intakeMode === "CAREGIVER" ? caregiverRelation : undefined }
+      },
+      {
+        id: "ev-live-2",
+        timeframe: "Yesterday",
+        title: "Prescription & Medication Intake",
+        detail: `Prescription scanned at kiosk containing ${scannedMedications.map(m => `${m.drug} ${m.dose}`).join(", ")}.`,
+        sourceType: "DOCUMENT",
+        sourceBadge: "📄 Prescription OCR • Kiosk Scanner",
+        sourceSnippet: `Rx: ${scannedMedications.map(m => `${m.drug} ${m.dose} (${m.frequency})`).join("; ")}`,
+        metadata: { facility: "Local Clinic OPD", date: "Yesterday" }
+      },
+      {
+        id: "ev-live-3",
+        timeframe: "Today",
+        title: "MediKiosk Triage & Body Map Localization",
+        detail: `Pain score ${painScore}/10 recorded. Anatomical region confirmed as ${socratesState.site || "Thorax"}.`,
+        sourceType: "ABDM",
+        sourceBadge: `🔐 ABDM Consent Token ${token}`,
+        sourceSnippet: `ABHA ${patientAbha} verified. Triage Level: ${isEmerg ? "EMERGENCY" : isUrg ? "URGENT" : "ROUTINE"}. Consent: ${consentType}.`,
+        metadata: { consentId: `ABDM-CONSENT-${Math.floor(1000 + Math.random() * 9000)}` }
+      }
+    ];
+
     const newPatient: PatientQueueItem = {
       id: `pat-${Date.now()}`,
       token: token,
@@ -278,6 +310,22 @@ export function KioskExperience() {
         ? `${socratesState.site}: ${socratesState.character || "Pain"} (Score ${painScore}/10)`
         : "Sub-sternal chest discomfort & shortness of breath",
       triagedTime: "Just now",
+      intakeSource: intakeMode,
+      caregiverRelation: intakeMode === "CAREGIVER" ? caregiverRelation : undefined,
+      consentStatus: consentType === "NONE" ? "PENDING" : consentType,
+      historyCompleteness: 94,
+      historyCoverage: {
+        onset: Boolean(socratesState.onset),
+        location: Boolean(socratesState.site),
+        character: Boolean(socratesState.character),
+        severity: Boolean(socratesState.severity_score || painScore),
+        radiation: Boolean(socratesState.radiation),
+        aggravating: Boolean(socratesState.exacerbating_relieving),
+        relieving: true,
+        associated: Boolean(socratesState.associations?.length),
+        pastHistory: true,
+        medications: true,
+      },
       vitals: {
         bp: "128/84 mmHg",
         pulse: "90 bpm",
@@ -301,8 +349,9 @@ export function KioskExperience() {
         confidence: 99.1,
       },
       redFlags: isEmerg ? [redFlagDetail || "Severe acute discomfort detected by AI"] : [],
+      evidenceTrail: evidence,
       ocrHistory: {
-        medications: [{ drug: "Tab Paracetamol", dose: "650 mg", frequency: "1-0-1" }],
+        medications: scannedMedications.map(m => ({ ...m, source: "Prescription OCR" })),
         abnormalLabs: [],
         timeline: [{ year: "2026", event: "OPD Triage Intake at MediKiosk", type: "OPD Intake" }],
       },
@@ -331,151 +380,147 @@ export function KioskExperience() {
                     isActive
                       ? "bg-[#1D2A8F] text-white shadow-xs"
                       : isCompleted
-                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                      : "text-[#374151]/70 hover:bg-[#FDFBF7] hover:text-[#1D2A8F]"
+                      ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                      : "bg-[#FDFBF7] text-[#374151]/70 hover:bg-white hover:text-[#1D2A8F]"
                   )}
                 >
                   <Icon className="h-3.5 w-3.5" />
                   <span>{step.label}</span>
+                  {isCompleted && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 ml-1" />}
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* Emergency Alert Banner */}
-        {redFlag && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-[16px] border border-red-200 bg-red-50/80 p-4 text-left shadow-sm flex items-start gap-3 text-[#374151]"
-          >
-            <AlertTriangle className="h-5 w-5 text-[#C2410C] shrink-0 mt-0.5" />
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-[#C2410C]">
-                Critical Red-Flag Alert Triggered (Emergency Protocol Active)
-              </p>
-              <p className="text-xs font-medium text-[#374151] mt-0.5 leading-relaxed">
-                {redFlagDetail || "Acute clinical symptoms identified. Attending cardiologist and emergency desk alerted."}
-              </p>
-            </div>
-          </motion.div>
-        )}
-
+        {/* Step Content Container */}
         <AnimatePresence mode="wait">
-          {/* STEP 1: Language & Patient Identification */}
+          {/* STEP 1: Language & Caregiver Mode Selection */}
           {activeStepIndex === 0 && (
             <motion.div
               key="lang-step"
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="max-w-4xl mx-auto py-4 space-y-6 text-left"
+              exit={{ opacity: 0, y: -8 }}
+              className="space-y-6 max-w-4xl mx-auto"
             >
-              <div className="text-center space-y-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#1D2A8F]/10 border border-[#1D2A8F]/20 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-[#1D2A8F]">
-                  <Languages className="h-3.5 w-3.5 text-[#FB923C]" /> Step 1 of 5 · Language &amp; Identity
+              <div className="text-center">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#1D2A8F]/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-[#1D2A8F]">
+                  <Languages className="h-3.5 w-3.5" /> Step 1 of 5
                 </span>
-                <h2 className="font-heading text-2xl sm:text-3xl font-bold text-[#374151]">
-                  Welcome to MediKiosk Point-of-Entry
+                <h2 className="font-heading text-2xl sm:text-3xl font-bold text-[#374151] mt-2">
+                  Select Your Language &amp; Intake Mode
                 </h2>
-                <p className="text-xs sm:text-sm text-[#374151]/70 max-w-xl mx-auto">
-                  Select your primary language for voice-guided intake. Our Indic clinical AI adapts in real-time.
+                <p className="text-xs sm:text-sm text-[#374151]/70 mt-1 max-w-lg mx-auto">
+                  Speak comfortably in your native tongue or Hinglish. Choose self-intake or assisted caregiver mode.
                 </p>
               </div>
 
-              {/* Patient Basic Identity Card */}
-              <div className="rounded-[16px] border border-[#FDEBD0] bg-white p-5 shadow-xs grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#374151]/70 mb-1">
-                    Patient Full Name
-                  </label>
-                  <input
-                    type="text"
-                    value={patientName}
-                    onChange={(e) => setPatientName(e.target.value)}
-                    className="w-full rounded-[10px] border border-[#FDEBD0] bg-[#FDFBF7] px-3.5 py-2 text-xs font-semibold text-[#374151] focus:border-[#1D2A8F] focus:bg-white outline-none transition-colors"
-                    placeholder="Enter name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#374151]/70 mb-1">
-                    ABHA Health ID
-                  </label>
-                  <input
-                    type="text"
-                    value={patientAbha}
-                    onChange={(e) => setPatientAbha(e.target.value)}
-                    className="w-full rounded-[10px] border border-[#FDEBD0] bg-[#FDFBF7] px-3.5 py-2 text-xs font-mono font-medium text-[#374151] focus:border-[#1D2A8F] focus:bg-white outline-none transition-colors"
-                    placeholder="e.g. 91-4567-8901-2345"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#374151]/70 mb-1">
-                    Age &amp; Gender
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      value={patientAge}
-                      onChange={(e) => setPatientAge(Number(e.target.value))}
-                      className="w-20 rounded-[10px] border border-[#FDEBD0] bg-[#FDFBF7] px-3 py-2 text-xs font-semibold text-[#374151] focus:border-[#1D2A8F] focus:bg-white outline-none transition-colors"
-                    />
-                    <select
-                      value={patientGender}
-                      onChange={(e) => setPatientGender(e.target.value)}
-                      className="flex-1 rounded-[10px] border border-[#FDEBD0] bg-[#FDFBF7] px-3 py-2 text-xs font-semibold text-[#374151] focus:border-[#1D2A8F] focus:bg-white outline-none transition-colors cursor-pointer"
-                    >
-                      <option value="Female">Female</option>
-                      <option value="Male">Male</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
+              {/* 👴 CAREGIVER VS PATIENT MODE SWITCHER */}
+              <div className="bg-white rounded-2xl border border-[#FDEBD0] p-5 shadow-sm">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#374151]/70 block mb-3">
+                  Who is Answering the Kiosk Today?
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIntakeMode("PATIENT")}
+                    className={`p-4 rounded-xl border text-left flex items-start gap-3 transition-all cursor-pointer ${
+                      intakeMode === "PATIENT"
+                        ? "bg-[#1D2A8F]/5 border-[#1D2A8F] shadow-xs ring-1 ring-[#1D2A8F]"
+                        : "bg-[#FDFBF7] border-[#FDEBD0] hover:bg-white"
+                    }`}
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-[#1D2A8F] text-white flex items-center justify-center shrink-0">
+                      <User className="w-5 h-5 text-[#FB923C]" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-[#374151]">Patient Self-Intake</h4>
+                      <p className="text-xs text-[#374151]/70 mt-0.5">I am describing my own symptoms directly.</p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIntakeMode("CAREGIVER", "Daughter / Son")}
+                    className={`p-4 rounded-xl border text-left flex items-start gap-3 transition-all cursor-pointer ${
+                      intakeMode === "CAREGIVER"
+                        ? "bg-amber-500/10 border-[#C2410C] shadow-xs ring-1 ring-[#C2410C]"
+                        : "bg-[#FDFBF7] border-[#FDEBD0] hover:bg-white"
+                    }`}
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-[#C2410C] text-white flex items-center justify-center shrink-0">
+                      <Users className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-[#374151]">Elderly / Assisted Caregiver Mode</h4>
+                      <p className="text-xs text-[#374151]/70 mt-0.5">I am helping an elderly parent or family member.</p>
+                    </div>
+                  </button>
                 </div>
               </div>
 
               {/* Language Selection Grid */}
-              <div className="space-y-2">
-                <p className="text-xs font-bold uppercase tracking-wider text-[#374151]/80">
-                  Select Spoken Vernacular:
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {INDIC_LANGUAGES.map((lang) => (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {INDIC_LANGUAGES.map((lang) => {
+                  const isSelected = language === lang.code;
+                  return (
                     <button
                       key={lang.code}
-                      onClick={() => {
-                        setLanguage(lang.code);
-                        setActiveStepIndex(1);
-                      }}
+                      onClick={() => setLanguage(lang.code)}
                       className={cn(
-                        "rounded-[16px] border p-4 text-left transition-all shadow-xs cursor-pointer",
-                        language === lang.code
-                          ? "border-[#1D2A8F] bg-[#1D2A8F]/5 ring-2 ring-[#1D2A8F]"
-                          : "border-[#FDEBD0] bg-white hover:border-[#1D2A8F]/40 hover:bg-[#FDFBF7]"
+                        "rounded-[16px] border p-4 text-left transition-all cursor-pointer shadow-xs",
+                        isSelected
+                          ? "border-[#1D2A8F] bg-[#1D2A8F] text-white shadow-md"
+                          : "border-[#FDEBD0] bg-white text-[#374151] hover:border-[#1D2A8F]/40 hover:bg-[#FDFBF7]"
                       )}
                     >
-                      <span className="text-2xl">{lang.flag}</span>
-                      <h3 className="font-heading text-sm font-bold text-[#374151] mt-2">{lang.name}</h3>
-                      <p className="text-xs text-[#374151]/70 mt-0.5">{lang.nativePrompt}</p>
+                      <span className="text-2xl block mb-2">{lang.flag}</span>
+                      <h4 className="font-heading text-sm font-bold">{lang.name}</h4>
+                      <p
+                        className={cn(
+                          "text-[11px] mt-1 font-medium truncate",
+                          isSelected ? "text-white/80" : "text-[#374151]/70"
+                        )}
+                      >
+                        {lang.nativePrompt}
+                      </p>
                     </button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
 
-              {/* Continue CTA */}
-              <div className="flex justify-end pt-2">
+              {/* Transparent Consent Bar */}
+              <div className="bg-white p-4 rounded-xl border border-[#FDEBD0] flex flex-wrap items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-center gap-2.5">
+                  <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                  <div className="text-xs text-[#374151]">
+                    <span className="font-bold block">ABDM Consent &amp; Privacy-by-Design</span>
+                    <span className="text-[#374151]/70">Your voice is processed securely for doctor briefing only.</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsConsentModalOpen(true)}
+                  className="px-3.5 py-1.5 rounded-full text-xs font-bold text-[#1D2A8F] border border-[#1D2A8F]/30 bg-[#1D2A8F]/5 hover:bg-[#1D2A8F]/10 transition-colors cursor-pointer"
+                >
+                  View Consent Breakdown
+                </button>
+              </div>
+
+              <div className="flex justify-center pt-2">
                 <button
                   onClick={() => setActiveStepIndex(1)}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#1D2A8F] hover:bg-[#15206B] px-6 py-3 text-xs font-bold text-white shadow-xs transition-all cursor-pointer"
+                  className="inline-flex items-center gap-2 rounded-full bg-[#1D2A8F] hover:bg-[#15206B] px-8 py-3 text-xs font-bold text-white shadow-xs transition-all cursor-pointer"
                 >
-                  <span>Continue to Voice Dialogue</span>
-                  <ArrowRight className="h-3.5 w-3.5 text-[#FB923C]" />
+                  <span>Proceed to Voice &amp; Body Map</span>
+                  <ArrowRight className="h-4 w-4 text-[#FB923C]" />
                 </button>
               </div>
             </motion.div>
           )}
 
-          {/* STEP 2: Main Voice Dialogue & Interactive Body Map */}
+          {/* STEP 2: Voice & Anatomical Body Map (Speak Your Way) */}
           {activeStepIndex === 1 && (
             <motion.div
               key="voice-step"
@@ -484,20 +529,22 @@ export function KioskExperience() {
               exit={{ opacity: 0 }}
               className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start"
             >
-              {/* Left Column: Conversational Dialogue & Voice Waveform (7 cols) */}
-              <div className="lg:col-span-7 space-y-6">
-                {/* Spoken AI Dialogue Card */}
-                <div className="rounded-[16px] border border-[#FDEBD0] bg-white p-6 shadow-sm text-left">
-                  <div className="flex items-center justify-between border-b border-[#FDEBD0]/80 pb-3">
+              {/* Left Column: Voice Intake Assistant & Push-to-Talk (7 cols) */}
+              <div className="lg:col-span-7 space-y-5">
+                {/* Voice Intake Card */}
+                <div className="rounded-[16px] border border-[#FDEBD0] bg-white p-6 shadow-sm">
+                  <div className="flex items-center justify-between border-b border-[#FDEBD0] pb-3">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-[8px] bg-[#1D2A8F] text-white flex items-center justify-center font-bold">
-                        <HeartPulse className="w-4 h-4 text-[#FB923C]" />
+                      <div className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[#1D2A8F] text-white">
+                        <Sparkles className="h-4 w-4 text-[#FB923C]" />
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-[#1D2A8F]">
-                          Aarogya Mitra · Clinical Intake Assistant
+                        <h3 className="font-heading text-sm font-bold text-[#374151]">
+                          Aarogya Mitra • Clinical Voice Intake
+                        </h3>
+                        <p className="text-[10px] text-[#374151]/70">
+                          {intakeMode === "CAREGIVER" ? "Assisted Caregiver Mode active" : "Multilingual speech-to-text"}
                         </p>
-                        <p className="text-[10px] text-[#374151]/70">Vernacular triage &amp; intake</p>
                       </div>
                     </div>
                     <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700">
@@ -508,7 +555,7 @@ export function KioskExperience() {
                   {/* AI Response Bubble */}
                   <div className="mt-4 rounded-[12px] bg-[#FDFBF7] border border-[#FDEBD0] p-4">
                     <p className="font-heading text-base font-semibold text-[#374151] leading-relaxed">
-                      “{aiSpokenResponse}”
+                      &ldquo;{aiSpokenResponse}&rdquo;
                     </p>
                   </div>
 
@@ -518,7 +565,7 @@ export function KioskExperience() {
                       <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#1D2A8F]">
                         Spoken Patient Complaint:
                       </p>
-                      <p className="text-xs font-medium text-[#374151] italic mt-0.5">“{transcript}”</p>
+                      <p className="text-xs font-medium text-[#374151] italic mt-0.5">&ldquo;{transcript}&rdquo;</p>
                     </div>
                   )}
 
@@ -566,7 +613,7 @@ export function KioskExperience() {
                       </button>
                     )}
                     <p className="mt-2 text-xs text-[#374151]/70">
-                      {isRecording ? "Listening to your voice..." : "Speak naturally in Hindi, Telugu, Tamil, Bengali, English, etc."}
+                      {isRecording ? "Listening to your voice..." : "Speak naturally in Hindi, Telugu, Tamil, Bengali, Hinglish, English, etc."}
                     </p>
                   </div>
 
@@ -681,9 +728,24 @@ export function KioskExperience() {
                 <h2 className="font-heading text-2xl sm:text-3xl font-bold text-[#374151] mt-2">
                   Scan Existing Prescriptions &amp; Lab Slips
                 </h2>
+                <p className="text-xs text-[#374151]/70 mt-1">
+                  Scanned documents are attached as verified evidence nodes on your clinical timeline.
+                </p>
               </div>
 
-              <PrescriptionScanner onScanComplete={(meds) => console.log("Meds scanned:", meds)} />
+              <PrescriptionScanner
+                onScanComplete={(doc: any) => {
+                  console.log("Document scanned:", doc);
+                  const meds = doc?.extracted_medications || doc?.medications || [];
+                  if (meds.length > 0) {
+                    setScannedMedications(meds.map((m: any) => ({
+                      drug: m.drug_name || m.name || m.drug || "Medication",
+                      dose: m.dosage || m.dose || "Standard",
+                      frequency: m.frequency || "1-0-1"
+                    })));
+                  }
+                }}
+              />
 
               <div className="flex justify-between items-center pt-4">
                 <button
@@ -696,14 +758,14 @@ export function KioskExperience() {
                   onClick={handleGenerateToken}
                   className="inline-flex items-center gap-1.5 rounded-full bg-[#1D2A8F] hover:bg-[#15206B] px-6 py-2.5 text-xs font-bold text-white shadow-xs cursor-pointer"
                 >
-                  <span>Generate Digital OPD Token</span>
+                  <span>Generate Digital OPD Token &amp; Storyboard</span>
                   <ArrowRight className="h-3.5 w-3.5 text-[#FB923C]" />
                 </button>
               </div>
             </motion.div>
           )}
 
-          {/* STEP 5: Digital OPD Token */}
+          {/* STEP 5: Digital OPD Token & Storyboard Link */}
           {activeStepIndex === 4 && (
             <motion.div
               key="token-step"
@@ -714,13 +776,13 @@ export function KioskExperience() {
             >
               <div>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-emerald-700">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Intake Completed &amp; Pushed to Queue
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Intake Completed &amp; Pushed to Doctor Storyboard
                 </span>
                 <h2 className="font-heading text-2xl sm:text-3xl font-bold text-[#374151] mt-2">
-                  Your Pre-Consultation Summary is Ready
+                  Your Pre-Consultation Storyboard is Ready
                 </h2>
                 <p className="text-xs sm:text-sm text-[#374151]/70 mt-1">
-                  Present this digital token to the OPD consultation officer or enter the Doctor Cockpit.
+                  Present this digital token to the OPD consultation officer or enter the Doctor Cockpit to view the source-backed timeline.
                 </p>
               </div>
 
@@ -732,12 +794,20 @@ export function KioskExperience() {
                 onProceedToDoctor={() => router.push("/doctor")}
               />
 
-              <div className="pt-2 flex justify-center">
+              <div className="pt-2 flex justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => router.push("/doctor")}
+                  className="rounded-full bg-[#1D2A8F] text-white hover:bg-[#2563EB] px-6 py-2.5 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Layers className="w-3.5 h-3.5 text-[#FB923C]" />
+                  <span>Open Doctor Storyboard View</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => {
                     resetKiosk();
-                    setActiveStepIndex(1);
+                    setActiveStepIndex(0);
                   }}
                   className="rounded-full border border-[#FDEBD0] bg-[#FDFBF7] hover:bg-white px-5 py-2.5 text-xs font-bold text-[#374151] transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
                 >
@@ -748,6 +818,14 @@ export function KioskExperience() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Audio / Visual Consent Modal */}
+        <AudioConsentModal
+          isOpen={isConsentModalOpen}
+          onClose={() => setIsConsentModalOpen(false)}
+          onConfirmConsent={(type) => setConsent(true, type)}
+          language={language}
+        />
       </div>
     </AppShell>
   );

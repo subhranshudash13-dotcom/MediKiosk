@@ -178,36 +178,40 @@ class DocumentOCRService:
         if not client:
             return None
 
-        logger.info("DocumentOCR: Attempting OpenAI Vision extraction (gpt-4o-mini)")
-        data_url = f"data:{mime_type};base64,{base64_image}"
-        response = await client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": DOCUMENT_NER_SYSTEM_PROMPT},
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": "Extract all clinical prescriptions, lab results, diagnoses, and vitals from this document."},
-                        {"type": "image_url", "image_url": {"url": data_url, "detail": "high"}}
-                    ]
-                }
-            ],
-            response_format={"type": "json_object"},
-            temperature=0.1,
-            max_tokens=2048,
-        )
-        raw_content = response.choices[0].message.content
-        if raw_content:
-            return json.loads(raw_content)
+        try:
+            logger.info("DocumentOCR: Attempting OpenAI Vision extraction (gpt-4o-mini)")
+            data_url = f"data:{mime_type};base64,{base64_image}"
+            response = await client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": DOCUMENT_NER_SYSTEM_PROMPT},
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": "Extract all clinical prescriptions, lab results, diagnoses, and vitals from this document."},
+                            {"type": "image_url", "image_url": {"url": data_url, "detail": "high"}}
+                        ]
+                    }
+                ],
+                response_format={"type": "json_object"},
+                temperature=0.1,
+                max_tokens=2048,
+                timeout=3.0,
+            )
+            raw_content = response.choices[0].message.content
+            if raw_content:
+                return json.loads(raw_content)
+        except Exception as e:
+            logger.warning(f"DocumentOCR: OpenAI Vision extraction failed ({e}). Proceeding to Groq Vision.")
         return None
 
     async def _extract_with_groq_vision(self, base64_image: str, mime_type: str) -> Optional[Dict[str, Any]]:
-        """Run extraction using Groq Vision (llama-3.2-90b-vision-preview)."""
+        """Run extraction using Groq Vision."""
         client = self.groq_client
         if not client:
             return None
 
-        for model_candidate in ["llama-3.2-90b-vision-preview", "llama-3.2-11b-vision"]:
+        for model_candidate in ["llama-3.2-11b-vision-preview", "llama-3.2-90b-vision-preview"]:
             try:
                 logger.info(f"DocumentOCR: Attempting Groq Vision extraction ({model_candidate})")
                 data_url = f"data:{mime_type};base64,{base64_image}"
@@ -218,14 +222,15 @@ class DocumentOCRService:
                         {
                             "role": "user",
                             "content": [
-                                {"type": "text", "text": "Extract all clinical prescriptions, lab results, diagnoses, and vitals from this document in JSON format."},
+                                {"type": "text", "text": "Extract structured clinical data from this medical document."},
                                 {"type": "image_url", "image_url": {"url": data_url}}
                             ]
                         }
                     ],
-                    response_format={"type": "json_object"},
                     temperature=0.1,
                     max_tokens=2048,
+                    response_format={"type": "json_object"},
+                    timeout=3.0,
                 )
                 raw_content = response.choices[0].message.content
                 if raw_content:

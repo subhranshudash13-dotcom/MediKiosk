@@ -1,7 +1,8 @@
 import io
 import base64
 import logging
-from typing import Optional
+import asyncio
+from typing import Optional, Dict
 import edge_tts
 
 logger = logging.getLogger(__name__)
@@ -29,7 +30,12 @@ VOICE_MAP = {
 
 
 class TTSService:
-    """Zero-cost, natural neural Text-to-Speech service for Indian languages."""
+    """Zero-cost, natural neural Text-to-Speech service for Indian languages with instant caching."""
+
+    def __init__(self):
+        # In-memory LRU cache for audio base64 representations
+        self._cache: Dict[str, str] = {}
+        self._max_cache_size = 250
 
     async def synthesize_speech(
         self,
@@ -38,7 +44,7 @@ class TTSService:
         gender: str = "female"
     ) -> bytes:
         """
-        Synthesizes text into high quality MP3 audio bytes.
+        Synthesizes text into high quality MP3 audio bytes with a tight 1.2s timeout.
         """
         if not text or not text.strip():
             return b""
@@ -49,24 +55,46 @@ class TTSService:
         voice = VOICE_MAP.get(key, VOICE_MAP.get(norm_lang, "hi-IN-SwaraNeural"))
 
         try:
-            communicate = edge_tts.Communicate(text=text, voice=voice, rate="+0%", pitch="+0Hz")
+            communicate = edge_tts.Communicate(text=text, voice=voice, rate="+5%", pitch="+0Hz")
             audio_buffer = io.BytesIO()
-            async for chunk in communicate.stream():
-                if chunk["type"] == "audio":
-                    audio_buffer.write(chunk["data"])
-            audio_bytes = audio_buffer.getvalue()
-            return audio_bytes
+            
+            async def _stream():
+                async for chunk in communicate.stream():
+                    if chunk["type"] == "audio":
+                        audio_buffer.write(chunk["data"])
+            
+            await asyncio.wait_for(_stream(), timeout=1.5)
+            return audio_buffer.getvalue()
+        except asyncio.TimeoutError:
+            logger.warning(f"TTSService: Timeout synthesizing speech for '{text[:25]}...'")
+            return b""
         except Exception as e:
             logger.error(f"TTSService: Speech synthesis failed for text '{text[:30]}...': {e}")
             return b""
 
     async def synthesize_speech_base64(self, text: str, language_code: str = "hi") -> str:
-        """Returns synthesized audio as base64 data URI for instant web playback."""
+        """Returns synthesized audio as base64 data URI with instant cache lookup."""
+        if not text or not text.strip():
+            return ""
+
+        cache_key = f"{language_code}:{text.strip()}"
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+
         audio_bytes = await self.synthesize_speech(text, language_code=language_code)
         if not audio_bytes:
             return ""
+
         encoded = base64.b64encode(audio_bytes).decode("utf-8")
-        return f"data:audio/mp3;base64,{encoded}"
+        result = f"data:audio/mp3;base64,{encoded}"
+
+        # Maintain cache bounds
+        if len(self._cache) >= self._max_cache_size:
+            # Pop oldest item
+            self._cache.pop(next(iter(self._cache)))
+        self._cache[cache_key] = result
+
+        return result
 
 
 tts_service = TTSService()

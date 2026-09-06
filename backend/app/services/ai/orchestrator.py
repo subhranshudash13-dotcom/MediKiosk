@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import Dict, Any, Optional, List
 import uuid
 
@@ -10,8 +11,8 @@ from app.services.ai.schemas import (
     RedFlagAlert,
 )
 from app.services.ai.safety_guardrails import safety_guardrails
-from app.services.ai.extractor import clinical_extractor
-from app.services.ai.dialogue_engine import dialogue_engine
+from app.services.ai.clinical_nlu_model import clinical_nlu
+from app.services.ai.fast_pipeline import fast_ai_pipeline
 from app.services.ai.tts_service import tts_service
 from app.services.ai.asr_service import asr_service
 
@@ -21,12 +22,11 @@ logger = logging.getLogger(__name__)
 class AIOrchestratorService:
     """
     Master Clinical Voice Agent Orchestrator.
-    Manages conversational turns, clinical state tracking, emergency detection,
-    structured zero-hallucination extraction, and vernacular speech synthesis.
+    Manages low-latency conversational turns, state tracking, emergency red flags,
+    and sub-second speech synthesis with trained Indian clinical NLU.
     """
 
     def __init__(self):
-        # In-memory session store (can be connected to Redis in production)
         self.sessions: Dict[str, ClinicalIntakeState] = {}
         self.conversation_histories: Dict[str, List[Dict[str, str]]] = {}
 
@@ -52,11 +52,13 @@ class AIOrchestratorService:
     ) -> DialogueTurnResponse:
         """
         Full End-to-End Voice Turn:
-        Audio in -> ASR -> Safety/Red Flag -> Clinical Extraction -> Dialogue Reasoning -> TTS out.
+        Audio in -> Fast ASR -> Fast AI Turn Execution -> Instant Cached TTS out.
         """
+        start_time = time.time()
         # 1. Speech-to-Text Transcription
         transcript, detected_lang, _ = await asr_service.transcribe_audio(audio_bytes, language_code=language_code)
         lang = detected_lang or language_code
+        logger.info(f"ASR complete in {round((time.time() - start_time) * 1000, 1)}ms: '{transcript}'")
 
         # 2. Process text intake turn
         return await self.process_text_turn(
@@ -95,20 +97,22 @@ class AIOrchestratorService:
     ) -> DialogueTurnResponse:
         """
         Handles text or transcribed speech turn:
-        Transcript -> Language Switch Check -> Emergency Scan -> Entity Extraction -> State Update -> Dialogue Response -> TTS.
+        Transcript -> Language Switch -> Red Flag Scan -> Single-Pass Fast NLU/LLM -> State Update -> TTS.
         """
+        turn_start = time.time()
         state = self.get_or_create_session(session_id, language=language_code or "hi")
+
         # Handle empty/inaudible transcript
         if not transcript or not transcript.strip():
             lang = state.language
             if lang == "hi" or "hindi" in lang or "hinglish" in lang:
-                fallback_msg = "आपकी आवाज़ स्पष्ट सुनाई नहीं दी। कृपया माइक्रोफ़ोन के पास आकर दोबारा बताएं — आपको क्या तकलीफ़ है?"
+                fallback_msg = "आपकी आवाज़ स्पष्ट सुनाई नहीं दी। कृपया दोबारा बताएं — आपको क्या तकलीफ़ है?"
                 fallback_opts = ["छाती में दर्द है", "पेट में दर्द है", "बुखार और खांसी है"]
             elif lang == "te":
-                fallback_msg = "మీ స్వరం స్పష్టంగా వినబడలేదు. దయచేసి మైక్రోఫోన్ దగ్గరకు వచ్చి మళ్లీ చెప్పండి — మీకు ఏమి సమస్య ఉంది?"
+                fallback_msg = "మీ స్వరం స్పష్టంగా వినబడలేదు. దయచేసి మళ్లీ చెప్పండి — మీకు ఏమి సమస్య ఉంది?"
                 fallback_opts = ["ఛాతీలో నొప్పి ఉంది", "కడుపు నొప్పి ఉంది", "జ్వరం మరియు దగ్గు ఉంది"]
             else:
-                fallback_msg = "I couldn't hear you clearly. Please speak into the microphone and describe your symptoms."
+                fallback_msg = "I couldn't hear you clearly. Please tell me what symptoms you are having."
                 fallback_opts = ["Chest pain", "Stomach pain", "Fever and cough"]
 
             audio_base64 = None
@@ -134,25 +138,24 @@ class AIOrchestratorService:
         state.raw_transcripts.append(transcript)
         history = self.conversation_histories.setdefault(state.session_id, [])
 
-        # 0. Dynamic Language Switch (via UI toggle or spoken request)
+        # 0. Dynamic Language Switch (UI or voice request)
         if language_code and language_code != state.language:
             state.language = language_code
-            logger.info(f"Language updated via UI toggle to: {language_code}")
-
         spoken_lang_switch = self.detect_language_switch(transcript)
         if spoken_lang_switch:
             state.language = spoken_lang_switch
-            logger.info(f"Language dynamically switched by user request to: {spoken_lang_switch}")
 
-        # 1. Deterministic Emergency Red Flag Check
+        # 1. Deterministic Emergency Red Flag Check (< 1ms)
         red_flag = safety_guardrails.scan_red_flags(transcript)
         if red_flag and red_flag.is_emergency:
             state.red_flags.append(red_flag)
-            logger.warning(f"EMERGENCY RED FLAG TRIGGERED for session {state.session_id}: {red_flag.flag_type}")
+            logger.warning(f"EMERGENCY RED FLAG TRIGGERED: {red_flag.flag_type}")
 
-        # 2. Structured Clinical Entity Extraction (Zero-Hallucination)
-        extracted: ExtractionPayload = await clinical_extractor.extract_clinical_entities(
-            transcript, current_state=state.model_dump()
+        # 2. Unified Single-Pass Turn Execution (Trained Local NLU + Fast Cloud Race)
+        extracted, spoken_response, quick_replies = await fast_ai_pipeline.execute_turn(
+            transcript=transcript,
+            state=state,
+            language=state.language
         )
 
         # 3. Update Clinical Intake State
@@ -160,24 +163,14 @@ class AIOrchestratorService:
 
         # 4. Check SOCRATES completeness
         completeness = safety_guardrails.calculate_socrates_completeness(state.socrates)
-        if completeness >= 0.75 or state.turn_count >= 5:
+        if completeness >= 0.70 or state.turn_count >= 5 or (red_flag and red_flag.is_emergency):
             state.is_triage_complete = True
 
-        # 5. Dynamic Dialogue Generation (Empathetic & Personalized)
-        dialogue_output = await dialogue_engine.generate_response(
-            transcript=transcript,
-            state=state,
-            extracted=extracted,
-            conversation_history=history
-        )
-        spoken_response = dialogue_output.get("spoken_response", "आपकी तकलीफ़ नोट कर ली गई है।")
-        quick_replies = dialogue_output.get("quick_replies", [])
-
-        # 6. Update Conversation History
+        # 5. Update Conversation History
         history.append({"role": "user", "content": transcript})
         history.append({"role": "assistant", "content": spoken_response})
 
-        # 7. Optional Text-to-Speech Synthesis
+        # 6. Synthesize TTS Speech Audio (Cached & Concurrent)
         audio_base64 = None
         if synthesize_audio:
             try:
@@ -187,6 +180,9 @@ class AIOrchestratorService:
                 )
             except Exception as e:
                 logger.error(f"TTS synthesis error: {e}")
+
+        turn_duration_ms = round((time.time() - turn_start) * 1000, 1)
+        logger.info(f"Voice Agent Turn completed in {turn_duration_ms}ms (Completeness: {completeness*100}%)")
 
         return DialogueTurnResponse(
             session_id=state.session_id,
@@ -201,7 +197,7 @@ class AIOrchestratorService:
         )
 
     def _merge_extracted_into_state(self, state: ClinicalIntakeState, extracted: ExtractionPayload):
-        """Merges new factual extractions into the patient intake state without overwriting existing valid facts."""
+        """Merges new factual extractions into the patient intake state."""
         if extracted.chief_complaint and extracted.chief_complaint not in state.chief_complaints:
             state.chief_complaints.append(extracted.chief_complaint)
 

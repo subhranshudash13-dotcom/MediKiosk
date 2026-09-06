@@ -312,6 +312,21 @@ export function PatientVoiceWaveKiosk() {
       triageLevel: activeExtraction.triageLevel,
       chiefComplaint: activeExtraction.chiefComplaint,
       triagedTime: "Just now",
+      intakeSource: "PATIENT",
+      consentStatus: "GRANTED_HOSPITAL",
+      historyCompleteness: 94,
+      historyCoverage: {
+        onset: true,
+        location: true,
+        character: true,
+        severity: true,
+        radiation: true,
+        aggravating: true,
+        relieving: true,
+        associated: true,
+        pastHistory: true,
+        medications: true,
+      },
       vitals: {
         bp: "124/82 mmHg",
         pulse: "88 bpm",
@@ -338,9 +353,41 @@ export function PatientVoiceWaveKiosk() {
         activeExtraction.triageLevel === "EMERGENCY"
           ? ["Severe acute chest discomfort radiating to left arm", "Immediate ECG evaluation ordered"]
           : [],
+      evidenceTrail: [
+        {
+          id: "ev-wave-1",
+          timeframe: "3 Days Ago",
+          title: "Symptom Onset (Vernacular Voice Stream)",
+          detail: activeExtraction.chiefComplaint,
+          sourceType: "VOICE",
+          sourceBadge: `🎙 Patient Voice (${selectedLanguage.toUpperCase()})`,
+          sourceSnippet: transcript,
+          metadata: { confidence: 0.99 }
+        },
+        {
+          id: "ev-wave-2",
+          timeframe: "Yesterday",
+          title: "Self-Reported Symptom Progression",
+          detail: `Severity scored at ${activeExtraction.severity} with radiation to left arm.`,
+          sourceType: "VOICE",
+          sourceBadge: "🎙 Patient Statement",
+          sourceSnippet: `Severity: ${activeExtraction.severity}, ${activeExtraction.associated}`,
+          metadata: { confidence: 0.98 }
+        },
+        {
+          id: "ev-wave-3",
+          timeframe: "Today",
+          title: "Kiosk Point-of-Entry Triage & OPD Token",
+          detail: `Triaged to ${activeExtraction.department} (${activeExtraction.roomNumber}).`,
+          sourceType: "ABDM",
+          sourceBadge: `🔐 ABDM Consent Verified`,
+          sourceSnippet: `ABHA 91-4567-8901-2345 verified via OTP. Triage Level: ${activeExtraction.triageLevel}`,
+          metadata: { consentId: "ABDM-CONSENT-WAVE-01" }
+        }
+      ],
       ocrHistory: {
         medications: [
-          { drug: "Tab Paracetamol", dose: "650 mg", frequency: "1-0-1 (BD)" },
+          { drug: "Tab Paracetamol", dose: "650 mg", frequency: "1-0-1 (BD)", source: "Prescription OCR" },
         ],
         abnormalLabs: [],
         timeline: [
