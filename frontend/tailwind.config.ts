@@ -10,79 +10,81 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Master 5-Color Palette: Cobalt + Rust + Marigold + Almond + Slate
-        cobalt: {
-          DEFAULT: "#1D2A8F",
-          dark: "#141E66",
-          light: "#2A3ABF",
-          subtle: "#EAEBFA",
+        // Master Natural Clinical Palette: Forest Pine + Botanical Sage + Terracotta + Warm Linen + Mineral Charcoal
+        pine: {
+          DEFAULT: "#1B4332",
+          dark: "#081C15",
+          light: "#2D6A4F",
+          subtle: "#E8F5EE",
         },
-        rust: {
-          DEFAULT: "#C2410C",
-          dark: "#9A3412",
-          light: "#FFEDD5",
-          hover: "#EA580C",
+        sage: {
+          DEFAULT: "#40916C",
+          dark: "#2D6A4F",
+          light: "#D8F3DC",
+          muted: "#EBF7EE",
         },
-        marigold: {
-          DEFAULT: "#FB923C",
-          light: "#FFF7ED",
-          dark: "#EA580C",
+        terracotta: {
+          DEFAULT: "#9C4124",
+          dark: "#7A3119",
+          light: "#FDF3F0",
+          hover: "#B34A29",
         },
-        almond: {
-          DEFAULT: "#FDEBD0",
-          warm: "#FDEBD0",
+        linen: {
+          DEFAULT: "#FBF9F5",
+          warm: "#F5F1E9",
           card: "#FFFFFF",
-          subtle: "#FAF2E8",
-          border: "#EAD7C0",
+          subtle: "#EFEBE2",
+          border: "#E0D7C9",
+          borderStrong: "#C9BEAC",
         },
-        slate: {
-          DEFAULT: "#374151",
-          soft: "#1F2937",
-          secondary: "#6B7280",
-          muted: "#9CA3AF",
-          border: "#E5E7EB",
-          "border-subtle": "#F3F4F6",
+        charcoal: {
+          DEFAULT: "#1F2421",
+          soft: "#2A302D",
+          secondary: "#4E5752",
+          muted: "#76807A",
+          border: "#E0D7C9",
+          "border-subtle": "#EDE8DE",
         },
         emerald: {
-          DEFAULT: "#059669",
-          light: "#D1FAE5",
-          dark: "#047857",
+          DEFAULT: "#2D6A4F",
+          light: "#D8F3DC",
+          dark: "#1B4332",
         },
 
         // Semantic Mappings
-        background: "#FDEBD0",
-        foreground: "#374151",
+        background: "#FBF9F5",
+        foreground: "#1F2421",
         card: {
           DEFAULT: "#FFFFFF",
-          foreground: "#374151",
+          foreground: "#1F2421",
         },
         popover: {
           DEFAULT: "#FFFFFF",
-          foreground: "#374151",
+          foreground: "#1F2421",
         },
         primary: {
-          DEFAULT: "#1D2A8F",
+          DEFAULT: "#1B4332",
           foreground: "#FFFFFF",
         },
         secondary: {
-          DEFAULT: "#FB923C",
+          DEFAULT: "#9C4124",
           foreground: "#FFFFFF",
         },
         muted: {
-          DEFAULT: "#FAF2E8",
-          foreground: "#6B7280",
+          DEFAULT: "#F3EFE8",
+          foreground: "#606963",
         },
         accent: {
-          DEFAULT: "#C2410C",
+          DEFAULT: "#9C4124",
           foreground: "#FFFFFF",
         },
         destructive: {
-          DEFAULT: "#C2410C",
+          DEFAULT: "#9C4124",
           foreground: "#FFFFFF",
         },
-        border: "#EAD7C0",
-        input: "#EAD7C0",
-        ring: "#1D2A8F",
+        border: "#E0D7C9",
+        input: "#E0D7C9",
+        ring: "#1B4332",
       },
       fontFamily: {
         sans: ["var(--font-inter)", "Inter", "system-ui", "sans-serif"],
@@ -92,21 +94,20 @@ const config: Config = {
       borderRadius: {
         "data": "6px",          // 4–6px: clinical data, tables, badges, vitals tags
         "clinical": "6px",      // 4–6px: clinical data values, ICD-10 tags
-        "card": "14px",         // 10–14px: cards, containers, panels, previews
-        "panel": "14px",        // 10–14px: panels
+        "card": "16px",         // 14–16px: cards, containers, panels, previews
+        "panel": "16px",        // 14–16px: panels
         "interactive": "24px",  // 20–24px: patient-facing touch targets, kiosk buttons
         "patient": "24px",      // 20–24px: patient buttons
         "control": "24px",      // 20–24px: primary action controls
-        lg: "14px",
-        md: "8px",
+        lg: "16px",
+        md: "10px",
         sm: "6px",
       },
       boxShadow: {
-        "subtle": "0 1px 3px 0 rgba(55, 65, 81, 0.05)",
-        "card": "0 2px 6px 0 rgba(55, 65, 81, 0.06), 0 1px 3px -1px rgba(55, 65, 81, 0.04)",
-        "elevated": "0 6px 18px -3px rgba(29, 42, 143, 0.1), 0 2px 6px -2px rgba(29, 42, 143, 0.05)",
-        "glow-amber": "0 0 20px -2px rgba(251, 146, 60, 0.35)",
-        "glow-cobalt": "0 0 20px -2px rgba(29, 42, 143, 0.25)",
+        "subtle": "0 1px 3px 0 rgba(31, 36, 33, 0.04)",
+        "card": "0 2px 8px -1px rgba(31, 36, 33, 0.06), 0 1px 3px -1px rgba(31, 36, 33, 0.03)",
+        "elevated": "0 8px 24px -4px rgba(27, 67, 50, 0.08), 0 2px 8px -2px rgba(27, 67, 50, 0.04)",
+        "pressed": "inset 0 2px 4px 0 rgba(31, 36, 33, 0.08)",
       }
     },
   },

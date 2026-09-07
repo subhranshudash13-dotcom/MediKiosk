@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { Heart, Brain, Activity, Wind } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -34,28 +33,28 @@ const REGION_METADATA: Record<
 > = {
   head: {
     name: "Head & Cranial",
-    organ: "Brain / Neurological",
+    organ: "Neurological & Vascular",
     icon: Brain,
-    commonSymptoms: ["Throbbing Headache", "Visual Aura", "Dizziness / Vertigo", "Neck Stiffness"],
+    commonSymptoms: ["Throbbing Headache", "Dizziness / Vertigo", "Visual Aura", "Neck Stiffness"],
     riskLevel: "warning",
   },
   throat: {
     name: "Throat & ENT",
-    organ: "Pharynx / Larynx",
+    organ: "Upper Respiratory",
     icon: Wind,
     commonSymptoms: ["Difficulty Swallowing", "Severe Sore Throat", "Hoarse Voice", "Tonsillar Pain"],
     riskLevel: "standard",
   },
   chest: {
     name: "Thorax & Chest",
-    organ: "Heart & Lungs",
+    organ: "Cardiac & Pulmonary",
     icon: Heart,
-    commonSymptoms: ["Sub-sternal Pressure", "Shortness of Breath", "Palpitations", "Left Arm Radiation"],
+    commonSymptoms: ["Sub-sternal Heaviness", "Shortness of Breath", "Palpitations", "Left Arm Radiation"],
     riskLevel: "critical",
   },
   epigastric: {
     name: "Epigastric Area",
-    organ: "Upper GI / Stomach",
+    organ: "Upper GI / Gastric",
     icon: Activity,
     commonSymptoms: ["Burning Acidity", "Post-meal Pain", "Nausea / Vomiting", "Bloating"],
     riskLevel: "standard",
@@ -64,19 +63,19 @@ const REGION_METADATA: Record<
     name: "Abdomen & Pelvis",
     organ: "Lower GI / Renal",
     icon: Activity,
-    commonSymptoms: ["Lower Right Colic", "Cramping", "Flank Pain", "Bloody Stool"],
+    commonSymptoms: ["Lower Right Pain", "Cramping Spasms", "Flank Pain", "Bloody Stool"],
     riskLevel: "warning",
   },
   spine: {
     name: "Spine & Lumbar",
     organ: "Musculoskeletal",
     icon: Activity,
-    commonSymptoms: ["Lower Back Spasm", "Sciatica Nerve Pain", "Stiffness on Waking"],
+    commonSymptoms: ["Lower Back Spasm", "Sciatica Radiating Pain", "Stiffness on Waking"],
     riskLevel: "standard",
   },
   arms: {
     name: "Upper Limbs",
-    organ: "Peripheral Vascular",
+    organ: "Joints & Peripheral",
     icon: Activity,
     commonSymptoms: ["Left Arm Numbness", "Shoulder Impingement", "Joint Swelling"],
     riskLevel: "warning",
@@ -85,7 +84,7 @@ const REGION_METADATA: Record<
     name: "Lower Limbs",
     organ: "Joints & Vascular",
     icon: Activity,
-    commonSymptoms: ["Calf Tenderness / Swelling", "Knee Arthralgia", "Edema / Fluid"],
+    commonSymptoms: ["Calf Tenderness / Swelling", "Knee Arthralgia", "Foot Edema"],
     riskLevel: "standard",
   },
 };
@@ -117,39 +116,39 @@ export function AnatomyBodyMap({
   const IconComponent = meta.icon;
 
   return (
-    <div className={cn("rounded-[16px] border border-[#FDEBD0] bg-white p-6 shadow-sm text-left relative overflow-hidden", className)}>
+    <div className={cn("rounded-2xl border border-[#E0D7C9] bg-white p-6 shadow-subtle text-left relative overflow-hidden", className)}>
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[#FDEBD0]/80 pb-3.5">
+      <div className="flex items-center justify-between border-b border-[#E0D7C9] pb-3.5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[#1D2A8F]/10 text-[#1D2A8F]">
-              <IconComponent className="h-3.5 w-3.5" />
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[#E8F5EE] text-[#1B4332]">
+              <IconComponent className="h-4 w-4" />
             </span>
-            <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#1D2A8F]">
-              Anatomical Symptom Locator
+            <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#1B4332]">
+              Anatomical Pain Localization
             </p>
           </div>
-          <h3 className="font-heading text-base font-bold text-[#374151] mt-0.5">
-            {meta.name} ({meta.organ})
+          <h3 className="font-heading text-base font-bold text-[#1F2421] mt-0.5">
+            {meta.name} <span className="text-xs font-normal text-[#606963]">({meta.organ})</span>
           </h3>
         </div>
 
         <span
           className={cn(
-            "rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+            "rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider",
             meta.riskLevel === "critical"
-              ? "bg-red-50 text-[#C2410C] border border-red-200"
-              : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+              ? "bg-[#FDF3F0] text-[#9C4124] border border-[#F5D5CB]"
+              : "bg-[#E8F5EE] text-[#1B4332] border border-[#C6E7D2]"
           )}
         >
-          {meta.riskLevel === "critical" ? "High Risk Area" : "Active Region"}
+          {meta.riskLevel === "critical" ? "Priority Area" : "Active Region"}
         </span>
       </div>
 
       {/* Body Diagram & Drilldowns */}
       <div className="mt-5 grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
         {/* SVG Human Figure (5 cols) */}
-        <div className="md:col-span-5 relative flex flex-col items-center justify-center bg-[#FDFBF7] rounded-[12px] p-4 border border-[#FDEBD0] min-h-[250px]">
+        <div className="md:col-span-5 relative flex flex-col items-center justify-center bg-[#FBF9F5] rounded-xl p-4 border border-[#E0D7C9] min-h-[250px]">
           <svg
             viewBox="0 0 240 340"
             className="h-60 w-auto"
@@ -165,8 +164,8 @@ export function AnatomyBodyMap({
               className={cn(
                 "cursor-pointer transition-all duration-200",
                 selectedZone === "head"
-                  ? "fill-red-100 stroke-[#C2410C] stroke-[2.5]"
-                  : "fill-white stroke-[#374151]/40 stroke-[1.5] hover:stroke-[#1D2A8F] hover:fill-[#1D2A8F]/10"
+                  ? "fill-[#FDF3F0] stroke-[#9C4124] stroke-[2.5]"
+                  : "fill-white stroke-[#4E5752] stroke-[1.5] hover:stroke-[#1B4332] hover:fill-[#E8F5EE]"
               )}
               onClick={() => onSelectRegion?.("head")}
               onMouseEnter={() => setHoveredRegion("head")}
@@ -179,7 +178,7 @@ export function AnatomyBodyMap({
               height="14"
               className={cn(
                 "cursor-pointer transition-all",
-                selectedZone === "throat" ? "fill-red-100 stroke-[#C2410C] stroke-2" : "fill-white stroke-[#374151]/40"
+                selectedZone === "throat" ? "fill-[#FDF3F0] stroke-[#9C4124] stroke-2" : "fill-white stroke-[#4E5752]"
               )}
               onClick={() => onSelectRegion?.("throat")}
               onMouseEnter={() => setHoveredRegion("throat")}
@@ -190,8 +189,8 @@ export function AnatomyBodyMap({
               className={cn(
                 "cursor-pointer transition-all duration-200",
                 selectedZone === "chest"
-                  ? "fill-red-100 stroke-[#C2410C] stroke-[2.5]"
-                  : "fill-white stroke-[#374151]/40 stroke-[1.5] hover:stroke-[#1D2A8F] hover:fill-[#1D2A8F]/10"
+                  ? "fill-[#FDF3F0] stroke-[#9C4124] stroke-[2.5]"
+                  : "fill-white stroke-[#4E5752] stroke-[1.5] hover:stroke-[#1B4332] hover:fill-[#E8F5EE]"
               )}
               onClick={() => onSelectRegion?.("chest")}
               onMouseEnter={() => setHoveredRegion("chest")}
@@ -202,8 +201,8 @@ export function AnatomyBodyMap({
               className={cn(
                 "cursor-pointer transition-all duration-200",
                 selectedZone === "epigastric" || selectedZone === "abdomen"
-                  ? "fill-amber-100 stroke-[#FB923C] stroke-[2.5]"
-                  : "fill-white stroke-[#374151]/40 stroke-[1.5] hover:stroke-[#1D2A8F] hover:fill-[#1D2A8F]/10"
+                  ? "fill-[#FDF3F0] stroke-[#9C4124] stroke-[2.5]"
+                  : "fill-white stroke-[#4E5752] stroke-[1.5] hover:stroke-[#1B4332] hover:fill-[#E8F5EE]"
               )}
               onClick={() => onSelectRegion?.("abdomen")}
               onMouseEnter={() => setHoveredRegion("abdomen")}
@@ -213,7 +212,7 @@ export function AnatomyBodyMap({
               d="M94 84 L56 126 L44 184 M146 84 L184 126 L196 184"
               className={cn(
                 "cursor-pointer transition-all",
-                selectedZone === "arms" ? "stroke-[#C2410C] stroke-[2.5]" : "stroke-[#374151]/40 stroke-[1.5] hover:stroke-[#1D2A8F]"
+                selectedZone === "arms" ? "stroke-[#9C4124] stroke-[2.5]" : "stroke-[#4E5752] stroke-[1.5] hover:stroke-[#1B4332]"
               )}
               onClick={() => onSelectRegion?.("arms")}
               onMouseEnter={() => setHoveredRegion("arms")}
@@ -223,7 +222,7 @@ export function AnatomyBodyMap({
               d="M102 206 L96 266 L92 324 M138 206 L144 266 L148 324"
               className={cn(
                 "cursor-pointer transition-all",
-                selectedZone === "legs" ? "stroke-[#C2410C] stroke-[2.5]" : "stroke-[#374151]/40 stroke-[1.5] hover:stroke-[#1D2A8F]"
+                selectedZone === "legs" ? "stroke-[#9C4124] stroke-[2.5]" : "stroke-[#4E5752] stroke-[1.5] hover:stroke-[#1B4332]"
               )}
               onClick={() => onSelectRegion?.("legs")}
               onMouseEnter={() => setHoveredRegion("legs")}
@@ -233,8 +232,8 @@ export function AnatomyBodyMap({
 
         {/* Symptoms Drilldown (7 cols) */}
         <div className="md:col-span-7 space-y-3">
-          <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#374151]/70">
-            Common Symptoms in {meta.name}:
+          <p className="text-xs font-mono font-bold uppercase tracking-wider text-[#4E5752]">
+            Select Specific Symptom in {meta.name}:
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {meta.commonSymptoms.map((symptom) => (
@@ -242,26 +241,26 @@ export function AnatomyBodyMap({
                 key={symptom}
                 type="button"
                 onClick={() => onSelectRegion?.(selectedZone, symptom)}
-                className="flex items-center gap-2 rounded-[10px] border border-[#FDEBD0] bg-white p-3 text-left transition-all hover:border-[#1D2A8F] hover:bg-[#FDFBF7] group shadow-xs cursor-pointer"
+                className="flex items-center gap-2 rounded-xl border border-[#E0D7C9] bg-white p-3 text-left transition-all hover:border-[#1B4332] hover:bg-[#F3EFE8] group shadow-subtle cursor-pointer"
               >
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#FDFBF7] border border-[#FDEBD0] text-[#374151] text-xs font-bold group-hover:bg-[#1D2A8F] group-hover:text-white transition-colors">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#F3EFE8] border border-[#E0D7C9] text-[#1F2421] text-xs font-bold group-hover:bg-[#1B4332] group-hover:text-white transition-colors">
                   +
                 </span>
-                <span className="text-xs font-semibold text-[#374151] group-hover:text-[#1D2A8F]">
+                <span className="text-xs font-semibold text-[#1F2421] group-hover:text-[#1B4332]">
                   {symptom}
                 </span>
               </button>
             ))}
           </div>
 
-          <div className="rounded-[10px] border border-[#FDEBD0] bg-[#FDFBF7] p-3 mt-3">
+          <div className="rounded-xl border border-[#E0D7C9] bg-[#FBF9F5] p-3.5 mt-3">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-[#374151]">Assessed Pain Severity:</span>
-              <span className="font-extrabold text-[#C2410C]">{painScore} / 10</span>
+              <span className="font-semibold text-[#1F2421]">Associated Pain Severity:</span>
+              <span className="font-extrabold text-[#9C4124]">{painScore} / 10</span>
             </div>
-            <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-[#FDEBD0]">
+            <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-[#E0D7C9]">
               <div
-                className="h-full bg-[#1D2A8F] rounded-full transition-all"
+                className="h-full bg-[#1B4332] rounded-full transition-all"
                 style={{ width: `${(painScore / 10) * 100}%` }}
               />
             </div>

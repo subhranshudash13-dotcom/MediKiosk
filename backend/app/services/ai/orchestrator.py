@@ -156,7 +156,8 @@ class AIOrchestratorService:
             transcript=transcript,
             state=state,
             language=state.language,
-            session_id=session_id
+            session_id=session_id,
+            history=history
         )
 
         # 3. Update Clinical Intake State
@@ -164,7 +165,8 @@ class AIOrchestratorService:
 
         # 4. Check SOCRATES completeness
         completeness = safety_guardrails.calculate_socrates_completeness(state.socrates)
-        if completeness >= 0.70 or state.turn_count >= 5 or (red_flag and red_flag.is_emergency):
+        has_core_facts = bool(state.socrates.site and (state.socrates.onset or state.socrates.duration_days))
+        if (red_flag and red_flag.is_emergency) or (completeness >= 0.80 and has_core_facts and state.turn_count >= 5):
             state.is_triage_complete = True
 
         # 5. Update Conversation History
@@ -199,7 +201,7 @@ class AIOrchestratorService:
             # Determine status & triage level
             is_emergency = bool(red_flag and red_flag.is_emergency)
             triage_level = "EMERGENCY" if is_emergency else ("URGENT" if completeness > 0.6 else "ROUTINE")
-            new_status = "ready_for_doctor" if (state.is_triage_complete or state.turn_count >= 1) else "in_progress"
+            new_status = "ready_for_doctor" if state.is_triage_complete else "in_progress"
             
             # History coverage map
             coverage_map = {
@@ -222,7 +224,7 @@ class AIOrchestratorService:
                 "title": f"Patient Narration (Turn {state.turn_count})",
                 "detail": transcript,
                 "sourceType": "VOICE",
-                "sourceBadge": "🎙️ Voice Statement",
+                "sourceBadge": f"🎙️ Voice Statement ({state.language.upper()})",
                 "sourceSnippet": f'"{transcript}"',
                 "metadata": {
                     "language": state.language,
@@ -305,8 +307,13 @@ class AIOrchestratorService:
         s = state.socrates
         if extracted.site and not s.site:
             s.site = extracted.site
-        if extracted.onset and not s.onset:
-            s.onset = extracted.onset
+        if not s.onset:
+            if extracted.onset:
+                s.onset = extracted.onset
+            elif extracted.time_course:
+                s.onset = extracted.time_course
+            elif extracted.duration_days is not None:
+                s.onset = f"{extracted.duration_days} days"
         if extracted.character and not s.character:
             s.character = extracted.character
         if extracted.radiation and not s.radiation:

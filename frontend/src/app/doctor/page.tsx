@@ -358,8 +358,29 @@ export default function DoctorDashboard() {
               onOpenStoryboard={() => setActiveTab("storyboard")}
             />
 
+            {/* Action Bar with PDF Report Download & ABDM Sync */}
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-[#E0D7C9] shadow-subtle">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#1B4332]" />
+                <span className="text-xs font-bold text-[#1F2421]">
+                  Official First-Mile Intake Dossier (Token {currentPatient.token})
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href={`http://localhost:8000/api/v1/clinical/report/pdf/${currentPatient.sessionId || currentPatient.id || 'demo'}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 rounded-full bg-[#1B4332] text-white hover:bg-[#081C15] text-xs font-bold transition-all flex items-center gap-1.5 shadow-subtle cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5 text-[#D8F3DC]" />
+                  <span>Download Full Medical PDF Report</span>
+                </a>
+              </div>
+            </div>
+
             {/* Tab Navigation */}
-            <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-[#FDEBD0] overflow-x-auto">
+            <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-[#E0D7C9] overflow-x-auto">
               {[
                 { id: "storyboard", label: "⭐ Clinical Storyboard & Evidence", icon: Layers },
                 { id: "summary", label: "Completeness & Structured HPI", icon: FileText },
@@ -375,8 +396,8 @@ export default function DoctorDashboard() {
                     onClick={() => setActiveTab(tab.id as any)}
                     className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                       isActive
-                        ? "bg-[#1D2A8F] text-white shadow-xs"
-                        : "bg-[#FDFBF7] text-[#374151]/70 border border-[#FDEBD0] hover:bg-white hover:text-[#1D2A8F]"
+                        ? "bg-[#1B4332] text-white shadow-subtle"
+                        : "bg-[#FBF9F5] text-[#4E5752] border border-[#E0D7C9] hover:bg-white hover:text-[#1B4332]"
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5" />

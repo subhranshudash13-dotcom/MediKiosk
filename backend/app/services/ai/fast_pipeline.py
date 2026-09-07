@@ -1,8 +1,8 @@
 """
 MediKiosk Unified Ultra-Fast AI Pipeline.
-Performs Single-Pass Extraction + Empathetic Dialogue Generation with sub-800ms racing architecture:
+Performs Single-Pass Extraction + Empathetic Dialogue Generation with sub-second racing architecture:
 1. Instant Local NLU Model (< 5ms) generates high-accuracy baseline extraction & vernacular response.
-2. Fast Cloud LLM (Groq LLaMA-3.1-8B-Instant / GPT-4o-mini) executes single unified pass with strict 800ms timeout.
+2. Fast Cloud LLM (Groq GPT-OSS-120B / GPT-OSS-20B / GPT-4o-mini) executes single unified pass with 4.5s timeout.
 3. If network delays or errors occur, local NLU response is returned seamlessly with zero user-visible lag.
 """
 
@@ -28,42 +28,66 @@ from app.services.ai.schemas import (
 )
 from app.services.ai.clinical_nlu_model import clinical_nlu
 from app.services.ai.safety_guardrails import safety_guardrails
-from app.services.ai.prompts import CLINICAL_INTAKE_SYSTEM_PROMPT
 from app.services.clinical.event_logger import event_logger
 
 logger = logging.getLogger(__name__)
 
 
-UNIFIED_SINGLE_PASS_PROMPT = """You are "Aarogya Mitra", a compassionate clinical intake assistant at an Indian hospital kiosk.
-Analyze the patient's utterance and perform BOTH:
-1. Extraction of clinical facts into structured JSON.
-2. A single empathetic 1-2 sentence follow-up in the patient's language asking for missing clinical details (SOCRATES).
+UNIFIED_SINGLE_PASS_PROMPT = """You are "Aarogya Mitra", a highly skilled, compassionate AI Clinical Intake Assistant at an Indian hospital smart kiosk.
+You converse fluently, naturally, and warmly in English, Hindi (हिंदी), Bengali (বাংলা), Telugu (తెలుగు), Tamil (தமிழ்), Marathi (मराठी), and Hinglish.
 
-JSON Response format:
-{
-  "extraction": {
-    "chief_complaint": "string or null",
-    "site": "string or null",
-    "onset": "string or null",
-    "character": "string or null",
-    "radiation": "string or null",
-    "associated_symptoms": ["string"],
-    "duration_days": null,
-    "time_course": "string or null",
-    "severity_score": null
-  },
-  "spoken_response": "1-2 warm sentences in patient's language acknowledging symptom and asking 1 gentle clinical follow-up",
-  "quick_replies": ["option 1", "option 2", "option 3"]
-}
+BEHAVIORAL DIRECTIVES:
+1. Meta-Questions, Greetings, & Name Inquiries:
+   - If the patient asks what your name is, who you are, or greets you in ANY language:
+     * English: "I am Aarogya Mitra, your AI clinical assistant at MediKiosk. Please tell me what symptoms or health trouble you are experiencing today."
+     * Hindi / Hinglish: "नमस्ते! मैं आरोग्य मित्र हूँ — मेडीकियोस्क का एआई क्लिनिकल सहायक। कृपया बताएं आज आपको क्या तकलीफ़ या समस्या है?"
+     * Bengali ("Tumára nám kjá er?", "Apnar naam ki?"): "নমস্কার! আমি আরোগ্য মিত্র — মেডিকিয়স্কের এআই ক্লিনিকাল সহকারী। আপনার কী সমস্যা বা অসুস্থতা হচ্ছে দয়া করে বলুন।"
+     * Telugu: "నమస్కారం! నేను ఆరోగ్య మిత్ర — మేడికియోస్క్ AI క్లినికల్ సహాయకుడిని. మీకు ఏ విధమైన ఆరోగ్య సమస్య ఉంది?"
+   - Do NOT treat greeting/identity questions as clinical symptoms or advance intake slots.
+   - If the patient asks how you can help, explain that you record their symptoms and prepare a structured pre-consultation summary for the doctor.
 
-Respond ONLY with valid JSON. Do not prescribe or diagnose.
-"""
+2. Deep Clinical SOCRATES Inquiry (Specialty-Specific):
+   - When the patient reports symptoms, do NOT ask generic robotic questions. Probe deeply based on anatomical system:
+     * Abdomen / Stomach: Exact quadrant (upper, lower, right, left), burning vs cramping vs sharp, relation to food/meals, nausea, vomiting, loose motions or constipation.
+     * Chest / Heart: Heavy crushing pressure vs sharp, radiation to left arm/jaw/back, shortness of breath, cold sweating, worsens with exertion.
+     * Fever / Infection: High vs low grade, chills/rigors, cough with sputum, sore throat, burning urination, rash.
+     * Head / Neuro: Throbbing vs tight band, unilateral vs bilateral, sensitivity to light/sound, nausea, dizziness.
+     * Limbs / Joints: Swelling, morning stiffness, trauma/injury history.
+   - NEVER ask more than 1 or 2 focused follow-up questions per turn.
+   - NEVER repeat questions already answered in conversation history.
+
+3. Deepening Details & Handling Patient Feedback:
+   - If the patient says "you didn't take all details", "ask more questions", "be more specific", or adds more symptoms:
+     * Graciously acknowledge and ask about aggravating/relieving factors, previous episodes, past medical history (hypertension, diabetes, thyroid), or ongoing medications.
+
+4. Intake Completion Criteria:
+   - Do NOT rush to complete intake. Only summarize and conclude when at least 4-5 SOCRATES dimensions have been thoroughly gathered, OR if the patient explicitly says "that's all / please finish / ready for doctor".
+
+5. Output Format:
+   Return ONLY a valid JSON object matching this schema:
+   {{
+     "extraction": {{
+       "chief_complaint": "brief description or null",
+       "site": "anatomical site or null",
+       "onset": "time or null",
+       "character": "character or null",
+       "radiation": "radiation or null",
+       "associated_symptoms": [],
+       "duration_days": null,
+       "time_course": "time course or null",
+       "severity_score": null
+     }},
+     "spoken_response": "1-2 natural empathetic sentences in {language} answering the patient and asking the next focused clinical question",
+     "quick_replies": ["option 1", "option 2", "option 3"]
+   }}
+
+Do not prescribe medications or make final medical diagnoses."""
 
 
-def clean_json(text: str) -> str:
-    """Extracts valid JSON substring from text."""
+def clean_json_dict(text: str) -> dict:
+    """Extracts valid JSON dictionary from text with support for markdown fences and loose keys."""
     if not text:
-        return "{}"
+        return {}
     t = text.strip()
     if "```" in t:
         match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", t)
@@ -73,7 +97,14 @@ def clean_json(text: str) -> str:
     last_brace = t.rfind("}")
     if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
         t = t[first_brace:last_brace + 1]
-    return t
+    try:
+        return json.loads(t)
+    except Exception:
+        # Fallback regex extraction of spoken response
+        spoken_m = re.search(r'"(?:spoken_response|spoken|response|message)":\s*"([^"]+)"', t)
+        if spoken_m:
+            return {"spoken_response": spoken_m.group(1), "quick_replies": []}
+        return {}
 
 
 class FastAIPipelineService:
@@ -114,11 +145,12 @@ class FastAIPipelineService:
         transcript: str,
         state: ClinicalIntakeState,
         language: str = "hi",
-        session_id: Optional[str] = None
+        session_id: Optional[str] = None,
+        history: Optional[List[Dict[str, str]]] = None
     ) -> Tuple[ExtractionPayload, str, List[str]]:
         """
         Executes single unified turn:
-        Runs local NLU baseline in < 3ms, then races with ultra-fast cloud LLM (timeout 800ms).
+        Runs local NLU baseline in < 3ms, then races with ultra-fast cloud LLM.
         Enforces concurrency limit (2 calls/session) and circuit-breaker protection.
         Returns: (extracted_payload, spoken_response, quick_replies)
         """
@@ -127,7 +159,7 @@ class FastAIPipelineService:
 
         # Step 1: Run trained Local Clinical NLU (< 3ms)
         local_extraction = clinical_nlu.extract_slots_fast(transcript, current_state=state.model_dump())
-        local_dialogue = clinical_nlu.generate_dialogue_fast(transcript, state, local_extraction, language=language)
+        local_dialogue = clinical_nlu.generate_dialogue_fast(transcript, state, local_extraction, language=language, history=history)
 
         local_spoken = local_dialogue.get("spoken_response", "आपकी तकलीफ़ नोट कर ली गई है।")
         local_replies = local_dialogue.get("quick_replies", [])
@@ -141,39 +173,38 @@ class FastAIPipelineService:
             logger.warning("FastAIPipeline: Circuit breaker OPEN. Directing traffic to high-speed local NLU.")
             return local_extraction, local_spoken, local_replies
 
-        # Step 2: Try Fast Cloud LLM Race (Target < 800ms) within session concurrency cap
+        # Step 2: Fast Cloud LLM Race (Target < 4.5s)
         try:
             async with sem:
                 llm_result = await asyncio.wait_for(
-                    self._single_pass_cloud_llm(transcript, state, language),
-                    timeout=0.85
+                    self._single_pass_cloud_llm(transcript, state, language, history=history),
+                    timeout=4.5
                 )
                 if llm_result:
                     extracted, spoken, replies = llm_result
                     if spoken and len(spoken.strip()) > 5:
-                        # Success - reset circuit breaker failures
                         if self._consecutive_failures > 0:
                             self._consecutive_failures = 0
                             await event_logger.log_event(
                                 event_type="CIRCUIT_BREAKER_RESET",
                                 session_id=sid,
-                                details={"status": "healthy", "service": "Groq/OpenAI"},
+                                details={"status": "healthy", "service": "Groq/LLM"},
                                 severity="INFO"
                             )
                         sanitized_spoken = safety_guardrails.sanitize_model_output(spoken, language=language)
                         return extracted, sanitized_spoken, replies or local_replies
         except asyncio.TimeoutError:
             self._consecutive_failures += 1
-            logger.info(f"FastAIPipeline: Cloud LLM timed out (>850ms, count={self._consecutive_failures}), using local NLU.")
+            logger.info(f"FastAIPipeline: Cloud LLM timed out (>4500ms, count={self._consecutive_failures}), using local NLU.")
             await event_logger.log_event(
                 event_type="AI_FALLBACK_TIMEOUT",
                 session_id=sid,
-                details={"timeout_ms": 850, "consecutive_failures": self._consecutive_failures},
+                details={"timeout_ms": 4500, "consecutive_failures": self._consecutive_failures},
                 severity="WARNING"
             )
         except Exception as e:
             self._consecutive_failures += 1
-            logger.debug(f"FastAIPipeline: Cloud LLM fallback triggered: {e}")
+            logger.warning(f"FastAIPipeline: Cloud LLM fallback triggered: {e}")
             await event_logger.log_event(
                 event_type="AI_FALLBACK_ERROR",
                 session_id=sid,
@@ -181,14 +212,14 @@ class FastAIPipelineService:
                 severity="WARNING"
             )
 
-        # Check if we need to trip the circuit breaker
-        if self._consecutive_failures >= 3:
-            self._circuit_open_until = time.time() + 30.0  # Open for 30s
-            logger.error(f"FastAIPipeline: Circuit breaker TRIPPED! 3 consecutive failures. Open for 30s.")
+        # Check if we need to trip the circuit breaker (after 10 consecutive failures)
+        if self._consecutive_failures >= 10:
+            self._circuit_open_until = time.time() + 20.0  # Open for 20s
+            logger.error("FastAIPipeline: Circuit breaker TRIPPED! 10 consecutive failures. Open for 20s.")
             await event_logger.log_event(
                 event_type="CIRCUIT_BREAKER_TRIPPED",
                 session_id=sid,
-                details={"failures": self._consecutive_failures, "open_seconds": 30},
+                details={"failures": self._consecutive_failures, "open_seconds": 20},
                 severity="ERROR"
             )
 
@@ -199,63 +230,96 @@ class FastAIPipelineService:
         self,
         transcript: str,
         state: ClinicalIntakeState,
-        language: str
+        language: str,
+        history: Optional[List[Dict[str, str]]] = None
     ) -> Optional[Tuple[ExtractionPayload, str, List[str]]]:
-        """Runs a single unified extraction + dialogue generation pass."""
-        user_prompt = f"""Patient Preferred Language: {language}
-Patient just said: \"\"\"{transcript}\"\"\"
+        """Runs a single unified extraction + dialogue generation pass with full context history."""
+        hist_text = ""
+        if history:
+            hist_text = "\n".join([f"- {h['role'].upper()}: \"{h['content']}\"" for h in history[-8:]])
 
-Current Clinical State:
+        user_prompt = f"""Patient Preferred Language: {language}
+Current Turn Count: {state.turn_count + 1}
+
+Conversation History So Far:
+{hist_text or "No prior history (Start of conversation)"}
+
+Patient Just Said: \"\"\"{transcript}\"\"\"
+
+Known Clinical State:
 - Known Chief Complaints: {state.chief_complaints}
 - Known SOCRATES: {state.socrates.model_dump(exclude_none=True)}
+- Associated Symptoms: {state.associated_symptoms}
 
-Extract structured clinical JSON and formulate 1 empathetic clinical follow-up in {language}."""
+Respond as Aarogya Mitra following all instructions. Return strictly valid raw JSON."""
 
-        # 1. Try Groq LLaMA-3.1-8B-Instant (Fastest LLM on the market, ~150-250ms)
+        # 1. Try Groq (Ultra-Fast 600-1200ms)
         if settings.GROQ_API_KEY or self.groq_client:
             client = self.groq_client
             if client:
-                for model_name in ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"]:
+                for model_name in ["openai/gpt-oss-120b", "openai/gpt-oss-20b"]:
                     try:
                         resp = await client.chat.completions.create(
                             model=model_name,
                             messages=[
-                                {"role": "system", "content": UNIFIED_SINGLE_PASS_PROMPT},
+                                {"role": "system", "content": UNIFIED_SINGLE_PASS_PROMPT.format(language=language)},
                                 {"role": "user", "content": user_prompt}
                             ],
                             temperature=0.2,
-                            max_tokens=220,
-                            response_format={"type": "json_object"}
+                            max_tokens=600
                         )
                         raw = resp.choices[0].message.content or "{}"
-                        data = json.loads(clean_json(raw))
-                        extracted = ExtractionPayload(**data.get("extraction", {}))
-                        spoken = data.get("spoken_response", "")
-                        replies = data.get("quick_replies", [])
-                        return extracted, spoken, replies
-                    except Exception:
+                        data = clean_json_dict(raw)
+                        if not data:
+                            continue
+
+                        extraction_dict = data.get("extraction", {})
+                        if not isinstance(extraction_dict, dict):
+                            extraction_dict = {}
+
+                        extracted = ExtractionPayload(**extraction_dict)
+                        spoken = (
+                            data.get("spoken_response")
+                            or data.get("spoken")
+                            or data.get("response")
+                            or data.get("message")
+                            or ""
+                        )
+                        replies = data.get("quick_replies") or data.get("replies") or data.get("options") or []
+                        if isinstance(replies, list):
+                            replies = [str(r) for r in replies if r]
+                        else:
+                            replies = []
+
+                        if spoken:
+                            return extracted, spoken, replies
+                    except Exception as e:
+                        logger.debug(f"Groq model {model_name} failed: {e}")
                         continue
 
         # 2. Try OpenAI GPT-4o-mini
         if settings.OPENAI_API_KEY or self.openai_client:
             client = self.openai_client
             if client:
-                resp = await client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[
-                        {"role": "system", "content": UNIFIED_SINGLE_PASS_PROMPT},
-                        {"role": "user", "content": user_prompt}
-                    ],
-                    temperature=0.2,
-                    max_tokens=180,
-                    response_format={"type": "json_object"}
-                )
-                raw = resp.choices[0].message.content or "{}"
-                data = json.loads(clean_json(raw))
-                extracted = ExtractionPayload(**data.get("extraction", {}))
-                spoken = data.get("spoken_response", "")
-                replies = data.get("quick_replies", [])
-                return extracted, spoken, replies
+                try:
+                    resp = await client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=[
+                            {"role": "system", "content": UNIFIED_SINGLE_PASS_PROMPT.format(language=language)},
+                            {"role": "user", "content": user_prompt}
+                        ],
+                        temperature=0.2,
+                        max_tokens=500
+                    )
+                    raw = resp.choices[0].message.content or "{}"
+                    data = clean_json_dict(raw)
+                    extracted = ExtractionPayload(**data.get("extraction", {}))
+                    spoken = data.get("spoken_response") or data.get("response") or data.get("spoken") or ""
+                    replies = data.get("quick_replies") or data.get("replies") or []
+                    if spoken:
+                        return extracted, spoken, replies
+                except Exception as e:
+                    logger.debug(f"OpenAI fallback failed: {e}")
 
         return None
 

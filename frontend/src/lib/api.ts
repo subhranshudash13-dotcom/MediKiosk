@@ -23,6 +23,28 @@ export const KioskAPI = {
     const res = await apiClient.get(`/clinical/summary/${sessionId}`);
     return res.data;
   },
+  submitIntakeComplete: async (payload: {
+    session_id: string;
+    token: string;
+    name: string;
+    age: number;
+    gender: string;
+    abha_id: string;
+    triage_level: string;
+    chief_complaint: string;
+    intake_source?: string;
+    caregiver_relation?: string;
+    socrates?: any;
+    past_history?: string[];
+    allergies?: string[];
+    current_medications?: any[];
+    vitals?: any;
+    evidence_trail?: any[];
+    language?: string;
+  }) => {
+    const res = await apiClient.post("/clinical/intake-complete", payload);
+    return res.data;
+  },
 
   // 2. AI Voice & Chat Intake
   sendVoiceIntake: async (audioBlob: Blob, sessionId: string, languageCode: string = "hi") => {

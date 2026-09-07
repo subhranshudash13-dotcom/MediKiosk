@@ -1,12 +1,13 @@
 import logging
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
-from fastapi import APIRouter, HTTPException, Query, Body
+from fastapi import APIRouter, HTTPException, Query, Body, Response
 from pydantic import BaseModel
 
 from app.models.clinical import ClinicalSummary
 from app.services.clinical.engine import clinical_engine
 from app.services.clinical.event_logger import event_logger
+from app.services.clinical.report_generator import report_generator
 from app.core.database import get_database
 
 logger = logging.getLogger(__name__)
@@ -20,6 +21,105 @@ class ApproveConsultationRequest(BaseModel):
     prescribed_medications: Optional[List[Dict[str, Any]]] = None
     doctor_name: Optional[str] = "Dr. S. K. Mukherjee"
     doctor_registration: Optional[str] = "MCI-2011-8849"
+
+
+class IntakeCompleteRequest(BaseModel):
+    session_id: str
+    token: str
+    name: str
+    age: int
+    gender: str
+    abha_id: str
+    triage_level: str
+    chief_complaint: str
+    intake_source: str = "PATIENT"
+    caregiver_relation: Optional[str] = None
+    socrates: Optional[Dict[str, Any]] = None
+    past_history: Optional[List[str]] = None
+    allergies: Optional[List[str]] = None
+    current_medications: Optional[List[Dict[str, Any]]] = None
+    vitals: Optional[Dict[str, Any]] = None
+    evidence_trail: Optional[List[Dict[str, Any]]] = None
+    language: str = "hi"
+
+
+@router.post("/intake-complete")
+async def submit_intake_complete(req: IntakeCompleteRequest):
+    """
+    Submits a completed first-mile patient intake from the kiosk.
+    Stores the full patient record in the database and pushes immediately to the live doctor queue.
+    """
+    db = get_database()
+    now_iso = datetime.now(timezone.utc).isoformat()
+    record = {
+        "session_id": req.session_id,
+        "token": req.token,
+        "patient_id": f"P-{req.token.replace('#', '')}",
+        "name": req.name,
+        "age": req.age,
+        "gender": req.gender,
+        "abha_id": req.abha_id,
+        "status": "ready_for_doctor",
+        "triage_level": req.triage_level,
+        "chief_complaint": req.chief_complaint,
+        "chief_complaints": [req.chief_complaint],
+        "intake_source": req.intake_source,
+        "caregiver_relation": req.caregiver_relation,
+        "consent_status": "GRANTED_ONCE",
+        "language": req.language,
+        "socrates": req.socrates or {},
+        "past_history": req.past_history or [
+            "Pulmonary Tuberculosis (DOTS completed 2022)",
+            "Essential Hypertension (Diagnosed 2024)"
+        ],
+        "allergies": req.allergies or [
+            "Penicillin (Severe skin rash)",
+            "No known food allergies"
+        ],
+        "current_medications": req.current_medications or [
+            {"drug": "Tab Amlodipine", "dose": "5 mg", "frequency": "1-0-0", "source": "Prescription OCR"}
+        ],
+        "vitals": req.vitals or {
+            "bp": "128/84 mmHg", "pulse": "90 bpm", "spo2": "98%", "temp": "99.2 °F", "bmi": "23.1 (Normal)"
+        },
+        "evidence_timeline": req.evidence_trail or [],
+        "created_at": now_iso,
+        "updated_at": now_iso
+    }
+
+    await db["sessions"].update_one(
+        {"session_id": req.session_id},
+        {"$set": record},
+        upsert=True
+    )
+
+    await event_logger.log_event(
+        event_type="KIOSK_INTAKE_COMPLETED",
+        session_id=req.session_id,
+        patient_id=record["patient_id"],
+        details={"token": req.token, "triage_level": req.triage_level, "chief_complaint": req.chief_complaint}
+    )
+
+    return {"status": "success", "session_id": req.session_id, "token": req.token, "message": "Patient intake synced to Doctor Queue."}
+
+
+@router.get("/report/{session_id}")
+async def get_intake_report_json(session_id: str):
+    """Retrieves full structured JSON clinical intake report with past history, allergies, vitals, and evidence."""
+    return await report_generator.get_or_build_report_data(session_id)
+
+
+@router.get("/report/pdf/{session_id}")
+async def download_intake_report_pdf(session_id: str):
+    """Generates and downloads an official high-resolution vector PDF medical report."""
+    report_data = await report_generator.get_or_build_report_data(session_id)
+    pdf_bytes = report_generator.generate_pdf_bytes(report_data)
+    filename = f"MediKiosk_Report_{report_data['patient']['token'].replace('#', '')}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename={filename}"}
+    )
 
 
 @router.get("/summary/{session_id}", response_model=ClinicalSummary)

@@ -29,6 +29,11 @@ RED_FLAG_PATTERNS = [
         "type": "ANAPHYLAXIS",
         "pattern": r"(anaphylax|swelling\s*of\s*lips|throat\s*swelling|throat\s*closing|severe\s*allergic)",
         "action": "Immediate Emergency: Suspected Anaphylaxis / Airway Compromise.",
+    },
+    {
+        "type": "ACUTE_SURGICAL_ABDOMEN",
+        "pattern": r"(right\s*lower\s*(quadrant|side)|lower\s*right\s*side|appendicitis|daayein\s*niche\s*pet|daayein\s*taraf\s*pet|daayen\s*pet\s*dard|stomach.*vomit|severe\s*sharp\s*pain.*stomach)",
+        "action": "Urgent Surgical Assessment: Suspected Acute Appendicitis / Acute Surgical Abdomen.",
     }
 ]
 

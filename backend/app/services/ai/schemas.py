@@ -40,6 +40,7 @@ class ClinicalIntakeState(BaseModel):
     is_triage_complete: bool = False
     turn_count: int = 0
     raw_transcripts: List[str] = Field(default_factory=list)
+    last_target_slot: Optional[str] = None
 
 
 class ExtractionPayload(BaseModel):

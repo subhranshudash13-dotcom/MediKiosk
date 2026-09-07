@@ -22,7 +22,8 @@ import {
   User,
   Zap,
   Check,
-  ChevronDown
+  ChevronDown,
+  Download
 } from "lucide-react";
 import { useKioskStore, PatientQueueItem } from "@/lib/store";
 import { KioskAPI } from "@/lib/api";
@@ -298,12 +299,16 @@ export function PatientVoiceWaveKiosk() {
     }
   };
 
-  const handleCompleteIntake = () => {
+  const [currentSessionId, setCurrentSessionId] = useState("session_demo_01");
+
+  const handleCompleteIntake = async () => {
     const newToken = `#${Math.floor(100 + Math.random() * 900)}`;
+    const sessionId = `session_${Date.now()}`;
     setGeneratedToken(newToken);
+    setCurrentSessionId(sessionId);
 
     const newPatient: PatientQueueItem = {
-      id: `pat-${Date.now()}`,
+      id: sessionId,
       token: newToken,
       name: patientName,
       age: 26,
@@ -397,6 +402,49 @@ export function PatientVoiceWaveKiosk() {
     };
 
     pushPatientToQueue(newPatient);
+
+    // Sync to live backend MongoDB & Doctor Queue
+    try {
+      await KioskAPI.submitIntakeComplete({
+        session_id: sessionId,
+        token: newToken,
+        name: patientName,
+        age: 26,
+        gender: "Female",
+        abha_id: "91-4567-8901-2345",
+        triage_level: activeExtraction.triageLevel,
+        chief_complaint: activeExtraction.chiefComplaint,
+        intake_source: "PATIENT",
+        socrates: {
+          site: "Thorax / Retro-sternal",
+          onset: activeExtraction.onset,
+          character: "Severe acute onset",
+          radiation: "Radiating to left shoulder & arm",
+          associations: [activeExtraction.associated],
+          timing: "Continuous",
+          exacerbating_relieving: "Resting in upright posture",
+          severity_score: 8
+        },
+        past_history: [
+          "Pulmonary Tuberculosis (DOTS completed 2022)",
+          "Essential Hypertension (Diagnosed 2024)"
+        ],
+        allergies: [
+          "Penicillin & Amoxicillin (Severe skin rash)",
+          "No known food allergies"
+        ],
+        current_medications: [
+          { drug: "Tab Amlodipine", dose: "5 mg", frequency: "1-0-0", source: "Prescription OCR" }
+        ],
+        vitals: {
+          bp: "124/82 mmHg", pulse: "88 bpm", spo2: "98%", temp: "99.1 °F", bmi: "22.6 (Normal)"
+        },
+        language: selectedLanguage
+      });
+    } catch (e) {
+      console.warn("Backend intake sync note:", e);
+    }
+
     setIsComplete(true);
   };
 
@@ -684,6 +732,16 @@ export function PatientVoiceWaveKiosk() {
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Start New Intake</span>
             </button>
+
+            <a
+              href={`http://localhost:8000/api/v1/clinical/report/pdf/${currentSessionId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-full bg-[#1B4332] text-white hover:bg-[#081C15] text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-[#D8F3DC]" />
+              <span>Download PDF Medical Report</span>
+            </a>
 
             <Link
               href="/doctor"

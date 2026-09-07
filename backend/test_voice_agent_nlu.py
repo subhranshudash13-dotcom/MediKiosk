@@ -94,6 +94,17 @@ async def run_comprehensive_benchmark():
     test_conversations = [
         {
             "lang": "hi",
+            "name": "Hindi Abdominal Pain Intake (User Reported Flow)",
+            "turns": [
+                "मुझे पेट में बहुत तेज दर्द हो रहा है।",
+                "आज सुबह से है",
+                "जलन और भारीपन जैसा अहसास है, 10 में से 7 दर्द है।",
+                "इसके साथ मुझे दो बार उल्टी भी हुई है।",
+                "मुझे पहले से बीपी या शुगर की कोई बीमारी नहीं है।"
+            ]
+        },
+        {
+            "lang": "hi",
             "name": "Hindi Chest Pain (Acute Triage)",
             "turns": [
                 "नमस्ते, कल से सीने में बहुत तेज भारीपन और दर्द है।",
@@ -118,11 +129,13 @@ async def run_comprehensive_benchmark():
             ]
         },
         {
-            "lang": "hi",
-            "name": "Hinglish Headache & Migraine",
+            "lang": "en",
+            "name": "English Post-Intake Conversational QA (User Reported Flow)",
             "turns": [
-                "Doctor 2 din se sir ke aadhe hisse me bohot tez throb karne wala dard hai.",
-                "Roshni se aur aawaz se dard badh jata hai, score 7 hai.",
+                "I have sharp pain in my stomach since today morning, score is 7 out of 10.",
+                "No, it doesn't spread anywhere else.",
+                "Can you translate this in Hindi please?",
+                "Hey, what's your name?"
             ]
         }
     ]
@@ -130,6 +143,8 @@ async def run_comprehensive_benchmark():
     for conv in test_conversations:
         session_id = f"test_sess_{int(time.time()*1000)}"
         print(f"\n  ▶ Testing [{conv['lang'].upper()}] {conv['name']}:")
+        previous_responses = []
+
         for turn_idx, user_utt in enumerate(conv["turns"], 1):
             t_start = time.perf_counter()
             resp = await ai_orchestrator.process_text_turn(
@@ -142,8 +157,15 @@ async def run_comprehensive_benchmark():
             print(f"    Turn {turn_idx} ({t_turn_ms:.1f}ms):")
             print(f"      Patient: \"{user_utt}\"")
             print(f"      Agent  : \"{resp.spoken_response}\"")
-            print(f"      State  : Site={resp.clinical_state.socrates.site}, Duration={resp.clinical_state.socrates.duration_days}d, Severity={resp.clinical_state.socrates.severity_score}/10, Complete={resp.is_intake_complete}")
+            print(f"      State  : Site={resp.clinical_state.socrates.site}, Duration={resp.clinical_state.socrates.duration_days}d ({resp.clinical_state.socrates.onset}), Severity={resp.clinical_state.socrates.severity_score}/10, Complete={resp.is_intake_complete}")
+            print(f"      Replies: {resp.quick_replies}")
+
             assert resp.spoken_response and len(resp.spoken_response) > 5, "Response must not be empty"
+
+            # Assert that agent does NOT repeat the exact same response as previous turn during active inquiry
+            if previous_responses and not resp.is_intake_complete:
+                assert resp.spoken_response != previous_responses[-1], f"Agent repeated identical question: {resp.spoken_response}"
+            previous_responses.append(resp.spoken_response)
 
     # 5. Executive Verification Summary
     print("\n" + "=" * 70)

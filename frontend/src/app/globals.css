@@ -6,49 +6,52 @@
 
 @layer base {
   :root {
-    /* 5-Color Master Palette */
-    --cobalt: #1D2A8F;
-    --cobalt-dark: #141E66;
-    --cobalt-light: #2A3ABF;
-    --rust: #C2410C;
-    --rust-dark: #9A3412;
-    --marigold: #FB923C;
-    --almond-cream: #FDEBD0;
-    --almond-border: #EAD7C0;
-    --slate-charcoal: #374151;
-    --slate-muted: #6B7280;
-    --emerald-success: #059669;
+    /* Natural Clinical Palette: Forest Pine + Botanical Sage + Mineral Charcoal + Warm Linen Paper */
+    --pine-primary: #1B4332;
+    --pine-dark: #081C15;
+    --pine-light: #2D6A4F;
+    --sage-accent: #40916C;
+    --terracotta: #9C4124;
+    --terracotta-dark: #7A3119;
+    --linen-bg: #FBF9F5;
+    --linen-card: #FFFFFF;
+    --linen-subtle: #F3EFE8;
+    --linen-border: #E0D7C9;
+    --linen-border-strong: #C9BEAC;
+    --charcoal-ink: #1F2421;
+    --charcoal-muted: #606963;
+    --laurel-verified: #2D6A4F;
 
-    /* Backgrounds & Text */
-    --background: 36 84% 90%;   /* #FDEBD0 Almond Cream */
-    --foreground: 217 19% 27%;  /* #374151 Slate Charcoal */
-    --card: 0 0% 100%;          /* #FFFFFF Pure White */
-    --card-foreground: 217 19% 27%;
+    /* Semantic HSL tokens */
+    --background: 40 33% 97%;    /* #FBF9F5 Warm Natural Linen */
+    --foreground: 144 6% 13%;    /* #1F2421 Deep Mineral Charcoal */
+    --card: 0 0% 100%;           /* #FFFFFF Crisp Paper Card */
+    --card-foreground: 144 6% 13%;
     --popover: 0 0% 100%;
-    --popover-foreground: 217 19% 27%;
-    --primary: 231 66% 34%;     /* #1D2A8F Cobalt */
+    --popover-foreground: 144 6% 13%;
+    --primary: 154 42% 18%;      /* #1B4332 Forest Pine */
     --primary-foreground: 0 0% 100%;
-    --secondary: 27 96% 61%;    /* #FB923C Marigold */
+    --secondary: 14 62% 38%;     /* #9C4124 Terracotta */
     --secondary-foreground: 0 0% 100%;
-    --muted: 36 60% 95%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 17 88% 40%;       /* #C2410C Rust */
+    --muted: 40 22% 93%;         /* #F3EFE8 */
+    --muted-foreground: 147 5% 39%;
+    --accent: 14 62% 38%;        /* #9C4124 */
     --accent-foreground: 0 0% 100%;
-    --destructive: 17 88% 40%;
+    --destructive: 0 68% 42%;
     --destructive-foreground: 0 0% 100%;
-    --border: 33 46% 83%;       /* #EAD7C0 */
-    --input: 33 46% 83%;
-    --ring: 231 66% 34%;
+    --border: 37 25% 83%;        /* #E0D7C9 */
+    --input: 37 25% 83%;
+    --ring: 154 42% 18%;
 
-    --radius: 0.875rem;
+    --radius: 1rem;
 
     --font-inter: 'Inter', system-ui, sans-serif;
     --font-dm-sans: 'DM Sans', 'Manrope', system-ui, sans-serif;
   }
 
   body {
-    background-color: #FDEBD0;
-    color: #374151;
+    background-color: #FBF9F5;
+    color: #1F2421;
     font-family: var(--font-inter);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
@@ -56,23 +59,47 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-dm-sans);
-    letter-spacing: -0.025em;
-    color: #374151;
+    letter-spacing: -0.02em;
+    color: #1F2421;
   }
 }
 
-/* Custom Scrollbar in Warm Almond Theme */
+/* Tactile Clinical Paper Card */
+.tactile-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E0D7C9;
+  box-shadow: 0 2px 8px -1px rgba(31, 36, 33, 0.05), 0 1px 3px -1px rgba(31, 36, 33, 0.03);
+  border-radius: 1rem;
+}
+
+.tactile-card:hover {
+  border-color: #C9BEAC;
+}
+
+/* Physical Kiosk Touch Button */
+.kiosk-touch-button {
+  min-height: 48px;
+  font-weight: 600;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+}
+
+.kiosk-touch-button:active {
+  transform: translateY(1px);
+}
+
+/* Custom Scrollbar in Warm Linen Theme */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #FAF2E8;
+  background: #F3EFE8;
 }
 ::-webkit-scrollbar-thumb {
-  background: #E0CAAF;
+  background: #D5CDC2;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #C9B091;
+  background: #B8ADA0;
 }

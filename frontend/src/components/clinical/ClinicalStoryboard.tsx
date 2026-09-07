@@ -37,34 +37,34 @@ export function ClinicalStoryboard({ patient, className = "" }: ClinicalStoryboa
   const getSourceIcon = (type: EvidenceTimelineItem["sourceType"]) => {
     switch (type) {
       case "VOICE":
-        return <Mic className="w-3.5 h-3.5 text-[#FB923C]" />;
+        return <Mic className="w-3.5 h-3.5 text-[#1B4332]" />;
       case "CAREGIVER":
-        return <User className="w-3.5 h-3.5 text-[#C2410C]" />;
+        return <User className="w-3.5 h-3.5 text-[#9C4124]" />;
       case "DOCUMENT":
-        return <FileText className="w-3.5 h-3.5 text-blue-600" />;
+        return <FileText className="w-3.5 h-3.5 text-[#2D6A4F]" />;
       case "LAB":
-        return <TestTube className="w-3.5 h-3.5 text-purple-600" />;
+        return <TestTube className="w-3.5 h-3.5 text-[#B45309]" />;
       case "ABDM":
-        return <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />;
+        return <ShieldCheck className="w-3.5 h-3.5 text-[#2D6A4F]" />;
       default:
-        return <Info className="w-3.5 h-3.5 text-[#374151]" />;
+        return <Info className="w-3.5 h-3.5 text-[#1F2421]" />;
     }
   };
 
   const getSourceBadgeStyle = (type: EvidenceTimelineItem["sourceType"]) => {
     switch (type) {
       case "VOICE":
-        return "bg-amber-50 text-amber-900 border-amber-200 hover:bg-amber-100";
+        return "bg-[#E8F5EE] text-[#1B4332] border-[#C6E7D2] hover:bg-[#D8F3DC]";
       case "CAREGIVER":
-        return "bg-orange-50 text-orange-900 border-orange-200 hover:bg-orange-100";
+        return "bg-[#FDF3F0] text-[#9C4124] border-[#F5D5CB] hover:bg-[#FAE3DC]";
       case "DOCUMENT":
-        return "bg-blue-50 text-blue-900 border-blue-200 hover:bg-blue-100";
+        return "bg-[#F3EFE8] text-[#1F2421] border-[#E0D7C9] hover:bg-[#EAE4D9]";
       case "LAB":
-        return "bg-purple-50 text-purple-900 border-purple-200 hover:bg-purple-100";
+        return "bg-[#FEF9EE] text-[#B45309] border-[#F5E6CC] hover:bg-[#FDF0D5]";
       case "ABDM":
-        return "bg-emerald-50 text-emerald-900 border-emerald-200 hover:bg-emerald-100";
+        return "bg-[#E8F5EE] text-[#1B4332] border-[#C6E7D2] hover:bg-[#D8F3DC]";
       default:
-        return "bg-slate-50 text-slate-900 border-slate-200 hover:bg-slate-100";
+        return "bg-[#FBF9F5] text-[#1F2421] border-[#E0D7C9] hover:bg-[#F3EFE8]";
     }
   };
 
@@ -76,30 +76,30 @@ export function ClinicalStoryboard({ patient, className = "" }: ClinicalStoryboa
   };
 
   return (
-    <div className={`bg-white rounded-xl border border-[#FDEBD0] p-5 shadow-xs ${className}`}>
+    <div className={`bg-white rounded-2xl border border-[#E0D7C9] p-5 shadow-subtle ${className}`}>
       {/* Header with Title & Strategic Insight */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-5 border-b border-[#FDEBD0]">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-5 border-b border-[#E0D7C9]">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#1D2A8F]" />
-            <h2 className="text-base font-bold text-[#374151] font-heading flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#1B4332]" />
+            <h2 className="text-base font-bold text-[#1F2421] font-heading flex items-center gap-2">
               Clinical Storyboard &amp; Multimodal Evidence Trail
             </h2>
-            <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-bold border border-emerald-200">
+            <span className="px-2.5 py-0.5 rounded-full bg-[#E8F5EE] text-[#1B4332] text-xs font-bold border border-[#C6E7D2]">
               100% Provenance Linked
             </span>
           </div>
-          <p className="text-xs text-[#374151]/70 mt-1">
-            Every AI observation is anchored to verified voice transcripts, OCR document scans, or ABDM records. Click any badge to inspect source evidence.
+          <p className="text-xs text-[#606963] mt-1">
+            Every clinical observation is anchored to verified voice statements, scanned prescriptions, or ABDM records.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <div className="text-right hidden sm:block">
-            <div className="text-[11px] text-[#374151]/60 uppercase tracking-wider font-semibold">
+            <div className="text-[11px] text-[#606963] uppercase tracking-wider font-semibold">
               Intake Provenance
             </div>
-            <div className="text-xs font-bold text-[#1D2A8F]">
+            <div className="text-xs font-bold text-[#1B4332]">
               {patient.intakeSource === "CAREGIVER"
                 ? `Caregiver Assisted (${patient.caregiverRelation || "Family"})`
                 : "Direct Patient Speech"}
@@ -109,28 +109,28 @@ export function ClinicalStoryboard({ patient, className = "" }: ClinicalStoryboa
       </div>
 
       {/* Vertical Interactive Timeline */}
-      <div className="relative pl-6 sm:pl-8 space-y-6 before:absolute before:left-3 sm:before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-gradient-to-b before:from-[#1D2A8F] before:via-[#FB923C] before:to-emerald-500">
+      <div className="relative pl-6 sm:pl-8 space-y-6 before:absolute before:left-3 sm:before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#E0D7C9]">
         {evidenceTrail.map((event, idx) => (
           <div key={event.id || idx} className="relative group">
             {/* Timeline Node Icon */}
-            <div className="absolute -left-6 sm:-left-8 top-1 w-6 h-6 rounded-full bg-white border-2 border-[#1D2A8F] flex items-center justify-center shadow-xs transition-transform group-hover:scale-110">
+            <div className="absolute -left-6 sm:-left-8 top-1 w-6 h-6 rounded-full bg-white border-2 border-[#1B4332] flex items-center justify-center shadow-subtle transition-transform group-hover:scale-110">
               {getSourceIcon(event.sourceType)}
             </div>
 
             {/* Event Card */}
-            <div className="bg-[#FDFBF7] rounded-lg border border-[#FDEBD0] p-4 transition-all hover:border-[#1D2A8F]/40 hover:shadow-xs">
+            <div className="bg-[#FBF9F5] rounded-xl border border-[#E0D7C9] p-4 transition-all hover:border-[#1B4332] hover:shadow-subtle">
               <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-md bg-[#1D2A8F]/10 text-[#1D2A8F] font-bold text-xs">
+                  <span className="px-2.5 py-0.5 rounded-md bg-[#E8F5EE] text-[#1B4332] font-bold text-xs border border-[#C6E7D2]">
                     {event.timeframe}
                   </span>
-                  <h3 className="font-bold text-sm text-[#374151]">{event.title}</h3>
+                  <h3 className="font-bold text-sm text-[#1F2421]">{event.title}</h3>
                 </div>
 
                 {/* Clickable Source Pill */}
                 <button
                   onClick={() => setSelectedEvidence(event)}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-semibold cursor-pointer transition-all shadow-2xs ${getSourceBadgeStyle(
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-semibold cursor-pointer transition-all shadow-subtle ${getSourceBadgeStyle(
                     event.sourceType
                   )}`}
                 >
@@ -140,21 +140,21 @@ export function ClinicalStoryboard({ patient, className = "" }: ClinicalStoryboa
                 </button>
               </div>
 
-              <p className="text-xs text-[#374151]/80 leading-relaxed mb-2.5">{event.detail}</p>
+              <p className="text-xs text-[#4E5752] leading-relaxed mb-2.5">{event.detail}</p>
 
               {/* Collapsed Evidence Snippet Preview */}
               <div
                 onClick={() => setSelectedEvidence(event)}
-                className="bg-white/80 rounded-md p-2.5 border border-[#FDEBD0]/80 flex items-center justify-between gap-3 text-xs cursor-pointer hover:bg-white transition-colors"
+                className="bg-white rounded-lg p-2.5 border border-[#E0D7C9] flex items-center justify-between gap-3 text-xs cursor-pointer hover:bg-[#F3EFE8] transition-colors"
               >
-                <div className="flex items-center gap-2 truncate text-[#374151]/75">
-                  <span className="font-semibold text-[#1D2A8F] shrink-0 text-[11px] uppercase tracking-wider">
+                <div className="flex items-center gap-2 truncate text-[#4E5752]">
+                  <span className="font-semibold text-[#1B4332] shrink-0 text-xs uppercase tracking-wider">
                     Source Excerpt:
                   </span>
                   <span className="italic truncate">&ldquo;{event.sourceSnippet}&rdquo;</span>
                 </div>
-                <span className="text-[#1D2A8F] font-bold shrink-0 text-[11px] flex items-center gap-1">
-                  Inspect <ChevronRight className="w-3 h-3" />
+                <span className="text-[#1B4332] font-bold shrink-0 text-xs flex items-center gap-1">
+                  Inspect <ChevronRight className="w-3.5 h-3.5" />
                 </span>
               </div>
             </div>
@@ -164,26 +164,26 @@ export function ClinicalStoryboard({ patient, className = "" }: ClinicalStoryboa
 
       {/* Interactive Evidence Source Detail Modal */}
       {selectedEvidence && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-xl rounded-2xl shadow-2xl border border-[#FDEBD0] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-xl rounded-2xl shadow-2xl border border-[#E0D7C9] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {/* Modal Header */}
-            <div className="bg-[#1E2433] text-white px-5 py-4 flex items-center justify-between">
+            <div className="bg-[#1B4332] text-white px-5 py-4 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-[#FB923C]">
+                <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center text-[#D8F3DC]">
                   {getSourceIcon(selectedEvidence.sourceType)}
                 </div>
                 <div>
                   <h3 className="font-bold text-sm font-heading">
                     Evidence Source Verification
                   </h3>
-                  <p className="text-xs text-white/70">
+                  <p className="text-xs text-white/80">
                     {selectedEvidence.sourceBadge} • {selectedEvidence.timeframe}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setSelectedEvidence(null)}
-                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors"
+                className="w-7 h-7 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -192,31 +192,31 @@ export function ClinicalStoryboard({ patient, className = "" }: ClinicalStoryboa
             {/* Modal Content */}
             <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
               <div>
-                <span className="text-[11px] uppercase tracking-wider font-bold text-[#374151]/60">
+                <span className="text-xs uppercase tracking-wider font-bold text-[#606963]">
                   Clinical Observation
                 </span>
-                <h4 className="font-bold text-base text-[#374151] mt-0.5">
+                <h4 className="font-bold text-base text-[#1F2421] mt-0.5">
                   {selectedEvidence.title}
                 </h4>
-                <p className="text-xs text-[#374151]/80 mt-1 leading-relaxed">
+                <p className="text-xs text-[#4E5752] mt-1 leading-relaxed">
                   {selectedEvidence.detail}
                 </p>
               </div>
 
               {/* Exact Evidence Snippet Card */}
-              <div className="bg-[#FDFBF7] rounded-xl border border-[#FDEBD0] p-4 space-y-3">
+              <div className="bg-[#FBF9F5] rounded-xl border border-[#E0D7C9] p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#1D2A8F] flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span className="text-xs font-bold text-[#1B4332] flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-[#2D6A4F]" />
                     Verified Raw Provenance
                   </span>
                   {selectedEvidence.sourceType === "VOICE" && (
                     <button
                       onClick={playVoiceSnippet}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-colors ${
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-colors ${
                         isPlayingAudio
-                          ? "bg-amber-600 text-white"
-                          : "bg-amber-100 text-amber-900 hover:bg-amber-200"
+                          ? "bg-[#1B4332] text-white"
+                          : "bg-[#E8F5EE] text-[#1B4332] hover:bg-[#D8F3DC]"
                       }`}
                     >
                       <Volume2 className={`w-3.5 h-3.5 ${isPlayingAudio ? "animate-pulse" : ""}`} />
@@ -225,54 +225,42 @@ export function ClinicalStoryboard({ patient, className = "" }: ClinicalStoryboa
                   )}
                 </div>
 
-                <div className="p-3 bg-white rounded-lg border border-[#FDEBD0] text-sm text-[#374151] font-mono leading-relaxed">
+                <div className="p-3 bg-white rounded-lg border border-[#E0D7C9] text-sm text-[#1F2421] font-mono leading-relaxed">
                   &ldquo;{selectedEvidence.sourceSnippet}&rdquo;
                 </div>
 
                 {/* Specific Metadata Fields */}
                 {selectedEvidence.metadata && (
                   <div className="grid grid-cols-2 gap-2 text-xs pt-1">
-                    {selectedEvidence.metadata.prescriber && (
-                      <div className="bg-white p-2 rounded border border-[#FDEBD0]/60">
-                        <span className="text-[10px] text-[#374151]/60 uppercase block">Prescriber</span>
-                        <span className="font-semibold text-[#374151]">{selectedEvidence.metadata.prescriber}</span>
-                      </div>
-                    )}
                     {selectedEvidence.metadata.facility && (
-                      <div className="bg-white p-2 rounded border border-[#FDEBD0]/60">
-                        <span className="text-[10px] text-[#374151]/60 uppercase block">Facility</span>
-                        <span className="font-semibold text-[#374151]">{selectedEvidence.metadata.facility}</span>
+                      <div className="bg-white p-2.5 rounded-lg border border-[#E0D7C9]">
+                        <span className="text-[10px] text-[#606963] uppercase block">Facility</span>
+                        <span className="font-semibold text-[#1F2421]">{selectedEvidence.metadata.facility}</span>
                       </div>
                     )}
-                    {selectedEvidence.metadata.observedValue && (
-                      <div className="bg-white p-2 rounded border border-[#FDEBD0]/60">
-                        <span className="text-[10px] text-[#374151]/60 uppercase block">Observed Value</span>
-                        <span className="font-bold text-purple-700">{selectedEvidence.metadata.observedValue}</span>
-                      </div>
-                    )}
-                    {selectedEvidence.metadata.refRange && (
-                      <div className="bg-white p-2 rounded border border-[#FDEBD0]/60">
-                        <span className="text-[10px] text-[#374151]/60 uppercase block">Reference Range</span>
-                        <span className="font-semibold text-[#374151]">{selectedEvidence.metadata.refRange}</span>
+                    {selectedEvidence.metadata.date && (
+                      <div className="bg-white p-2.5 rounded-lg border border-[#E0D7C9]">
+                        <span className="text-[10px] text-[#606963] uppercase block">Timestamp</span>
+                        <span className="font-semibold text-[#1F2421]">{selectedEvidence.metadata.date}</span>
                       </div>
                     )}
                     {selectedEvidence.metadata.consentId && (
-                      <div className="bg-white p-2 rounded border border-[#FDEBD0]/60 col-span-2">
-                        <span className="text-[10px] text-[#374151]/60 uppercase block">ABDM Consent Artifact</span>
-                        <span className="font-mono text-[11px] font-bold text-emerald-700">{selectedEvidence.metadata.consentId}</span>
+                      <div className="bg-white p-2.5 rounded-lg border border-[#E0D7C9] col-span-2">
+                        <span className="text-[10px] text-[#606963] uppercase block">ABDM Consent Artifact</span>
+                        <span className="font-mono text-xs font-bold text-[#2D6A4F]">{selectedEvidence.metadata.consentId}</span>
                       </div>
                     )}
                   </div>
                 )}
               </div>
 
-              <div className="flex items-center justify-between text-xs text-[#374151]/70 pt-2 border-t border-[#FDEBD0]">
+              <div className="flex items-center justify-between text-xs text-[#606963] pt-2 border-t border-[#E0D7C9]">
                 <span>Provenance validated via FHIR R4 Provenance Resource</span>
                 <button
                   onClick={() => setSelectedEvidence(null)}
-                  className="px-4 py-1.5 rounded-lg bg-[#1D2A8F] text-white font-bold hover:bg-[#2563EB] transition-colors"
+                  className="px-5 py-2 rounded-full bg-[#1B4332] text-white font-bold hover:bg-[#081C15] transition-colors"
                 >
-                  Done
+                  Close
                 </button>
               </div>
             </div>

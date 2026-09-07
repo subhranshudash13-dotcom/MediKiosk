@@ -20,7 +20,7 @@ export function useAudioLevel(active: boolean) {
     const simulate = () => {
       const tick = () => {
         if (cancelled) return;
-        setLevel(0.25 + Math.random() * 0.55);
+        setLevel(0.22 + Math.random() * 0.58);
         raf = window.setTimeout(tick, 90);
       };
       tick();
@@ -80,32 +80,32 @@ export function VoiceWaveform({
   const bars = [0.35, 0.6, 0.9, 0.75, 1, 0.8, 0.95, 0.5, 0.4, 0.7, 0.85, 0.65, 0.45];
 
   return (
-    <div className={cn("flex flex-col items-center gap-3 rounded-[12px] border border-[#FDEBD0] bg-[#FDFBF7] p-5 shadow-xs", className)}>
-      {/* Dynamic ECG Live Cardiac Rhythm Graphic in Marigold */}
-      <div className="relative w-full h-10 overflow-hidden border-b border-[#FDEBD0]">
-        <svg viewBox="0 0 300 40" className="w-full h-full stroke-[#FB923C]" fill="none" strokeWidth="2">
+    <div className={cn("flex flex-col items-center gap-3 rounded-2xl border border-[#E0D7C9] bg-white p-5 shadow-subtle", className)}>
+      {/* Physiological Acoustic Monitor Line in Sage & Pine */}
+      <div className="relative w-full h-8 overflow-hidden border-b border-[#E0D7C9] pb-2">
+        <svg viewBox="0 0 300 30" className="w-full h-full stroke-[#2D6A4F]" fill="none" strokeWidth="1.75">
           <path
-            d="M0 20 L50 20 L58 14 L66 26 L74 20 L110 20 L118 6 L124 34 L132 10 L138 24 L146 20 L210 20 L218 12 L224 28 L230 20 L300 20"
-            strokeDasharray="8 4"
-            className={active ? "animate-pulse" : "opacity-30"}
+            d="M0 15 L45 15 L52 10 L60 20 L68 15 L100 15 L108 4 L114 26 L122 8 L128 19 L136 15 L200 15 L208 9 L214 21 L220 15 L300 15"
+            strokeDasharray="6 3"
+            className={active ? "opacity-90" : "opacity-30"}
           />
         </svg>
-        <span className="absolute top-1 right-2 text-[9px] font-mono font-medium uppercase text-[#374151]/70">
-          {active ? "● Voice Stream Active" : "○ Microphone Standby"}
+        <span className="absolute top-0 right-1 text-[10px] font-mono font-semibold uppercase text-[#606963]">
+          {active ? "● Live Acoustic Stream" : "○ Microphone Standby"}
         </span>
       </div>
 
-      {/* Tactile Frequency Bars in Marigold & Rust */}
+      {/* Tactile Frequency Amplitude Bars in Terracotta & Forest Pine */}
       <div className="flex h-12 items-center justify-center gap-1.5 px-4">
         {bars.map((weight, i) => {
-          const height = active ? Math.max(10, Math.min(46, weight * level * 50)) : 6;
+          const height = active ? Math.max(8, Math.min(44, weight * level * 48)) : 6;
           return (
             <span
               key={i}
               style={{ height: `${height}px` }}
               className={cn(
                 "w-1.5 rounded-full transition-all duration-75",
-                active ? "bg-[#FB923C]" : "bg-[#FDEBD0]"
+                active ? "bg-[#1B4332]" : "bg-[#E0D7C9]"
               )}
             />
           );
