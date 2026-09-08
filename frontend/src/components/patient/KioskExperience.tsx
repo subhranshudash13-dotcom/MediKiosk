@@ -106,16 +106,16 @@ export function KioskExperience() {
   const [textInput, setTextInput] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [socratesState, setSocratesState] = useState<SocratesData>({
-    site: "Thorax / Chest",
-    onset: "Gradual over 2 days",
-    character: "Constricting pressure",
-    radiation: "Radiating to left shoulder",
-    associations: ["Nocturnal fever", "Fatigue"],
-    timing: "Evening worsening",
-    exacerbating_relieving: "Worse on exertion",
-    severity_score: 7,
+    site: undefined,
+    onset: undefined,
+    character: undefined,
+    radiation: undefined,
+    associations: [],
+    timing: undefined,
+    exacerbating_relieving: undefined,
+    severity_score: undefined,
   });
-  const [painScore, setPainScore] = useState<number>(7);
+  const [painScore, setPainScore] = useState<number>(0);
   const [generatedTokenNumber, setGeneratedTokenNumber] = useState<string>("A-104");
   const [sessionId] = useState<string>(() => "kiosk_" + Math.random().toString(36).substring(2, 9));
 
@@ -155,15 +155,56 @@ export function KioskExperience() {
     };
   }, []);
 
-  const playTTSAudio = (base64Audio?: string | null) => {
-    if (!base64Audio) return;
-    try {
-      if (audioElementRef.current) {
-        audioElementRef.current.src = base64Audio;
-        audioElementRef.current.play().catch(() => {});
+  const playTTSAudio = (base64Audio?: string | null, textToSpeak?: string) => {
+    const text = textToSpeak || aiSpokenResponse;
+    
+    // Web Speech API fallback helper
+    const speakWebSpeech = (txt: string) => {
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        try {
+          window.speechSynthesis.cancel(); // Stop prior speech
+          const utterance = new SpeechSynthesisUtterance(txt);
+          if (language === "hi") utterance.lang = "hi-IN";
+          else if (language === "bn") utterance.lang = "bn-IN";
+          else if (language === "te") utterance.lang = "te-IN";
+          else if (language === "ta") utterance.lang = "ta-IN";
+          else utterance.lang = "en-IN";
+          window.speechSynthesis.speak(utterance);
+        } catch (e) {
+          console.warn("Web Speech API playback note:", e);
+        }
       }
-    } catch (err) {
-      console.error("TTS playback error:", err);
+    };
+
+    if (base64Audio && base64Audio.trim().length > 10) {
+      try {
+        if (audioElementRef.current) {
+          audioElementRef.current.pause();
+          const srcUri = base64Audio.startsWith("data:")
+            ? base64Audio
+            : `data:audio/mp3;base64,${base64Audio}`;
+          audioElementRef.current.src = srcUri;
+          
+          audioElementRef.current.onended = () => {
+            setRecording(false);
+          };
+
+          const playPromise = audioElementRef.current.play();
+          if (playPromise !== undefined) {
+            playPromise.catch((err) => {
+              console.warn("Audio element play failed, falling back to Web Speech API:", err);
+              speakWebSpeech(text);
+            });
+          }
+        } else {
+          speakWebSpeech(text);
+        }
+      } catch (err) {
+        console.error("TTS playback error, falling back to Web Speech API:", err);
+        speakWebSpeech(text);
+      }
+    } else if (text) {
+      speakWebSpeech(text);
     }
   };
 
@@ -191,10 +232,9 @@ export function KioskExperience() {
       }
     }
 
-    if (data.audio_base64) {
-      playTTSAudio(data.audio_base64);
-    }
+    playTTSAudio(data.audio_base64, data.spoken_response);
   };
+
 
   const sendTextMessage = async (textToSend: string) => {
     if (!textToSend.trim()) return;

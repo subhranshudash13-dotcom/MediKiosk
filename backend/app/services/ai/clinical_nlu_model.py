@@ -241,7 +241,7 @@ class ClinicalNLUModel:
         # 3. Extract Anatomical Site
         if any(k in text_lower for k in ["chest", "chhati", "seene", "chhatilo", "छाती", "सीना", "ఛాతీ", "గుండె", "நெஞ்சு", "বুক", "বুকে"]):
             payload.site = "Chest"
-        elif any(k in text_lower for k in ["stomach", "pet", "abdomen", "kadupu", "पेट", "కడుపు", "வயிறு", "পেট", "পেটে"]):
+        elif any(k in text_lower for k in ["stomach", "pet", "abdomen", "kadupu", "पेट", "कడుపు", "வயிறு", "পেট", "পেটে"]):
             payload.site = "Abdomen/Stomach"
         elif any(k in text_lower for k in ["head", "sar", "sir", "tala", "सिर", "सर", "తల", "தலை", "মাথা", "মাথায়"]):
             payload.site = "Head"
@@ -249,12 +249,11 @@ class ClinicalNLUModel:
             payload.site = "Throat"
         elif any(k in text_lower for k in ["back", "peeth", "venuka", "kamar", "कमर", "पीठ", "నడుము", "పిঠ"]):
             payload.site = "Back/Spine"
+
         elif any(k in text_lower for k in ["knee", "ankle", "pair", "kaalu", "ghutna", "घुटने", "टखने", "पैर", "కాలు", "পা"]):
             payload.site = "Lower Limbs / Joints"
         elif any(k in text_lower for k in ["skin", "rash", "khujli", "chamdi", "त्वचा", "खुजली", "దద్దుర్లు", "চামড়া", "চুলকানি"]):
             payload.site = "Skin / Whole body"
-        elif nearest_doc and similarity > 0.4 and not nearest_doc.get("is_meta_intent"):
-            payload.site = nearest_doc.get("site")
 
         # 4. Extract Radiation
         if any(k in text_lower for k in ["left arm", "baaye hath", "baye hath", "edama cheyi", "बाएं हाथ", "ఎడమ చేయి", "বাঁ হাত"]):
@@ -273,7 +272,7 @@ class ClinicalNLUModel:
             payload.character = "Sharp / Stabbing"
         elif any(k in text_lower for k in ["burning", "jalan", "manta", "जलन", "మంట", "জ্বালা"]):
             payload.character = "Burning / Dyspeptic"
-        elif any(k in text_lower for k in ["wheez", "ghargharahat", "घरघराहट", "దగ్గు"]):
+        elif any(k in text_lower for k in ["wheez", "ghargharahat", "घरघराहट", "దగ్गु"]):
             payload.character = "Wheezing / Constricting"
 
         # 6. Extract Associated Symptoms with Negation Awareness
@@ -307,9 +306,6 @@ class ClinicalNLUModel:
         if any(k in text_lower for k in ["weak", "kamzori", "alasata", "कमजोरी", "నీరసం", "দুর্বলতা"]):
             symptoms.append("Generalized Weakness")
 
-        if not symptoms and nearest_doc and similarity > 0.4 and not nearest_doc.get("is_meta_intent"):
-            symptoms = nearest_doc.get("associated_symptoms", [])
-
         payload.associated_symptoms = symptoms
 
         # 7. Extract Past History, Allergies & Medications
@@ -322,7 +318,7 @@ class ClinicalNLUModel:
             allergies.append("Penicillin / Beta-lactam Antibiotics (Severe rash/urticaria reported)")
         if any(k in text_lower for k in ["sulfa", "sulfonamide", "सल्फा"]):
             allergies.append("Sulfa Drugs")
-        if any(k in text_lower for k in ["aspirin", "nsaid", "ibuprofen", "combiflam"]):
+        if any(k in text_lower for k in ["aspirin", "nsaid", "ibuprofen"]):
             allergies.append("NSAIDs / Aspirin")
         if any(k in text_lower for k in ["peanut", "peanuts", "egg", "milk allergy", "dust allergy"]):
             allergies.append("Environmental / Food Allergy")
@@ -352,17 +348,20 @@ class ClinicalNLUModel:
             curr_meds.append("Oral Anti-diabetic medication (Metformin)")
         if any(k in text_lower for k in ["thyronorm", "eltroxin", "levothyroxine"]):
             curr_meds.append("Levothyroxine (Thyroid)")
+        if any(k in text_lower for k in ["paracetamol", "crocin", "dolo", "calpol", "pcm", "combiflam"]):
+            curr_meds.append("Paracetamol / Analgesic")
 
         payload.past_history = past_hist
         payload.allergies = allergies
         payload.current_medications = curr_meds
 
-        if nearest_doc and similarity > 0.35 and not nearest_doc.get("is_meta_intent"):
-            payload.chief_complaint = nearest_doc["chief_complaint"]
+        # Apply strict lexical grounding verification to eliminate any unevidenced extractions
+        payload = safety_guardrails.verify_grounding(payload, transcript)
 
         return payload
 
     def generate_dialogue_fast(
+
         self,
         transcript: str,
         state: ClinicalIntakeState,
@@ -504,23 +503,26 @@ class ClinicalNLUModel:
 
         site_val = state.socrates.site or extracted.site or ""
 
-        # Slot evaluation with repeat prevention
-        candidate_slots = []
-        if not has_site: candidate_slots.append("site")
-        if not has_duration: candidate_slots.append("duration")
-        if not has_severity: candidate_slots.append("severity")
-        if not has_character: candidate_slots.append("character")
-        if not has_associated: candidate_slots.append("associated")
-        if not has_history: candidate_slots.append("history")
-        if not has_radiation and "chest" in site_val.lower(): candidate_slots.append("radiation")
+        # Slot evaluation with repeat prevention and strict turn capping (7-8 questions max)
+        if state.is_triage_complete or state.turn_count >= 7:
+            target_slot = "complete"
+        else:
+            candidate_slots = []
+            if not has_site: candidate_slots.append("site")
+            if not has_duration: candidate_slots.append("duration")
+            if not has_severity: candidate_slots.append("severity")
+            if not has_character: candidate_slots.append("character")
+            if not has_associated: candidate_slots.append("associated")
+            if not has_history: candidate_slots.append("history")
+            if not has_radiation and "chest" in site_val.lower(): candidate_slots.append("radiation")
 
-        target_slot = "complete"
-        for slot in candidate_slots:
-            if slot != state.last_target_slot:
-                target_slot = slot
-                break
-        if target_slot == "complete" and candidate_slots:
-            target_slot = candidate_slots[0]
+            target_slot = "complete"
+            for slot in candidate_slots:
+                if slot != state.last_target_slot:
+                    target_slot = slot
+                    break
+            if target_slot == "complete" and candidate_slots:
+                target_slot = candidate_slots[0]
 
         state.last_target_slot = target_slot
 
@@ -640,18 +642,19 @@ class ClinicalNLUModel:
         if history:
             prev_assistant = [h["content"] for h in history if h.get("role") == "assistant"]
             if prev_assistant and prev_assistant[-1] == spoken:
+                state.is_triage_complete = True
                 if language == "hi":
-                    spoken = "आपकी सभी जानकारियाँ नोट कर ली गई हैं। क्या आपको कुछ और बताना है, या हम डॉक्टर साहब के पास चलें?"
-                    replies = ["हाँ, यही सब है", "डॉक्टर वर्कस्टेशन खोलें", "टोकन नंबर दिखाएं"]
+                    spoken = "आपकी सभी जानकारियाँ नोट कर ली गई हैं और विस्तृत रिपोर्ट डॉक्टर साहब को भेज दी गई है। कृपया ओपीडी टोकन के साथ प्रतीक्षा करें।"
+                    replies = ["डॉक्टर वर्कस्टेशन खोलें", "टोकन नंबर दिखाएं"]
                 elif language == "bn":
-                    spoken = "আপনার সমস্ত তথ্য রেকর্ড করা হয়েছে। আপনার কি আর কিছু বলার আছে?"
-                    replies = ["হ্যাঁ, এটাই সব", "ডাক্তার পোর্টাল খুলুন"]
+                    spoken = "আপনার সকল তথ্য যথাযথভাবে রেকর্ড করে কনসাল্টিং ডাক্তারের কাছে পাঠিয়ে দেওয়া হয়েছে। অনুগ্রহ করে ওপিডি টোকেন নিয়ে অপেক্ষা করুন।"
+                    replies = ["ওপিডি টোকেন দেখুন", "ডাক্তার পোর্টাল খুলুন"]
                 elif language == "te":
-                    spoken = "మీ వివరాలన్నీ నమోదు చేయబడ్డాయి. మీరు ఇంకా ఏమైనా చెప్పాలనుకుంటున్నారా?"
-                    replies = ["అవును, ఇంతే", "డాక్టర్ పోర్టల్"]
+                    spoken = "మీ వివరాలన్నీ నమోదు చేయబడ్డాయి మరియు రిపోర్ట్ డాక్టర్ గారికి పంపబడింది. దయచేసి OPD టోకెన్‌తో వేచి ఉండండి।"
+                    replies = ["టోకెన్ సంఖ్య చూడండి", "డాక్టర్ పోర్టల్"]
                 else:
-                    spoken = "All your clinical details have been recorded. Is there anything else you would like to mention for the doctor?"
-                    replies = ["That is all", "Open Doctor Cockpit"]
+                    spoken = "All your clinical details have been recorded and sent to the consulting physician. Please proceed with your OPD token."
+                    replies = ["View OPD Token", "Open Doctor Cockpit"]
 
         return {
             "spoken_response": spoken,

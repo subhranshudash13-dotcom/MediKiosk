@@ -163,11 +163,16 @@ class AIOrchestratorService:
         # 3. Update Clinical Intake State
         self._merge_extracted_into_state(state, extracted)
 
-        # 4. Check SOCRATES completeness
+        # 4. Check SOCRATES completeness & Turn Cap (Strict 7-8 questions max)
         completeness = safety_guardrails.calculate_socrates_completeness(state.socrates)
         has_core_facts = bool(state.socrates.site and (state.socrates.onset or state.socrates.duration_days))
-        if (red_flag and red_flag.is_emergency) or (completeness >= 0.80 and has_core_facts and state.turn_count >= 5):
+        if (red_flag and red_flag.is_emergency) or (completeness >= 0.55 and has_core_facts and state.turn_count >= 4) or (state.turn_count >= 7):
             state.is_triage_complete = True
+
+        if state.is_triage_complete and not (red_flag and red_flag.is_emergency):
+            # Override spoken response to strictly prevent follow-up question loops
+            spoken_response = self._get_completion_message(state.language)
+            quick_replies = self._get_completion_replies(state.language)
 
         # 5. Update Conversation History
         history.append({"role": "user", "content": transcript})
@@ -348,6 +353,30 @@ class AIOrchestratorService:
     def get_session_state(self, session_id: str) -> Optional[ClinicalIntakeState]:
         """Returns the current clinical intake summary."""
         return self.sessions.get(session_id)
+
+    def _get_completion_message(self, language: str) -> str:
+        if language == "hi":
+            return "आपकी सभी जानकारियाँ नोट कर ली गई हैं और विस्तृत रिपोर्ट डॉक्टर साहब को भेज दी गई है। कृपया ओपीडी टोकन के साथ प्रतीक्षा करें।"
+        elif language == "bn":
+            return "আপনার সকল তথ্য যথাযথভাবে রেকর্ড করে কনসাল্টিং ডাক্তারের কাছে পাঠিয়ে দেওয়া হয়েছে। অনুগ্রহ করে ওপিডি টোকেন নিয়ে অপেক্ষা করুন।"
+        elif language == "te":
+            return "మీ వివరాలన్నీ నమోదు చేయబడ్డాయి మరియు రిపోర్ట్ డాక్టర్ గారికి పంపబడింది. దయచేసి OPD టోకెన్‌తో వేచి ఉండండి।"
+        elif language == "ta":
+            return "உங்கள் அனைத்து விவரங்களும் பதிவு செய்யப்பட்டு மருத்துவருக்கு அனுப்பப்பட்டுள்ளன. தயவுசெய்து உங்கள் OPD டோக்கனுடன் காத்திருக்கவும்."
+        else:
+            return "All your clinical details have been recorded and sent to the consulting physician. Please proceed with your OPD token."
+
+    def _get_completion_replies(self, language: str) -> List[str]:
+        if language == "hi":
+            return ["डॉक्टर वर्कस्टेशन खोलें", "टोकन नंबर दिखाएं"]
+        elif language == "bn":
+            return ["ওপিডি টোকেন দেখুন", "ডাক্তার পোর্টাল খুলুন"]
+        elif language == "te":
+            return ["టోకెన్ సంఖ్య చూడండి", "డాక్టర్ పోర్టల్"]
+        elif language == "ta":
+            return ["OPD டோக்கனைப் பார்க்கவும்", "மருத்துவர் போர்ட்டலைத் திறக்கவும்"]
+        else:
+            return ["View OPD Token", "Open Doctor Cockpit"]
 
     def reset_session(self, session_id: str):
         """Resets intake session for a new patient."""

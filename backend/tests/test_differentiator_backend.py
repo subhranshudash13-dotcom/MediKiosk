@@ -117,11 +117,12 @@ def test_guardrails_socrates_completeness_scoring():
         onset="Sudden",
         character="Sharp throbbing",
         radiation="To back",
-        severity="8/10",
+        severity_score=8,
         duration_days=2,
         time_course="Worsening after meals",
         exacerbating_relieving="Relieved by antacids"
     )
+
     score_dense = safety_guardrails.calculate_socrates_completeness(socrates_dense)
     assert score_dense >= 0.70
 

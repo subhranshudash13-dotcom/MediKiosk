@@ -60,8 +60,13 @@ BEHAVIORAL DIRECTIVES:
    - If the patient says "you didn't take all details", "ask more questions", "be more specific", or adds more symptoms:
      * Graciously acknowledge and ask about aggravating/relieving factors, previous episodes, past medical history (hypertension, diabetes, thyroid), or ongoing medications.
 
-4. Intake Completion Criteria:
-   - Do NOT rush to complete intake. Only summarize and conclude when at least 4-5 SOCRATES dimensions have been thoroughly gathered, OR if the patient explicitly says "that's all / please finish / ready for doctor".
+4. Intake Completion & Maximum Question Limit (STRICT MAX 7-8 QUESTIONS):
+   - Ask NO MORE than 7-8 unique questions total in the entire conversation.
+   - If Current Turn Count >= 7, OR if 4-5 SOCRATES dimensions have been gathered, OR if an emergency red flag is triggered:
+     * YOU MUST STOP ASKING QUESTIONS IMMEDIATELY.
+     * DO NOT ASK ANY FURTHER QUESTIONS.
+     * Warmly conclude intake in {language}, state that all clinical details have been recorded and sent to the consulting doctor, and instruct them to proceed with their OPD token.
+
 
 5. Output Format:
    Return ONLY a valid JSON object matching this schema:
@@ -173,15 +178,17 @@ class FastAIPipelineService:
             logger.warning("FastAIPipeline: Circuit breaker OPEN. Directing traffic to high-speed local NLU.")
             return local_extraction, local_spoken, local_replies
 
-        # Step 2: Fast Cloud LLM Race (Target < 4.5s)
+        # Step 2: Fast Cloud LLM Race (Target < 1.5s)
         try:
             async with sem:
                 llm_result = await asyncio.wait_for(
                     self._single_pass_cloud_llm(transcript, state, language, history=history),
-                    timeout=4.5
+                    timeout=1.5
                 )
                 if llm_result:
                     extracted, spoken, replies = llm_result
+                    # Apply grounding verification to LLM extraction
+                    extracted = safety_guardrails.verify_grounding(extracted, transcript)
                     if spoken and len(spoken.strip()) > 5:
                         if self._consecutive_failures > 0:
                             self._consecutive_failures = 0
@@ -195,11 +202,11 @@ class FastAIPipelineService:
                         return extracted, sanitized_spoken, replies or local_replies
         except asyncio.TimeoutError:
             self._consecutive_failures += 1
-            logger.info(f"FastAIPipeline: Cloud LLM timed out (>4500ms, count={self._consecutive_failures}), using local NLU.")
+            logger.info(f"FastAIPipeline: Cloud LLM timed out (>1500ms, count={self._consecutive_failures}), using local NLU.")
             await event_logger.log_event(
                 event_type="AI_FALLBACK_TIMEOUT",
                 session_id=sid,
-                details={"timeout_ms": 4500, "consecutive_failures": self._consecutive_failures},
+                details={"timeout_ms": 1500, "consecutive_failures": self._consecutive_failures},
                 severity="WARNING"
             )
         except Exception as e:
@@ -212,19 +219,55 @@ class FastAIPipelineService:
                 severity="WARNING"
             )
 
-        # Check if we need to trip the circuit breaker (after 10 consecutive failures)
-        if self._consecutive_failures >= 10:
-            self._circuit_open_until = time.time() + 20.0  # Open for 20s
-            logger.error("FastAIPipeline: Circuit breaker TRIPPED! 10 consecutive failures. Open for 20s.")
+        # Check if we need to trip the circuit breaker (after 5 consecutive failures)
+        if self._consecutive_failures >= 5:
+            self._circuit_open_until = time.time() + 15.0  # Open for 15s
+            logger.error("FastAIPipeline: Circuit breaker TRIPPED! 5 consecutive failures. Open for 15s.")
             await event_logger.log_event(
                 event_type="CIRCUIT_BREAKER_TRIPPED",
                 session_id=sid,
-                details={"failures": self._consecutive_failures, "open_seconds": 20},
+                details={"failures": self._consecutive_failures, "open_seconds": 15},
                 severity="ERROR"
             )
 
         # Fallback to high-speed local NLU output
         return local_extraction, local_spoken, local_replies
+
+    def _build_dynamic_quick_replies(self, state: ClinicalIntakeState, target_slot: str, language: str = "hi") -> List[str]:
+        """Builds contextual quick replies based on missing SOCRATES slots and language."""
+        if language == "hi":
+            if target_slot == "site":
+                return ["सीने में दर्द है", "पेट में दर्द है", "सिर में तेज दर्द"]
+            elif target_slot == "duration":
+                return ["आज सुबह से है", "2-3 दिनों से है", "1 हफ्ते से ज्यादा"]
+            elif target_slot == "severity":
+                return ["10 में से 8 (तेज दर्द)", "10 में से 5 (मध्यम)", "10 में से 3 (हल्का)"]
+            elif target_slot == "character":
+                return ["भारी दबाव जैसा लग रहा है", "तेज चुभन वाला दर्द है", "जलन जैसी तकलीफ़"]
+            elif target_slot == "associated":
+                return ["उल्टी और कमजोरी महसूस हो रही है", "सांस फूलने की शिकायत है", "कोई अन्य लक्षण नहीं है"]
+            elif target_slot == "history":
+                return ["बीपी और शुगर की दवा चल रही है", "पहले से कोई बीमारी नहीं है", "थायराइड की समस्या है"]
+            else:
+                return ["डॉक्टर वर्कस्टेशन खोलें", "टोकन नंबर दिखाएं"]
+        elif language == "bn":
+            if target_slot == "site":
+                return ["পেটে ব্যথা হচ্ছে", "বুকে ব্যথা বা চাপ", "মাথায় তীব্র যন্ত্রণা"]
+            elif target_slot == "duration":
+                return ["আজ সকাল থেকে", "২-৩ দিন ধরে", "এক সপ্তাহের বেশি"]
+            elif target_slot == "severity":
+                return ["১০ এ ৮ (তীব্র কষ্ট)", "১০ এ ৫ (মাঝারি কষ্ট)", "১০ এ ৩ (হালকা কষ্ট)"]
+            else:
+                return ["ওপিডি টোকেন দেখুন", "ডাক্তার পোর্টাল খুলুন"]
+        else:
+            if target_slot == "site":
+                return ["In my stomach/abdomen", "In my chest", "In my head"]
+            elif target_slot == "duration":
+                return ["Since today morning", "For 2-3 days", "More than 1 week"]
+            elif target_slot == "severity":
+                return ["8 out of 10 (Severe)", "5 out of 10 (Moderate)", "3 out of 10 (Mild)"]
+            else:
+                return ["View OPD Token", "Open Doctor Cockpit"]
 
     async def _single_pass_cloud_llm(
         self,
@@ -253,11 +296,11 @@ Known Clinical State:
 
 Respond as Aarogya Mitra following all instructions. Return strictly valid raw JSON."""
 
-        # 1. Try Groq (Ultra-Fast 600-1200ms)
+        # 1. Try Groq (Ultra-Fast < 1000ms using llama-3.1-8b-instant)
         if settings.GROQ_API_KEY or self.groq_client:
             client = self.groq_client
             if client:
-                for model_name in ["openai/gpt-oss-120b", "openai/gpt-oss-20b"]:
+                for model_name in ["llama-3.1-8b-instant", "llama3-70b-8192", "mixtral-8x7b-32768"]:
                     try:
                         resp = await client.chat.completions.create(
                             model=model_name,
@@ -265,8 +308,8 @@ Respond as Aarogya Mitra following all instructions. Return strictly valid raw J
                                 {"role": "system", "content": UNIFIED_SINGLE_PASS_PROMPT.format(language=language)},
                                 {"role": "user", "content": user_prompt}
                             ],
-                            temperature=0.2,
-                            max_tokens=600
+                            temperature=0.1,
+                            max_tokens=500
                         )
                         raw = resp.choices[0].message.content or "{}"
                         data = clean_json_dict(raw)
@@ -278,6 +321,9 @@ Respond as Aarogya Mitra following all instructions. Return strictly valid raw J
                             extraction_dict = {}
 
                         extracted = ExtractionPayload(**extraction_dict)
+                        # Filter LLM extraction with strict grounding
+                        extracted = safety_guardrails.verify_grounding(extracted, transcript)
+
                         spoken = (
                             data.get("spoken_response")
                             or data.get("spoken")
@@ -308,12 +354,13 @@ Respond as Aarogya Mitra following all instructions. Return strictly valid raw J
                             {"role": "system", "content": UNIFIED_SINGLE_PASS_PROMPT.format(language=language)},
                             {"role": "user", "content": user_prompt}
                         ],
-                        temperature=0.2,
-                        max_tokens=500
+                        temperature=0.1,
+                        max_tokens=400
                     )
                     raw = resp.choices[0].message.content or "{}"
                     data = clean_json_dict(raw)
                     extracted = ExtractionPayload(**data.get("extraction", {}))
+                    extracted = safety_guardrails.verify_grounding(extracted, transcript)
                     spoken = data.get("spoken_response") or data.get("response") or data.get("spoken") or ""
                     replies = data.get("quick_replies") or data.get("replies") or []
                     if spoken:
@@ -325,3 +372,4 @@ Respond as Aarogya Mitra following all instructions. Return strictly valid raw J
 
 
 fast_ai_pipeline = FastAIPipelineService()
+

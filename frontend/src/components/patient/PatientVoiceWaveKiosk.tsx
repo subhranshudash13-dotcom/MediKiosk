@@ -222,6 +222,51 @@ export function PatientVoiceWaveKiosk() {
     };
   }, [voiceState]);
 
+  const playAudioResponse = (base64Audio?: string | null, textToSpeak?: string) => {
+    setVoiceState("speaking");
+    const speakFallback = (txt?: string) => {
+      if (txt && typeof window !== "undefined" && "speechSynthesis" in window) {
+        try {
+          window.speechSynthesis.cancel();
+          const utt = new SpeechSynthesisUtterance(txt);
+          if (selectedLanguage === "hi") utt.lang = "hi-IN";
+          else if (selectedLanguage === "bn") utt.lang = "bn-IN";
+          else if (selectedLanguage === "te") utt.lang = "te-IN";
+          else if (selectedLanguage === "ta") utt.lang = "ta-IN";
+          else utt.lang = "en-IN";
+          utt.onend = () => setVoiceState("listening");
+          window.speechSynthesis.speak(utt);
+        } catch (e) {
+          setVoiceState("listening");
+        }
+      } else {
+        setTimeout(() => setVoiceState("listening"), 1200);
+      }
+    };
+
+    if (base64Audio && base64Audio.trim().length > 10) {
+      if (audioElementRef.current) {
+        audioElementRef.current.pause();
+        const srcUri = base64Audio.startsWith("data:")
+          ? base64Audio
+          : `data:audio/mp3;base64,${base64Audio}`;
+        audioElementRef.current.src = srcUri;
+        audioElementRef.current.onended = () => setVoiceState("listening");
+        const playPromise = audioElementRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((err) => {
+            console.warn("Audio element playback failed, using Web Speech API fallback:", err);
+            speakFallback(textToSpeak);
+          });
+        }
+      } else {
+        speakFallback(textToSpeak);
+      }
+    } else {
+      speakFallback(textToSpeak);
+    }
+  };
+
   const handleSelectSample = async (sample: typeof SAMPLE_UTTERANCES[0]) => {
     setVoiceState("processing");
     setTranscript(sample.transcript);
@@ -234,11 +279,9 @@ export function PatientVoiceWaveKiosk() {
         selectedLanguage
       );
       if (resp.spoken_response) {
-        setVoiceState("speaking");
-        if (resp.audio_base64 && audioElementRef.current) {
-          audioElementRef.current.src = resp.audio_base64;
-          audioElementRef.current.play().catch(() => {});
-        }
+        playAudioResponse(resp.audio_base64, resp.spoken_response);
+      } else {
+        setVoiceState("listening");
       }
     } catch {
       setTimeout(() => {
@@ -272,11 +315,7 @@ export function PatientVoiceWaveKiosk() {
               setTranscript(resp.clinical_state.raw_transcripts.slice(-1)[0]);
             }
             if (resp.spoken_response) {
-              setVoiceState("speaking");
-              if (resp.audio_base64 && audioElementRef.current) {
-                audioElementRef.current.src = resp.audio_base64;
-                audioElementRef.current.play().catch(() => {});
-              }
+              playAudioResponse(resp.audio_base64, resp.spoken_response);
             } else {
               setVoiceState("idle");
             }
@@ -298,6 +337,7 @@ export function PatientVoiceWaveKiosk() {
       setVoiceState("listening");
     }
   };
+
 
   const [currentSessionId, setCurrentSessionId] = useState("session_demo_01");
 

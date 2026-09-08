@@ -89,3 +89,26 @@ async def test_multi_turn_dynamic_dialogue():
     )
     assert turn2.clinical_state.turn_count == 2
     assert "fever" in turn2.clinical_state.associated_symptoms or "bukhar" in str(turn2.clinical_state.raw_transcripts)
+
+
+@pytest.mark.asyncio
+async def test_max_turn_question_limit_and_loop_prevention():
+    """Verify voice agent stops asking questions at max turn threshold and does not run in endless loops."""
+    session_id = "test_loop_prevention_session"
+    responses = []
+    for turn in range(1, 9):
+        res = await ai_orchestrator.process_text_turn(
+            f"Turn {turn} symptom update statement",
+            session_id=session_id,
+            language_code="hi",
+            synthesize_audio=False
+        )
+        responses.append(res)
+    
+    final_res = responses[-1]
+    # Check that triage is marked complete by turn 7/8
+    assert final_res.is_intake_complete is True
+    assert final_res.clinical_state.is_triage_complete is True
+    # Verify the final response contains a definitive completion message without asking further questions
+    assert "?" not in final_res.spoken_response
+    assert "ओपीडी टोकन" in final_res.spoken_response or "डॉक्टर साहब को भेज दी गई है" in final_res.spoken_response
