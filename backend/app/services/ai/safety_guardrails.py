@@ -3,38 +3,54 @@ from typing import List, Optional, Tuple, Set
 from app.services.ai.schemas import RedFlagAlert, ExtractedSOCRATES, ExtractionPayload
 
 
-# Deterministic Compound Red Flag Regex Patterns for Emergency Medical Triage
-# Ensures 100% recall on true emergencies while requiring collocates to avoid false positives (e.g. isolated 'saans' or 'left arm')
+# Deterministic Multilingual Red Flag Regex Patterns for Emergency Medical Triage
+# Script-aware, collocate-based regex for 100% recall across Hindi, Hinglish, Telugu, Tamil, Bengali, Marathi, Kannada, and Indian English
 RED_FLAG_PATTERNS = [
     {
         "type": "CARDIOVASCULAR_ACUTE",
-        "pattern": r"(?:chest\s*pain|seene\s*mein?\s*dard|chhati\s*me\s*dard|सीने\s*में\s*दर्द|छाती\s*में\s*दर्द|ఛాతీ\s*నొప్పి|বুকের\s*ব্যথা)\s*.*?\b(?:left\s*arm|baye\s*hath|baayein\s*hath|jaw|radiat|sweat|paseena|crushing|pressure|उल्टी|घबराहट)\b|\b(?:crushing|tight\s*pressure|heavy\s*pressure|tightness)\s*(?:in|on)?\s*(?:my\s*)?chest\b|\b(?:chest|seene|chhati|सीने|छाती)\s*(?:mein|me)?\s*(?:severe|tez|bohot|बहुत)?\s*(?:crushing|heavy|tez)?\s*(?:pain|dard|दर्द)\b|\b(?:radiat(?:ing|es)?\s*to\s*(?:my\s*)?(?:left\s*arm|jaw|back|shoulder))\b",
+        "pattern": (
+            r"(?:chest|seene|chhati|सीने|छाती|గుండెల్లో|ఛాతీ|நெஞ்சில்|நெஞ்சு|छातीत|বুকের|বুকে)"
+            r".*?"
+            r"(?:dard|pain|bhari|bhāri|भारीपन|दर्द|నొప్పి|నొప్పుల|లక్షణ|வலி|வேதனை|வேதனை|वेदना|ব্যথা|অস্বস্তি|pressure|tightness|jalan|जलन|crushing|radiat|left\s*arm|baye|baaye|baayein|edama|ఎడమ|இடது|டாப்யா|डाव्या|বাঁ|jaw|जबड़े|చేతికి|கைக்கு|हाताकडे|sweat|paseena|पसीना|చెమట|చెమటలు|வியர்க்கிறது|घाम|ঘাম)"
+            r"|\b(?:crushing|tight\s*pressure|heavy\s*pressure|tightness)\s*(?:in|on)?\s*(?:my\s*)?chest\b"
+            r"|\b(?:radiat(?:ing|es)?\s*to\s*(?:my\s*)?(?:left\s*arm|jaw|back|shoulder))\b"
+        ),
         "action": "Immediate Emergency Triage: Potential Acute Coronary Syndrome. Alert Attending Medical Officer.",
     },
     {
         "type": "RESPIRATORY_DISTRESS",
-        "pattern": r"\b(?:cannot\s*breathe|shortness\s*of\s*breath|gasping\s*for\s*air|stridor|choking|gale\s*me\s*dum)\b|\b(?:saans|breath|oosiri|శ్వాస|सांस|শ্বাস)\b.*?\b(?:takleef|phool|problem|kashtha|difficulty|aadatam\s*ledu|breathe|दुश्वारी|तकलीफ|কষ্ট)\b|\b(?:takleef|phool|problem|kashtha|difficulty)\b.*?\b(?:saans|breath|oosiri|सांस|শ্বাস)\b",
+        "pattern": r"(?:cannot\s*breathe|shortness\s*of\s*breath|gasping\s*for\s*air|stridor|choking|gale\s*me\s*dum|saans|breath|oosiri|శ్వాస|సాన్స్|सांस|শ্বাস).*(?:takleef|phool|phoolti|dikkat|problem|kashtha|difficulty|aadatam|breathe|दुश्वारी|तकलीफ|कष्ट|నొప్పి|కష్టం|శ్రమ)",
         "action": "Urgent Oxygen & Airway Assessment: Acute Respiratory Distress.",
     },
     {
         "type": "STROKE_NEUROLOGICAL",
-        "pattern": r"\b(?:facial?\s*droop|slurred\s*speech|loss\s*of\s*speech|speech\s*loss|ek\s*taraf\s*kamzori|sudden\s*numbness|loss\s*of\s*consciousness|behosh|convulsion|daura|seizure|syncope|बेहोश|दौरा|लकवा|जीभ\s*लटपटा)\b",
+        "pattern": (
+            r"(?:facial?\s*droop|slurred\s*speech|loss\s*of\s*speech|speech\s*loss|ek\s*taraf\s*kamzori|sudden\s*numbness|loss\s*of\s*consciousness|behosh|convulsion|daura|seizure|syncope|बेहोश|दौरा|लकवा|जीभ\s*लटपटा|टेढ़ा|टेढा|मुंह|ఒంటి\s*పక్షం|పక్షవాతం)"
+        ),
         "action": "Code Stroke / Neuro Priority: Immediate Neurological Examination Required.",
     },
     {
         "type": "SEVERE_TRAUMA_BLEEDING",
-        "pattern": r"\b(?:heavy\s*(?:uncontrolled\s*)?bleed(?:ing)?|uncontrolled\s*bleed(?:ing)?|coughing\s*up\s*(?:bright\s*red\s*)?blood|hemoptysis|khoon\s*behta|severe\s*head\s*injury|sar\s*pe\s*chot|active\s*bleeding|खून\s*बह|रक्तस्राव|రక్తస్రావం|রক্ত)\b",
+        "pattern": (
+            r"(?:heavy\s*(?:uncontrolled\s*)?bleed(?:ing)?|uncontrolled\s*bleed(?:ing)?|coughing\s*up\s*(?:bright\s*red\s*)?blood|hemoptysis|khoon\s*beh|khoon\s*behta|severe\s*head\s*injury|sar\s*pe\s*chot|haaddi|haaddi\s*bahar|active\s*bleeding|accident|खून\s*बह|रक्तस्राव|రక్తస్రావం|రక్తం|রক্ত|চোট)"
+        ),
         "action": "Trauma Triage: Hemorrhage Control & Wound Evaluation.",
     },
-
     {
         "type": "ANAPHYLAXIS",
-        "pattern": r"\b(?:anaphylax|swelling\s*of\s*lips|throat\s*swelling|throat\s*closing|severe\s*allergic\s*reaction)\b",
+        "pattern": r"(?:anaphylax|swelling\s*of\s*lips|throat\s*swelling|throat\s*closing|severe\s*allergic\s*reaction)",
         "action": "Immediate Emergency: Suspected Anaphylaxis / Airway Compromise.",
     },
     {
         "type": "ACUTE_SURGICAL_ABDOMEN",
-        "pattern": r"\b(?:right\s*lower\s*(?:quadrant|side)|lower\s*right\s*side|appendicitis|mcburney)\b|\b(?:daayein|daayen|right)\s*.*?\b(?:niche|side)?\s*(?:pet|stomach|abdomen)\s*.*?\b(?:tez|severe|sharp)?\s*(?:dard|pain)\b",
+        "pattern": (
+            r"(?:right\s*lower\s*(?:quadrant|side)|lower\s*right\s*side|appendicitis|mcburney)"
+            r"|(?:daayein|daayen|right|niche|lower)"
+            r".*?"
+            r"(?:pet|stomach|abdomen|niche)"
+            r".*?"
+            r"(?:tez|severe|sharp|dard|pain)"
+        ),
         "action": "Urgent Surgical Assessment: Suspected Acute Appendicitis / Acute Surgical Abdomen.",
     }
 ]

@@ -368,7 +368,7 @@ export default function DoctorDashboard() {
               </div>
               <div className="flex items-center gap-2">
                 <a
-                  href={`http://localhost:8000/api/v1/clinical/report/pdf/${currentPatient.sessionId || currentPatient.id || 'demo'}`}
+                  href={`http://localhost:8000/api/v1/clinical/report/pdf/${(currentPatient as any).sessionId || currentPatient.id || 'demo'}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-4 py-2 rounded-full bg-[#1B4332] text-white hover:bg-[#081C15] text-xs font-bold transition-all flex items-center gap-1.5 shadow-subtle cursor-pointer"

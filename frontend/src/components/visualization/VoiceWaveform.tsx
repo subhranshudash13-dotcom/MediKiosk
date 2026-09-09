@@ -80,22 +80,25 @@ export function VoiceWaveform({
   const bars = [0.35, 0.6, 0.9, 0.75, 1, 0.8, 0.95, 0.5, 0.4, 0.7, 0.85, 0.65, 0.45];
 
   return (
-    <div className={cn("flex flex-col items-center gap-3 rounded-2xl border border-[#E0D7C9] bg-white p-5 shadow-subtle", className)}>
-      {/* Physiological Acoustic Monitor Line in Sage & Pine */}
-      <div className="relative w-full h-8 overflow-hidden border-b border-[#E0D7C9] pb-2">
-        <svg viewBox="0 0 300 30" className="w-full h-full stroke-[#2D6A4F]" fill="none" strokeWidth="1.75">
+    <div className={cn("flex flex-col items-center gap-3 rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-xs", className)}>
+      {/* Physiological Acoustic Monitor Line in Clinical Blue */}
+      <div className="relative w-full h-8 overflow-hidden border-b border-[#E2E8F0] pb-2">
+        <svg viewBox="0 0 300 30" className="w-full h-full stroke-[#0056B3]" fill="none" strokeWidth="1.75">
           <path
             d="M0 15 L45 15 L52 10 L60 20 L68 15 L100 15 L108 4 L114 26 L122 8 L128 19 L136 15 L200 15 L208 9 L214 21 L220 15 L300 15"
             strokeDasharray="6 3"
             className={active ? "opacity-90" : "opacity-30"}
           />
         </svg>
-        <span className="absolute top-0 right-1 text-[10px] font-mono font-semibold uppercase text-[#606963]">
+        <span className={cn(
+          "absolute top-0 right-1 text-[10px] font-mono font-bold uppercase transition-colors",
+          active ? "text-[#28A745]" : "text-[#94A3B8]"
+        )}>
           {active ? "● Live Acoustic Stream" : "○ Microphone Standby"}
         </span>
       </div>
 
-      {/* Tactile Frequency Amplitude Bars in Terracotta & Forest Pine */}
+      {/* Tactile Frequency Amplitude Bars in Clinical Blue */}
       <div className="flex h-12 items-center justify-center gap-1.5 px-4">
         {bars.map((weight, i) => {
           const height = active ? Math.max(8, Math.min(44, weight * level * 48)) : 6;
@@ -105,7 +108,7 @@ export function VoiceWaveform({
               style={{ height: `${height}px` }}
               className={cn(
                 "w-1.5 rounded-full transition-all duration-75",
-                active ? "bg-[#1B4332]" : "bg-[#E0D7C9]"
+                active ? "bg-[#0056B3]" : "bg-[#E2E8F0]"
               )}
             />
           );

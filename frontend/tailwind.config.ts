@@ -10,81 +10,119 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Master Natural Clinical Palette: Forest Pine + Botanical Sage + Terracotta + Warm Linen + Mineral Charcoal
-        pine: {
-          DEFAULT: "#1B4332",
-          dark: "#081C15",
-          light: "#2D6A4F",
-          subtle: "#E8F5EE",
+        // v2 Primary Clinical Blue Palette
+        clinical: {
+          DEFAULT: "#0056B3",
+          dark: "#004085",
+          darker: "#002752",
+          light: "#CCE5FF",
+          subtle: "#EBF3FC",
+          hover: "#004B9E",
         },
-        sage: {
-          DEFAULT: "#40916C",
-          dark: "#2D6A4F",
-          light: "#D8F3DC",
-          muted: "#EBF7EE",
+        // v2 Secondary Calming Teal Palette
+        teal: {
+          DEFAULT: "#17A2B8",
+          brand: "#17A2B8",
+          dark: "#117A8B",
+          darker: "#0C5460",
+          light: "#D1ECF1",
+          subtle: "#E8F7F9",
         },
-        terracotta: {
-          DEFAULT: "#9C4124",
-          dark: "#7A3119",
-          light: "#FDF3F0",
-          hover: "#B34A29",
-        },
-        linen: {
-          DEFAULT: "#FBF9F5",
-          warm: "#F5F1E9",
-          card: "#FFFFFF",
-          subtle: "#EFEBE2",
-          border: "#E0D7C9",
-          borderStrong: "#C9BEAC",
-        },
+        // v2 Deep Charcoal Typography
         charcoal: {
-          DEFAULT: "#1F2421",
-          soft: "#2A302D",
-          secondary: "#4E5752",
-          muted: "#76807A",
-          border: "#E0D7C9",
-          "border-subtle": "#EDE8DE",
+          DEFAULT: "#2C3E50",
+          dark: "#1A252F",
+          secondary: "#4A5D6E",
+          muted: "#6C7A89",
+          subtle: "#8A9BA8",
+          border: "#DEE2E6",
+          "border-subtle": "#E9ECEF",
         },
-        emerald: {
-          DEFAULT: "#2D6A4F",
-          light: "#D8F3DC",
-          dark: "#1B4332",
+        // v2 Background & Neutral Canvas
+        canvas: {
+          DEFAULT: "#F8F9FA",
+          card: "#FFFFFF",
+          subtle: "#F1F3F5",
+          border: "#DEE2E6",
+          borderStrong: "#CED4DA",
+          disabled: "#E9ECEF",
+        },
+        // Semantic Action Colors
+        success: {
+          DEFAULT: "#28A745",
+          dark: "#1E7E34",
+          light: "#D4EDDA",
+          subtle: "#EAF7ED",
+        },
+        warning: {
+          DEFAULT: "#DC3545",
+          dark: "#BD2130",
+          light: "#F8D7DA",
+          subtle: "#FCEBEC",
         },
 
-        // Semantic Mappings
-        background: "#FBF9F5",
-        foreground: "#1F2421",
+        // Backward compatibility mappings
+        pine: {
+          DEFAULT: "#0056B3",
+          dark: "#004085",
+          light: "#17A2B8",
+          subtle: "#EBF3FC",
+        },
+        sage: {
+          DEFAULT: "#17A2B8",
+          dark: "#117A8B",
+          light: "#D1ECF1",
+          muted: "#E8F7F9",
+        },
+        terracotta: {
+          DEFAULT: "#DC3545",
+          dark: "#BD2130",
+          light: "#F8D7DA",
+          hover: "#C82333",
+        },
+        linen: {
+          DEFAULT: "#F8F9FA",
+          warm: "#F1F3F5",
+          card: "#FFFFFF",
+          subtle: "#EBF3FC",
+          border: "#DEE2E6",
+          borderStrong: "#CED4DA",
+        },
+
+        // Global Semantic Tokens
+        background: "#F8F9FA",
+        foreground: "#2C3E50",
         card: {
           DEFAULT: "#FFFFFF",
-          foreground: "#1F2421",
+          foreground: "#2C3E50",
         },
         popover: {
           DEFAULT: "#FFFFFF",
-          foreground: "#1F2421",
+          foreground: "#2C3E50",
         },
         primary: {
-          DEFAULT: "#1B4332",
+          DEFAULT: "#0056B3",
           foreground: "#FFFFFF",
         },
         secondary: {
-          DEFAULT: "#9C4124",
+          DEFAULT: "#17A2B8",
           foreground: "#FFFFFF",
         },
         muted: {
-          DEFAULT: "#F3EFE8",
-          foreground: "#606963",
+          DEFAULT: "#F1F3F5",
+          foreground: "#6C7A89",
         },
         accent: {
-          DEFAULT: "#9C4124",
+          DEFAULT: "#17A2B8",
           foreground: "#FFFFFF",
         },
         destructive: {
-          DEFAULT: "#9C4124",
+          DEFAULT: "#DC3545",
           foreground: "#FFFFFF",
         },
-        border: "#E0D7C9",
-        input: "#E0D7C9",
-        ring: "#1B4332",
+        border: "#DEE2E6",
+        input: "#DEE2E6",
+        ring: "#0056B3",
       },
       fontFamily: {
         sans: ["var(--font-inter)", "Inter", "system-ui", "sans-serif"],
@@ -92,22 +130,24 @@ const config: Config = {
         display: ["var(--font-dm-sans)", "DM Sans", "Manrope", "system-ui", "sans-serif"],
       },
       borderRadius: {
-        "data": "6px",          // 4–6px: clinical data, tables, badges, vitals tags
-        "clinical": "6px",      // 4–6px: clinical data values, ICD-10 tags
-        "card": "16px",         // 14–16px: cards, containers, panels, previews
-        "panel": "16px",        // 14–16px: panels
-        "interactive": "24px",  // 20–24px: patient-facing touch targets, kiosk buttons
-        "patient": "24px",      // 20–24px: patient buttons
-        "control": "24px",      // 20–24px: primary action controls
+        "data": "6px",
+        "clinical": "8px",
+        "card": "16px",
+        "panel": "16px",
+        "interactive": "24px",
+        "patient": "9999px",
+        "control": "24px",
         lg: "16px",
         md: "10px",
         sm: "6px",
       },
       boxShadow: {
-        "subtle": "0 1px 3px 0 rgba(31, 36, 33, 0.04)",
-        "card": "0 2px 8px -1px rgba(31, 36, 33, 0.06), 0 1px 3px -1px rgba(31, 36, 33, 0.03)",
-        "elevated": "0 8px 24px -4px rgba(27, 67, 50, 0.08), 0 2px 8px -2px rgba(27, 67, 50, 0.04)",
-        "pressed": "inset 0 2px 4px 0 rgba(31, 36, 33, 0.08)",
+        "subtle": "0 1px 3px 0 rgba(44, 62, 80, 0.05)",
+        "card": "0 2px 10px -1px rgba(44, 62, 80, 0.06), 0 1px 3px -1px rgba(44, 62, 80, 0.03)",
+        "elevated": "0 8px 30px -4px rgba(0, 86, 179, 0.08), 0 4px 12px -2px rgba(44, 62, 80, 0.04)",
+        "pressed": "inset 0 2px 4px 0 rgba(44, 62, 80, 0.08)",
+        "blue-glow": "0 0 20px rgba(0, 86, 179, 0.25)",
+        "teal-glow": "0 0 20px rgba(23, 162, 184, 0.25)",
       }
     },
   },
