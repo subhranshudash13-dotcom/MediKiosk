@@ -55,9 +55,10 @@ class Settings(BaseSettings):
     PII_LOOKUP_HMAC_KEY: str = "medikiosk-pii-lookup-hmac-key-2026"
 
     # AI Services (AI4Bharat / Bhashini / IndicConformer)
-    BHASHINI_API_KEY: str = ""
-    BHASHINI_USER_ID: str = ""
-    BHASHINI_PIPELINE_ID: str = ""
+    BHASHINI_API_KEY: str = "4R7dXbzTP4bEhb0fPJ8Zr8QrtRGXn_xi7ZcsjS1q25N42SjbFaWwo9gOJS6sOH5N"
+    BHASHINI_USER_ID: str = "064e834b5c-f509-41ad-98da-53b285ed500c"
+    BHASHINI_INFERENCE_API_KEY: str = "4R7dXbzTP4bEhb0fPJ8Zr8QrtRGXn_xi7ZcsjS1q25N42SjbFaWwo9gOJS6sOH5N"
+    BHASHINI_PIPELINE_ID: str = "64392f96daac500b55c543d6"
 
     # LLM Providers (Provider-Agnostic)
     LLM_PROVIDER: str = "gemini"  # "gemini" | "openai" | "groq" | "local"

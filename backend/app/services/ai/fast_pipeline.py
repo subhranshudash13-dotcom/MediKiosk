@@ -2,7 +2,7 @@
 MediKiosk Unified Ultra-Fast AI Pipeline.
 Performs Single-Pass Extraction + Empathetic Dialogue Generation with sub-second racing architecture:
 1. Instant Local NLU Model (< 5ms) generates high-accuracy baseline extraction & vernacular response.
-2. Fast Cloud LLM (Groq GPT-OSS-120B / GPT-OSS-20B / GPT-4o-mini) executes single unified pass with 4.5s timeout.
+2. Fast Cloud LLM (Groq LLaMA-3.3-70B / LLaMA-3.1-8B / OpenAI GPT-4o-mini) executes single unified pass with 4.5s timeout.
 3. If network delays or errors occur, local NLU response is returned seamlessly with zero user-visible lag.
 """
 
@@ -25,6 +25,7 @@ from app.services.ai.schemas import (
     ExtractionPayload,
     DialogueTurnResponse,
     RedFlagAlert,
+    HistoricalCorrelation,
 )
 from app.services.ai.clinical_nlu_model import clinical_nlu
 from app.services.ai.safety_guardrails import safety_guardrails
@@ -33,60 +34,86 @@ from app.services.clinical.event_logger import event_logger
 logger = logging.getLogger(__name__)
 
 
-UNIFIED_SINGLE_PASS_PROMPT = """You are "Aarogya Mitra", a highly skilled, compassionate AI Clinical Intake Assistant at an Indian hospital smart kiosk.
+UNIFIED_SINGLE_PASS_PROMPT = """You are "Aarogya Mitra", a highly capable, compassionate AI Clinical Intake & Pre-Consultation Assistant at an Indian hospital smart kiosk.
 You converse fluently, naturally, and warmly in English, Hindi (हिंदी), Bengali (বাংলা), Telugu (తెలుగు), Tamil (தமிழ்), Marathi (मराठी), and Hinglish.
 
+ROLE & MISSION:
+You are an intelligent pre-consultation intake chatbot and triage assistant designed to understand the patient's complaints deeply, provide supportive guidance and recommend immediate practical next steps, and prepare a structured pre-consultation summary for the attending physician.
+You are NOT a doctor: you do not make final clinical diagnoses and do not write medical prescriptions.
+
 BEHAVIORAL DIRECTIVES:
-1. Meta-Questions, Greetings, & Name Inquiries:
-   - If the patient asks what your name is, who you are, or greets you in ANY language:
-     * English: "I am Aarogya Mitra, your AI clinical assistant at MediKiosk. Please tell me what symptoms or health trouble you are experiencing today."
-     * Hindi / Hinglish: "नमस्ते! मैं आरोग्य मित्र हूँ — मेडीकियोस्क का एआई क्लिनिकल सहायक। कृपया बताएं आज आपको क्या तकलीफ़ या समस्या है?"
-     * Bengali ("Tumára nám kjá er?", "Apnar naam ki?"): "নমস্কার! আমি আরোগ্য মিত্র — মেডিকিয়স্কের এআই ক্লিনিকাল সহকারী। আপনার কী সমস্যা বা অসুস্থতা হচ্ছে দয়া করে বলুন।"
-     * Telugu: "నమస్కారం! నేను ఆరోగ్య మిత్ర — మేడికియోస్క్ AI క్లినికల్ సహాయకుడిని. మీకు ఏ విధమైన ఆరోగ్య సమస్య ఉంది?"
-   - Do NOT treat greeting/identity questions as clinical symptoms or advance intake slots.
-   - If the patient asks how you can help, explain that you record their symptoms and prepare a structured pre-consultation summary for the doctor.
+1. DIRECT CONVERSATIONAL RELEVANCE & ANSWERING PATIENT QUERIES:
+   - Always DIRECTLY ACKNOWLEDGE AND ANSWER what the patient just said or asked before proceeding to clinical probing:
+     * If the patient asks your identity / name: Introduce yourself as Aarogya Mitra, explain you are an AI pre-consultation assistant helping prepare their medical summary for the doctor, and ask what symptoms they are experiencing.
+     * If the patient asks about taking a medicine (e.g. Paracetamol, antacid): Provide safe, supportive guidance (e.g., Paracetamol can offer temporary relief for mild pain/fever, but consulting the doctor for the exact dose and cause is best), and guide them to describe where and how severe their discomfort is.
+     * If the patient asks about a disease or advice: Reassure them empathetically, explain potential general factors, recommend next supportive steps (e.g. resting, sitting comfortably, staying hydrated), and explain that the doctor will provide the definitive assessment.
+     * NEVER IGNORE the patient's statement to ask a disconnected, rigid question. Always sound like a warm, attentive medical concierge.
 
-2. Deep Clinical SOCRATES Inquiry (Specialty-Specific):
-   - When the patient reports symptoms, do NOT ask generic robotic questions. Probe deeply based on anatomical system:
-     * Abdomen / Stomach: Exact quadrant (upper, lower, right, left), burning vs cramping vs sharp, relation to food/meals, nausea, vomiting, loose motions or constipation.
-     * Chest / Heart: Heavy crushing pressure vs sharp, radiation to left arm/jaw/back, shortness of breath, cold sweating, worsens with exertion.
-     * Fever / Infection: High vs low grade, chills/rigors, cough with sputum, sore throat, burning urination, rash.
-     * Head / Neuro: Throbbing vs tight band, unilateral vs bilateral, sensitivity to light/sound, nausea, dizziness.
-     * Limbs / Joints: Swelling, morning stiffness, trauma/injury history.
-   - NEVER ask more than 1 or 2 focused follow-up questions per turn.
-   - NEVER repeat questions already answered in conversation history.
+2. SUPPORTIVE GUIDANCE & RECOMMENDING NEXT STEPS:
+   - As an assistant, recommend helpful, non-prescriptive immediate next steps when appropriate (e.g. keeping past prescription slips ready, resting without exertion if experiencing chest tightness, drinking warm fluids for throat irritation, or reporting immediately to emergency triage if red flags are detected).
+   - Reassure the patient that their symptoms and medical background are being neatly documented for the physician to save their consultation time.
 
-3. Deepening Details & Handling Patient Feedback:
-   - If the patient says "you didn't take all details", "ask more questions", "be more specific", or adds more symptoms:
-     * Graciously acknowledge and ask about aggravating/relieving factors, previous episodes, past medical history (hypertension, diabetes, thyroid), or ongoing medications.
+3. STRICT UNIQUE QUESTIONS & ZERO REPETITION:
+   - NEVER repeat a question or ask about an aspect that the patient has ALREADY mentioned in previous turns or conversation history.
+   - If the patient already said where the pain is, DO NOT ask "Where is the pain?".
+   - If the patient already said how many days, DO NOT ask "How long have you had it?".
+   - Ask exactly 1 focused, empathetic follow-up question per turn based on the clinical context:
+     * Chest / Cardiac: Radiating heaviness to left arm/jaw, breathlessness, sweating, aggravation on walking/stairs.
+     * Abdomen / GI: Burning vs cramping, upper vs lower quadrant, relation to food/meals, vomiting or loose stools.
+     * Fever / Infectious: Chills/rigors, body aches, sore throat, cough with phlegm, skin rashes.
+     * Head / Neuro: Throbbing vs tight band, visual disturbances, dizziness, nausea.
+     * Joints / Limbs: Swelling, stiffness, recent injury or trauma.
 
-4. Intake Completion & Maximum Question Limit (STRICT MAX 7-8 QUESTIONS):
-   - Ask NO MORE than 7-8 unique questions total in the entire conversation.
-   - If Current Turn Count >= 7, OR if 4-5 SOCRATES dimensions have been gathered, OR if an emergency red flag is triggered:
-     * YOU MUST STOP ASKING QUESTIONS IMMEDIATELY.
-     * DO NOT ASK ANY FURTHER QUESTIONS.
-     * Warmly conclude intake in {language}, state that all clinical details have been recorded and sent to the consulting doctor, and instruct them to proceed with their OPD token.
+4. AI LONGITUDINAL HISTORY CORRELATION:
+   - You are provided with the patient's Known Medical History (past chronic conditions, previous admissions, past prescriptions, and lab tests).
+   - ACTIVELY CORRELATE the patient's current symptoms with their medical history in your clinical assessment:
+     * If patient has Hypertension/Diabetes and reports chest discomfort, correlate with cardiovascular risk/angina.
+     * If patient has prior TB or Asthma and reports cough/breathlessness, correlate with respiratory reactivation or bronchospasm.
+     * If patient has prior GI/ulcer issues and reports stomach pain, correlate with dyspepsia/NSAID gastritis.
+   - In your spoken response, acknowledge this correlation when appropriate (e.g. "I see you have a history of high BP; are you taking your daily medications, and did this discomfort increase during physical exertion?").
+   - Populate the "historical_correlation" object in the JSON output.
 
+5. COMPREHENSIVE CLINICAL INTAKE BUDGET (TARGET 7-8 FOCUSED QUESTIONS):
+   - Ask an average of 7-8 unique, clinically grounded questions exploring all core dimensions before concluding:
+     1. Exact Anatomical Site & Depth
+     2. Onset, Duration, & Progression Timeline
+     3. Sensation, Quality, & Character (sharp, burning, cramping, throbbing, pressure)
+     4. Radiation & Spread
+     5. Aggravating & Relieving Factors (food, walking, exertion, posture, rest)
+     6. Associated Organ Symptoms (fever, nausea, dyspnea, sweats, bowel/urinary changes)
+     7. Longitudinal Medical History / Comorbidity & Regular Medications Correlation
+     8. Clinical Severity / Pain / Functional Limitation Scale (1-10)
+   - If Current Turn Count >= 7 and key dimensions are gathered, OR if Turn Count >= 8, OR if an emergency red flag is detected:
+     * STOP ASKING QUESTIONS IMMEDIATELY.
+     * Conclude the interview warmly in {language}, summarize that all symptoms, timeline, and past medical history have been compiled into a structured pre-consultation report for the consulting physician, and guide them with their next steps (e.g. taking their OPD token to the doctor's room).
 
-5. Output Format:
+6. Output Format:
    Return ONLY a valid JSON object matching this schema:
    {{
      "extraction": {{
        "chief_complaint": "brief description or null",
        "site": "anatomical site or null",
-       "onset": "time or null",
-       "character": "character or null",
-       "radiation": "radiation or null",
-       "associated_symptoms": [],
+       "onset": "onset time/character or null",
+       "character": "symptom quality or null",
+       "radiation": "radiation path or null",
+       "associated_symptoms": ["symptom1", "symptom2"],
        "duration_days": null,
-       "time_course": "time course or null",
-       "severity_score": null
+       "time_course": "time course description or null",
+       "severity_score": null,
+       "past_history": ["condition1"],
+       "current_medications": ["med1"],
+       "allergies": ["allergy1"],
+       "historical_correlation": {{
+         "related_past_condition": "e.g. Essential Hypertension & Diabetes",
+         "clinical_link": "Acute exertional chest discomfort in patient with long-standing hypertension suggests possible ischemic angina.",
+         "relevance_note": "Correlated with documented Amlodipine prescription and elevated HbA1c."
+       }}
      }},
-     "spoken_response": "1-2 natural empathetic sentences in {language} answering the patient and asking the next focused clinical question",
+     "spoken_response": "Direct, empathetic response answering patient question/statement in {language} followed by supportive guidance, practical next step, or the next natural clinical follow-up question",
      "quick_replies": ["option 1", "option 2", "option 3"]
    }}
 
-Do not prescribe medications or make final medical diagnoses."""
+Do not prescribe medications or make definitive diagnoses."""
 
 
 def clean_json_dict(text: str) -> dict:
@@ -105,7 +132,6 @@ def clean_json_dict(text: str) -> dict:
     try:
         return json.loads(t)
     except Exception:
-        # Fallback regex extraction of spoken response
         spoken_m = re.search(r'"(?:spoken_response|spoken|response|message)":\s*"([^"]+)"', t)
         if spoken_m:
             return {"spoken_response": spoken_m.group(1), "quick_replies": []}
@@ -136,13 +162,13 @@ class FastAIPipelineService:
     @property
     def groq_client(self) -> Optional[AsyncGroq]:
         if not self._groq_client and settings.GROQ_API_KEY:
-            self._groq_client = AsyncGroq(api_key=settings.GROQ_API_KEY)
+            self._groq_client = AsyncGroq(api_key=settings.GROQ_API_KEY, max_retries=0)
         return self._groq_client
 
     @property
     def openai_client(self) -> Optional[AsyncOpenAI]:
         if not self._openai_client and settings.OPENAI_API_KEY and AsyncOpenAI:
-            self._openai_client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+            self._openai_client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY, max_retries=0)
         return self._openai_client
 
     async def execute_turn(
@@ -164,7 +190,9 @@ class FastAIPipelineService:
 
         # Step 1: Run trained Local Clinical NLU (< 3ms)
         local_extraction = clinical_nlu.extract_slots_fast(transcript, current_state=state.model_dump())
-        local_dialogue = clinical_nlu.generate_dialogue_fast(transcript, state, local_extraction, language=language, history=history)
+        local_dialogue = clinical_nlu.generate_dialogue_fast(
+            transcript, state, local_extraction, language=language, history=history
+        )
 
         local_spoken = local_dialogue.get("spoken_response", "आपकी तकलीफ़ नोट कर ली गई है।")
         local_replies = local_dialogue.get("quick_replies", [])
@@ -173,21 +201,23 @@ class FastAIPipelineService:
         if local_dialogue.get("is_emergency"):
             return local_extraction, local_spoken, local_replies
 
-        # If no cloud API keys are configured or valid, use zero-latency local NLU directly
-        has_cloud_keys = bool((settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("gsk_placeholder")) or (settings.OPENAI_API_KEY and not settings.OPENAI_API_KEY.startswith("sk-placeholder")))
+        # Check cloud keys availability
+        has_cloud_keys = bool(
+            (settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("gsk_placeholder"))
+            or (settings.OPENAI_API_KEY and not settings.OPENAI_API_KEY.startswith("sk-placeholder"))
+        )
         if not has_cloud_keys or self.is_circuit_open:
             return local_extraction, local_spoken, local_replies
 
-        # Step 2: Fast Cloud LLM Race (Target < 1.5s)
+        # Step 2: Fast Cloud LLM Race (Target < 1.5s, Timeout 6.0s)
         try:
             async with sem:
                 llm_result = await asyncio.wait_for(
                     self._single_pass_cloud_llm(transcript, state, language, history=history),
-                    timeout=1.5
+                    timeout=6.0
                 )
                 if llm_result:
                     extracted, spoken, replies = llm_result
-                    # Apply grounding verification to LLM extraction
                     extracted = safety_guardrails.verify_grounding(extracted, transcript)
                     if spoken and len(spoken.strip()) > 5:
                         if self._consecutive_failures > 0:
@@ -196,54 +226,16 @@ class FastAIPipelineService:
                         return extracted, sanitized_spoken, replies or local_replies
         except asyncio.TimeoutError:
             self._consecutive_failures += 1
-            logger.info(f"FastAIPipeline: Cloud LLM timed out (>1500ms), using high-speed local NLU.")
+            logger.info("FastAIPipeline: Cloud LLM timed out (>6000ms), using high-speed local NLU.")
         except Exception as e:
             self._consecutive_failures += 1
             logger.info(f"FastAIPipeline: Cloud LLM unavailable ({e}), using high-speed local NLU.")
 
-        # Check if we need to trip the circuit breaker (after 5 consecutive failures)
         if self._consecutive_failures >= 5:
-            self._circuit_open_until = time.time() + 60.0  # Open for 60s
-            logger.info("FastAIPipeline: Directing traffic to high-speed local NLU engine.")
+            self._circuit_open_until = time.time() + 60.0
+            logger.info("FastAIPipeline: Circuit breaker open. Routing to high-speed local NLU engine.")
 
-        # Fallback to high-speed local NLU output
         return local_extraction, local_spoken, local_replies
-
-    def _build_dynamic_quick_replies(self, state: ClinicalIntakeState, target_slot: str, language: str = "hi") -> List[str]:
-        """Builds contextual quick replies based on missing SOCRATES slots and language."""
-        if language == "hi":
-            if target_slot == "site":
-                return ["सीने में दर्द है", "पेट में दर्द है", "सिर में तेज दर्द"]
-            elif target_slot == "duration":
-                return ["आज सुबह से है", "2-3 दिनों से है", "1 हफ्ते से ज्यादा"]
-            elif target_slot == "severity":
-                return ["10 में से 8 (तेज दर्द)", "10 में से 5 (मध्यम)", "10 में से 3 (हल्का)"]
-            elif target_slot == "character":
-                return ["भारी दबाव जैसा लग रहा है", "तेज चुभन वाला दर्द है", "जलन जैसी तकलीफ़"]
-            elif target_slot == "associated":
-                return ["उल्टी और कमजोरी महसूस हो रही है", "सांस फूलने की शिकायत है", "कोई अन्य लक्षण नहीं है"]
-            elif target_slot == "history":
-                return ["बीपी और शुगर की दवा चल रही है", "पहले से कोई बीमारी नहीं है", "थायराइड की समस्या है"]
-            else:
-                return ["डॉक्टर वर्कस्टेशन खोलें", "टोकन नंबर दिखाएं"]
-        elif language == "bn":
-            if target_slot == "site":
-                return ["পেটে ব্যথা হচ্ছে", "বুকে ব্যথা বা চাপ", "মাথায় তীব্র যন্ত্রণা"]
-            elif target_slot == "duration":
-                return ["আজ সকাল থেকে", "২-৩ দিন ধরে", "এক সপ্তাহের বেশি"]
-            elif target_slot == "severity":
-                return ["১০ এ ৮ (তীব্র কষ্ট)", "১০ এ ৫ (মাঝারি কষ্ট)", "১০ এ ৩ (হালকা কষ্ট)"]
-            else:
-                return ["ওপিডি টোকেন দেখুন", "ডাক্তার পোর্টাল খুলুন"]
-        else:
-            if target_slot == "site":
-                return ["In my stomach/abdomen", "In my chest", "In my head"]
-            elif target_slot == "duration":
-                return ["Since today morning", "For 2-3 days", "More than 1 week"]
-            elif target_slot == "severity":
-                return ["8 out of 10 (Severe)", "5 out of 10 (Moderate)", "3 out of 10 (Mild)"]
-            else:
-                return ["View OPD Token", "Open Doctor Cockpit"]
 
     async def _single_pass_cloud_llm(
         self,
@@ -257,26 +249,41 @@ class FastAIPipelineService:
         if history:
             hist_text = "\n".join([f"- {h['role'].upper()}: \"{h['content']}\"" for h in history[-8:]])
 
+        # Past medical history and historical clues
+        past_hist_str = ", ".join(state.past_history) if state.past_history else "None documented"
+        meds_str = ", ".join(state.current_medications) if state.current_medications else "None documented"
+        allergies_str = ", ".join(state.allergies) if state.allergies else "No known allergies"
+        clues_str = "\n".join([f"  * {c.get('condition', '')} ({c.get('year', '')}): {c.get('relevanceNote', '')}" for c in state.historical_clues]) if state.historical_clues else "No historical records linked"
+
         user_prompt = f"""Patient Preferred Language: {language}
 Current Turn Count: {state.turn_count + 1}
+Patient Name: {state.patient_name or 'Patient'} ({state.age or 35} yrs, {state.gender or 'Adult'})
+
+Patient's Longitudinal Medical History (EHR / ABDM Records):
+- Past Chronic Diseases / Admissions: {past_hist_str}
+- Active Prescriptions / Ongoing Medications: {meds_str}
+- Known Allergies: {allergies_str}
+- Historical Clinical Clues:
+{clues_str}
 
 Conversation History So Far:
-{hist_text or "No prior history (Start of conversation)"}
+{hist_text or "No prior history (Start of consultation)"}
 
 Patient Just Said: \"\"\"{transcript}\"\"\"
 
-Known Clinical State:
-- Known Chief Complaints: {state.chief_complaints}
-- Known SOCRATES: {state.socrates.model_dump(exclude_none=True)}
+Current Clinical Intake State:
+- Identified Chief Complaints: {state.chief_complaints}
+- Recorded SOCRATES: {state.socrates.model_dump(exclude_none=True)}
 - Associated Symptoms: {state.associated_symptoms}
+- Questions Already Asked: {state.asked_questions}
 
-Respond as Aarogya Mitra following all instructions. Return strictly valid raw JSON."""
+Respond as Aarogya Mitra following all directives. Directly address whatever the patient just asked/said and then naturally ask the next relevant question. Return strictly valid raw JSON."""
 
-        # 1. Try Groq (Ultra-Fast < 1000ms using llama-3.1-8b-instant)
+        # 1. Try Active High-Speed Groq Models
         if settings.GROQ_API_KEY or self.groq_client:
             client = self.groq_client
             if client:
-                for model_name in ["llama-3.1-8b-instant", "llama3-70b-8192", "mixtral-8x7b-32768"]:
+                for model_name in ["groq/compound-mini", "qwen/qwen3.6-27b", "openai/gpt-oss-20b", "groq/compound"]:
                     try:
                         resp = await client.chat.completions.create(
                             model=model_name,
@@ -284,8 +291,8 @@ Respond as Aarogya Mitra following all instructions. Return strictly valid raw J
                                 {"role": "system", "content": UNIFIED_SINGLE_PASS_PROMPT.format(language=language)},
                                 {"role": "user", "content": user_prompt}
                             ],
-                            temperature=0.1,
-                            max_tokens=500
+                            temperature=0.15,
+                            max_tokens=600
                         )
                         raw = resp.choices[0].message.content or "{}"
                         data = clean_json_dict(raw)
@@ -297,7 +304,6 @@ Respond as Aarogya Mitra following all instructions. Return strictly valid raw J
                             extraction_dict = {}
 
                         extracted = ExtractionPayload(**extraction_dict)
-                        # Filter LLM extraction with strict grounding
                         extracted = safety_guardrails.verify_grounding(extracted, transcript)
 
                         spoken = (
@@ -330,8 +336,8 @@ Respond as Aarogya Mitra following all instructions. Return strictly valid raw J
                             {"role": "system", "content": UNIFIED_SINGLE_PASS_PROMPT.format(language=language)},
                             {"role": "user", "content": user_prompt}
                         ],
-                        temperature=0.1,
-                        max_tokens=400
+                        temperature=0.15,
+                        max_tokens=500
                     )
                     raw = resp.choices[0].message.content or "{}"
                     data = clean_json_dict(raw)
@@ -348,4 +354,5 @@ Respond as Aarogya Mitra following all instructions. Return strictly valid raw J
 
 
 fast_ai_pipeline = FastAIPipelineService()
+
 

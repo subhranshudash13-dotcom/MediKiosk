@@ -23,9 +23,37 @@ class ExtractedSOCRATES(BaseModel):
     severity_score: Optional[int] = Field(None, ge=1, le=10, description="Severity from 1 to 10 scale")
 
 
+class HistoricalCorrelation(BaseModel):
+    """Clinical correlation connecting acute presenting symptoms with longitudinal patient medical history."""
+    related_past_condition: Optional[str] = None
+    correlated_past_condition: Optional[str] = None
+    clinical_link: Optional[str] = None
+    clinical_rationale: Optional[str] = None
+    relevance_note: Optional[str] = None
+    significance_level: Optional[str] = "Moderate"
+    recommended_physician_focus: Optional[str] = None
+    relevance_score: float = Field(default=0.85, ge=0.0, le=1.0)
+
+    def model_post_init(self, __context: Any) -> None:
+        if self.related_past_condition and not self.correlated_past_condition:
+            self.correlated_past_condition = self.related_past_condition
+        elif self.correlated_past_condition and not self.related_past_condition:
+            self.related_past_condition = self.correlated_past_condition
+
+        if self.clinical_link and not self.clinical_rationale:
+            self.clinical_rationale = self.clinical_link
+        elif self.clinical_rationale and not self.clinical_link:
+            self.clinical_link = self.clinical_rationale
+
+
 class ClinicalIntakeState(BaseModel):
     """Live state of the clinical consultation intake."""
     session_id: str
+    patient_id: Optional[str] = None
+    patient_name: Optional[str] = None
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    abha_id: Optional[str] = None
     mode: str = "allopathy"  # "allopathy" | "ayush"
     language: str = "hi"  # "hi" | "te" | "en" | "hinglish"
     chief_complaints: List[str] = Field(default_factory=list)
@@ -35,11 +63,14 @@ class ClinicalIntakeState(BaseModel):
     past_history: List[str] = Field(default_factory=list)
     current_medications: List[str] = Field(default_factory=list)
     allergies: List[str] = Field(default_factory=list)
+    historical_correlation: Optional[HistoricalCorrelation] = None
+    historical_clues: List[Dict[str, Any]] = Field(default_factory=list)
     red_flags: List[RedFlagAlert] = Field(default_factory=list)
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     is_triage_complete: bool = False
     turn_count: int = 0
     raw_transcripts: List[str] = Field(default_factory=list)
+    asked_questions: List[str] = Field(default_factory=list)
     last_target_slot: Optional[str] = None
 
 
@@ -58,6 +89,7 @@ class ExtractionPayload(BaseModel):
     past_history: List[str] = Field(default_factory=list)
     current_medications: List[str] = Field(default_factory=list)
     allergies: List[str] = Field(default_factory=list)
+    historical_correlation: Optional[HistoricalCorrelation] = None
     patient_asked_question: Optional[str] = None
     extraction_confidence: float = Field(default=0.85, ge=0.0, le=1.0)
 
@@ -74,3 +106,4 @@ class DialogueTurnResponse(BaseModel):
     red_flag_triggered: bool = False
     is_intake_complete: bool = False
     quick_replies: List[str] = Field(default_factory=list)
+

@@ -47,6 +47,7 @@ import { AudioConsentModal } from "@/components/clinical/AudioConsentModal";
 import { useKioskStore, PatientQueueItem, EvidenceTimelineItem } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { getBackendUrl } from "@/lib/config";
+import { UniversalAudioRecorder } from "@/lib/audioRecorder";
 
 const INDIC_LANGUAGES = [
   { code: "hi", name: "Hindi (हिंदी)", script: "अ", flag: "🇮🇳", nativePrompt: "नमस्ते, अपनी बीमारी या तकलीफ़ बताएं" },
@@ -124,6 +125,12 @@ export function LivePatientIntakeStation() {
   const [painScore, setPainScore] = useState<number>(0);
   const [generatedTokenNumber, setGeneratedTokenNumber] = useState<string>("A-104");
   const [sessionId] = useState<string>(() => "kiosk_" + Math.random().toString(36).substring(2, 9));
+  const [historicalCorrelation, setHistoricalCorrelation] = useState<{
+    correlated_past_condition?: string;
+    clinical_rationale?: string;
+    significance_level?: string;
+    recommended_physician_focus?: string;
+  } | null>(null);
 
   // Contextual Historical Memory Clues
   const [historicalClues] = useState<Array<{
@@ -148,8 +155,10 @@ export function LivePatientIntakeStation() {
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const universalRecorderRef = useRef<UniversalAudioRecorder | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const speechRecognitionRef = useRef<any>(null);
+  const liveSpeechTranscriptRef = useRef<string>("");
 
   const { level } = useAudioLevel(isRecording);
 
@@ -250,8 +259,16 @@ export function LivePatientIntakeStation() {
       setLanguage(data.language_code);
     }
 
+    if (data.historical_correlation) {
+      setHistoricalCorrelation(data.historical_correlation);
+    }
+
     const state = data.clinical_state;
     if (state) {
+      if (state.historical_correlation && !data.historical_correlation) {
+        setHistoricalCorrelation(state.historical_correlation);
+      }
+
       if (state.socrates) {
         setSocratesState(state.socrates);
         if (state.socrates.severity_score) {
@@ -284,6 +301,14 @@ export function LivePatientIntakeStation() {
           session_id: sessionId,
           language_code: language,
           synthesize_audio: true,
+          patient_name: patientName,
+          patient_age: patientAge,
+          patient_gender: patientGender,
+          past_history: [
+            "Pulmonary Tuberculosis (DOTS completed 2022)",
+            "Essential Hypertension (Diagnosed 2024)"
+          ],
+          historical_clues: historicalClues
         }),
       });
       const data = await resp.json();
@@ -298,7 +323,7 @@ export function LivePatientIntakeStation() {
 
   const startListening = async () => {
     let stream: MediaStream | null = null;
-    let liveWebSpeechTranscript = "";
+    liveSpeechTranscriptRef.current = "";
 
     // 1. Browser Web Speech Recognition for Real-Time live text transcription
     if (typeof window !== "undefined") {
@@ -324,7 +349,7 @@ export function LivePatientIntakeStation() {
               interim += e.results[i][0].transcript;
             }
             if (interim) {
-              liveWebSpeechTranscript = interim;
+              liveSpeechTranscriptRef.current = interim;
               setTranscript(interim);
             }
           };
@@ -341,61 +366,14 @@ export function LivePatientIntakeStation() {
       }
     }
 
-    // 2. MediaRecorder for High-Fidelity Audio to Backend Whisper NLU
+    // 2. Universal 16kHz PCM WAV Audio Recorder for Bhashini IndicASR
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioChunksRef.current = [];
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, {
-          type: mediaRecorder.mimeType || "audio/webm",
-        });
-        setIsLoading(true);
-
-        const formData = new FormData();
-        formData.append("file", audioBlob, "patient_speech.webm");
-        formData.append("session_id", sessionId);
-        formData.append("language_code", language);
-        formData.append("synthesize_audio", "true");
-
-        try {
-          const backendUrl = getBackendUrl();
-          const resp = await fetch(`${backendUrl}/api/v1/ai/voice-intake`, {
-            method: "POST",
-            body: formData,
-          });
-          const data = await resp.json();
-          const finalTranscript =
-            data.clinical_state?.raw_transcripts?.slice(-1)[0] ||
-            liveWebSpeechTranscript ||
-            "Audio recorded";
-          setTranscript(finalTranscript);
-          processResponseData(data);
-        } catch (err) {
-          console.error("Voice upload error, falling back to chat intake:", err);
-          if (liveWebSpeechTranscript && liveWebSpeechTranscript.trim()) {
-            await sendTextMessage(liveWebSpeechTranscript.trim());
-          } else {
-            setAiSpokenResponse("Voice recorded. Please confirm your symptom details.");
-          }
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
-      mediaRecorder.start();
+      const recorder = new UniversalAudioRecorder();
+      universalRecorderRef.current = recorder;
+      await recorder.start();
       setRecording(true);
     } catch (err) {
       console.warn("Microphone access notice:", err);
-      // If microphone media device is unavailable (e.g. permission or non-secure HTTP), fallback to text/quick options
       setRecording(false);
       if (speechRecognitionRef.current) {
         try {
@@ -405,16 +383,56 @@ export function LivePatientIntakeStation() {
     }
   };
 
-  const stopListening = () => {
+  const stopListening = async () => {
     if (speechRecognitionRef.current) {
       try {
         speechRecognitionRef.current.stop();
       } catch {}
       speechRecognitionRef.current = null;
     }
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
+
+    if (universalRecorderRef.current && isRecording) {
+      setIsLoading(true);
+      try {
+        const audioBlob = await universalRecorderRef.current.stop();
+        universalRecorderRef.current = null;
+
+        const formData = new FormData();
+        formData.append("file", audioBlob, "patient_speech.wav");
+        formData.append("session_id", sessionId);
+        formData.append("language_code", language);
+        formData.append("synthesize_audio", "true");
+        formData.append("patient_name", patientName);
+        formData.append("age", patientAge.toString());
+        formData.append("gender", patientGender);
+        formData.append("past_history", JSON.stringify([
+          "Pulmonary Tuberculosis (DOTS completed 2022)",
+          "Essential Hypertension (Diagnosed 2024)"
+        ]));
+        formData.append("historical_clues", JSON.stringify(historicalClues));
+
+        const backendUrl = getBackendUrl();
+        const resp = await fetch(`${backendUrl}/api/v1/ai/voice-intake`, {
+          method: "POST",
+          body: formData,
+        });
+        const data = await resp.json();
+        const finalTranscript =
+          data.clinical_state?.raw_transcripts?.slice(-1)[0] ||
+          liveSpeechTranscriptRef.current ||
+          "Audio recorded";
+        setTranscript(finalTranscript);
+        processResponseData(data);
+      } catch (err) {
+        console.error("Voice upload error, falling back to chat intake:", err);
+        if (liveSpeechTranscriptRef.current && liveSpeechTranscriptRef.current.trim()) {
+          await sendTextMessage(liveSpeechTranscriptRef.current.trim());
+        } else {
+          setAiSpokenResponse("Voice recorded. Please confirm your symptom details.");
+        }
+      } finally {
+        setIsLoading(false);
+      }
     }
     setRecording(false);
   };
@@ -863,10 +881,10 @@ export function LivePatientIntakeStation() {
                     </div>
                     <div>
                       <h3 className="font-heading text-base font-bold text-[#1E293B]">
-                        Aarogya Mitra • First-Mile Voice Intake Assistant
+                        Aarogya Mitra • AI Pre-Consultation Assistant
                       </h3>
                       <p className="text-xs text-[#64748B]">
-                        {intakeMode === "CAREGIVER" ? "Assisted Caregiver Mode active" : "Multilingual conversational speech-to-structure"}
+                        {intakeMode === "CAREGIVER" ? "Assisted Caregiver Mode active" : "Multilingual conversational intake & structured doctor briefing"}
                       </p>
                     </div>
                   </div>
@@ -876,15 +894,23 @@ export function LivePatientIntakeStation() {
                     </span>
                     <span className="rounded-full bg-[#EAF7ED] border border-[#28A745]/20 px-3 py-1 text-xs font-bold text-[#28A745] flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-[#28A745] animate-pulse" />
-                      Live Diagnostic Session
+                      Pre-Consultation Intake Active
                     </span>
                   </div>
+                </div>
+
+                {/* Professional Assistive Scope Notice */}
+                <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11px] text-[#64748B]">
+                  <Info className="w-4 h-4 text-[#0056B3] shrink-0" />
+                  <span>
+                    <strong>AI Intake Assistant:</strong> Aarogya Mitra gathers your symptoms and medical history to brief the attending doctor. Final medical diagnosis and prescriptions are provided directly by your physician.
+                  </span>
                 </div>
 
                 {/* AI Spoken Response Message Bubble */}
                 <div className="rounded-2xl bg-[#F0F7FF] border border-[#0056B3]/20 p-5 shadow-2xs">
                   <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#0056B3] block mb-1">
-                    AI Clinical Assistant:
+                    AI Pre-Consultation Assistant:
                   </span>
                   <p className="font-heading text-base sm:text-lg font-semibold text-[#1E293B] leading-relaxed">
                     &ldquo;{aiSpokenResponse}&rdquo;
@@ -900,6 +926,43 @@ export function LivePatientIntakeStation() {
                     <p className="text-xs sm:text-sm font-medium text-[#1E293B] italic leading-relaxed">
                       &ldquo;{transcript}&rdquo;
                     </p>
+                  </div>
+                )}
+
+                {/* AI Historical Mapping Card */}
+                {historicalCorrelation && historicalCorrelation.correlated_past_condition && (
+                  <div className="rounded-2xl bg-gradient-to-r from-[#EFF6FF] via-[#F0FDF4] to-[#EFF6FF] border border-[#3B82F6]/30 p-4.5 shadow-xs space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#2563EB] text-white text-xs">
+                          <Sparkles className="h-3.5 w-3.5" />
+                        </span>
+                        <span className="font-heading text-xs font-bold text-[#1E3A8A] uppercase tracking-wider">
+                          AI Longitudinal History Correlation Detected
+                        </span>
+                      </div>
+                      <span className={cn(
+                        "text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase",
+                        historicalCorrelation.significance_level?.toUpperCase() === "HIGH"
+                          ? "bg-[#FEE2E2] text-[#DC2626] border border-[#FCA5A5]"
+                          : "bg-[#FEF3C7] text-[#D97706] border border-[#FCD34D]"
+                      )}>
+                        {historicalCorrelation.significance_level || "Clinical"} Correlation
+                      </span>
+                    </div>
+                    <div className="text-xs text-[#1E293B] space-y-1">
+                      <p className="font-semibold text-[#1E3A8A]">
+                        Prior Condition Correlated: <span className="font-bold underline">{historicalCorrelation.correlated_past_condition}</span>
+                      </p>
+                      <p className="text-[#334155] leading-relaxed">
+                        {historicalCorrelation.clinical_rationale}
+                      </p>
+                      {historicalCorrelation.recommended_physician_focus && (
+                        <p className="text-[11px] text-[#059669] font-medium pt-0.5">
+                          <strong>Physician Clinical Focus:</strong> {historicalCorrelation.recommended_physician_focus}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 )}
 
