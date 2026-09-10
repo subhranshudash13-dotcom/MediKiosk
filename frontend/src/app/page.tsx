@@ -49,22 +49,17 @@ export default function Home() {
       <main className="w-full flex-1 space-y-16 sm:space-y-20">
         
         {/* ========================================================================= */}
-        {/* LUMINOUS CLEAN HEALTHCARE HERO BANNER */}
+        {/* HOSPITAL HERO BANNER */}
         {/* ========================================================================= */}
-        <section className="relative w-full min-h-[85vh] flex flex-col justify-between items-center text-center px-4 sm:px-8 py-14 sm:py-20 overflow-hidden bg-gradient-to-b from-[#EFF6FF] via-[#F8FAFC] to-[#F8F9FA] text-slate-900 border-b border-slate-200/60">
+        <section className="relative w-full min-h-[85vh] flex flex-col justify-between items-center text-center px-4 sm:px-8 py-14 sm:py-20 overflow-hidden text-slate-900">
           
-          {/* Ambient Hospital Lounge Background with Luminous High-Key Blend */}
+          {/* Hospital Lounge Background Image Only */}
           <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden select-none z-0">
             <img
               src="/images/eka_hospital_hero.jpg"
               alt="Hospital OPD Lounge Ambient"
-              className="absolute inset-0 w-full h-full object-cover object-center opacity-25 filter blur-[3px] scale-105 animate-hero-drift"
+              className="absolute inset-0 w-full h-full object-cover object-center"
             />
-            {/* Soft Ambient Radial Light Vignettes */}
-            <div className="absolute inset-0 bg-gradient-to-b from-white/80 via-white/40 to-[#F8F9FA]" />
-            <div className="absolute -top-24 -left-24 w-[36rem] h-[36rem] bg-blue-400/15 rounded-full blur-3xl animate-float-orb-1" />
-            <div className="absolute -bottom-24 -right-24 w-[36rem] h-[36rem] bg-teal-400/12 rounded-full blur-3xl animate-float-orb-2" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40rem] h-[40rem] bg-sky-200/20 rounded-full blur-3xl pointer-events-none" />
           </div>
 
           {/* Centered Hero Heading & Action */}
