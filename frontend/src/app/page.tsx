@@ -49,32 +49,34 @@ export default function Home() {
       <main className="w-full flex-1 space-y-16 sm:space-y-20">
         
         {/* ========================================================================= */}
-        {/* FULL-BLEED EKA.CARE INSPIRED HERO BANNER */}
+        {/* LUMINOUS CLEAN HEALTHCARE HERO BANNER */}
         {/* ========================================================================= */}
-        <section className="relative w-full min-h-[85vh] flex flex-col justify-between items-center text-center px-4 sm:px-8 py-16 sm:py-24 overflow-hidden bg-slate-950 text-white">
+        <section className="relative w-full min-h-[85vh] flex flex-col justify-between items-center text-center px-4 sm:px-8 py-14 sm:py-20 overflow-hidden bg-gradient-to-b from-[#EFF6FF] via-[#F8FAFC] to-[#F8F9FA] text-slate-900 border-b border-slate-200/60">
           
-          {/* Moving Blurred Hospital Lounge Background */}
+          {/* Ambient Hospital Lounge Background with Luminous High-Key Blend */}
           <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden select-none z-0">
             <img
               src="/images/eka_hospital_hero.jpg"
               alt="Hospital OPD Lounge Ambient"
-              className="absolute inset-0 w-full h-full object-cover object-center opacity-40 filter blur-[4px] scale-110 animate-hero-drift"
+              className="absolute inset-0 w-full h-full object-cover object-center opacity-25 filter blur-[3px] scale-105 animate-hero-drift"
             />
-            {/* Cinematic Gradient Vignette Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-slate-950/95" />
-            <div className="absolute -top-32 -left-32 w-[34rem] h-[34rem] bg-[#0056B3]/25 rounded-full blur-3xl animate-float-orb-1" />
-            <div className="absolute -bottom-32 -right-32 w-[34rem] h-[34rem] bg-[#17A2B8]/20 rounded-full blur-3xl animate-float-orb-2" />
+            {/* Soft Ambient Radial Light Vignettes */}
+            <div className="absolute inset-0 bg-gradient-to-b from-white/80 via-white/40 to-[#F8F9FA]" />
+            <div className="absolute -top-24 -left-24 w-[36rem] h-[36rem] bg-blue-400/15 rounded-full blur-3xl animate-float-orb-1" />
+            <div className="absolute -bottom-24 -right-24 w-[36rem] h-[36rem] bg-teal-400/12 rounded-full blur-3xl animate-float-orb-2" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40rem] h-[40rem] bg-sky-200/20 rounded-full blur-3xl pointer-events-none" />
           </div>
 
           {/* Centered Hero Heading & Action */}
-          <div className="relative z-10 max-w-5xl mx-auto my-auto space-y-8 pt-8 sm:pt-12">
+          <div className="relative z-10 max-w-5xl mx-auto my-auto space-y-7 pt-4 sm:pt-8">
             {/* Trust Pill */}
-            <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-white text-xs font-semibold backdrop-blur-md shadow-xs">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50/90 border border-blue-200/80 text-[#0056B3] text-xs font-semibold backdrop-blur-md shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-[#0056B3] animate-pulse" />
               <span>Smart Hospital Point-of-Entry &bull; ABDM Certified Platform</span>
             </div>
 
             {/* Giant Centered Headline with Dynamic Rotating Keyword */}
-            <h1 className="font-heading font-extrabold text-3xl sm:text-5xl md:text-6xl lg:text-7xl text-white tracking-tight leading-[1.12] drop-shadow-md max-w-5xl mx-auto">
+            <h1 className="font-heading font-extrabold text-3xl sm:text-5xl md:text-6xl lg:text-7xl text-slate-900 tracking-tight leading-[1.12] drop-shadow-xs max-w-5xl mx-auto">
               <span>The AI-Native Ambient</span>
               <br />
               <span className="inline-flex items-center justify-center flex-wrap gap-x-2.5">
@@ -84,7 +86,7 @@ export default function Home() {
             </h1>
 
             {/* Subtitle */}
-            <p className="text-base sm:text-lg md:text-xl text-white/80 max-w-2xl mx-auto font-normal leading-relaxed">
+            <p className="text-base sm:text-lg md:text-xl text-slate-600 max-w-2xl mx-auto font-normal leading-relaxed">
               MediKiosk captures vernacular spoken complaints, scans physical paper prescriptions via vision OCR, and synthesizes structured clinical history before the doctor consultation.
             </p>
 
@@ -92,30 +94,30 @@ export default function Home() {
             <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
               <Link
                 href="/kiosk"
-                className="px-8 py-3.5 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-sm flex items-center gap-2 transition-all shadow-lg hover:shadow-blue-500/30 hover:scale-[1.02] cursor-pointer"
+                className="px-8 py-3.5 rounded-full bg-[#0056B3] hover:bg-[#004494] text-white font-bold text-sm flex items-center gap-2 transition-all shadow-md hover:shadow-blue-500/25 hover:scale-[1.02] cursor-pointer"
               >
                 <span>Start Patient Intake</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
                 href="/doctor"
-                className="px-8 py-3.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/25 text-white font-bold text-sm flex items-center gap-2 backdrop-blur-md transition-all cursor-pointer"
+                className="px-8 py-3.5 rounded-full bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-bold text-sm flex items-center gap-2 backdrop-blur-md shadow-xs transition-all hover:border-blue-400 hover:text-[#0056B3] cursor-pointer"
               >
-                <Stethoscope className="w-4 h-4 text-[#38BDF8]" />
+                <Stethoscope className="w-4 h-4 text-[#0056B3]" />
                 <span>Doctor Workstation</span>
               </Link>
               <Link
                 href="/patient"
-                className="px-6 py-3.5 rounded-full bg-white/5 hover:bg-white/15 border border-white/20 text-white font-semibold text-sm flex items-center gap-2 backdrop-blur-md transition-all cursor-pointer"
+                className="px-6 py-3.5 rounded-full bg-emerald-50/80 hover:bg-emerald-100/80 border border-emerald-200 text-emerald-800 font-semibold text-sm flex items-center gap-2 backdrop-blur-md transition-all cursor-pointer shadow-xs"
               >
-                <User className="w-4 h-4 text-emerald-400" />
+                <User className="w-4 h-4 text-emerald-600" />
                 <span>Patient Portal</span>
               </Link>
             </div>
           </div>
 
           {/* Bottom Specifications Capsule Bar */}
-          <div className="relative z-10 w-full max-w-6xl mx-auto mt-12">
+          <div className="relative z-10 w-full max-w-6xl mx-auto mt-10">
             <TrustPartnerRibbon />
           </div>
         </section>
