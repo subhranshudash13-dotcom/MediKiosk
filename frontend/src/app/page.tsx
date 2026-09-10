@@ -51,15 +51,17 @@ export default function Home() {
         {/* ========================================================================= */}
         {/* HOSPITAL HERO BANNER */}
         {/* ========================================================================= */}
-        <section className="relative w-full min-h-[85vh] flex flex-col justify-between items-center text-center px-4 sm:px-8 py-14 sm:py-20 overflow-hidden text-slate-900">
+        <section className="relative w-full min-h-[85vh] flex flex-col justify-between items-center text-center px-4 sm:px-8 py-14 sm:py-20 overflow-hidden text-slate-900 border-b border-slate-200/80">
           
-          {/* Hospital Lounge Background Image Only */}
+          {/* Hospital Lounge Background with Balanced Legibility Scrim */}
           <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden select-none z-0">
             <img
               src="/images/eka_hospital_hero.jpg"
               alt="Hospital OPD Lounge Ambient"
               className="absolute inset-0 w-full h-full object-cover object-center"
             />
+            {/* Translucent Legibility Scrim */}
+            <div className="absolute inset-0 bg-white/75 backdrop-blur-[1.5px]" />
           </div>
 
           {/* Centered Hero Heading & Action */}
