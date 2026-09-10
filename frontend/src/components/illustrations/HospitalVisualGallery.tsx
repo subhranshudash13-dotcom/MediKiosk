@@ -1,17 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles,
-  Stethoscope,
-  Mic,
-  FileScan,
-  ShieldCheck,
   CheckCircle2,
-  ArrowRight,
-  Maximize2
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -62,24 +57,82 @@ const GALLERY_ITEMS: GalleryItem[] = [
   }
 ];
 
+const slideVariants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? 80 : -80,
+    opacity: 0,
+    scale: 0.98,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+    scale: 1,
+    transition: {
+      x: { type: "spring" as const, stiffness: 300, damping: 30 },
+      opacity: { duration: 0.35 },
+      scale: { duration: 0.35 },
+    },
+  },
+  exit: (direction: number) => ({
+    x: direction > 0 ? -80 : 80,
+    opacity: 0,
+    scale: 0.98,
+    transition: {
+      x: { type: "spring" as const, stiffness: 300, damping: 30 },
+      opacity: { duration: 0.25 },
+    },
+  }),
+};
+
 export function HospitalVisualGallery() {
-  const [activeId, setActiveId] = useState<string>("kiosk");
-  const activeItem = GALLERY_ITEMS.find((g) => g.id === activeId) || GALLERY_ITEMS[0];
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const [direction, setDirection] = useState<number>(1);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
+  const autoPlayRef = useRef<NodeJS.Timeout | null>(null);
+
+  const activeItem = GALLERY_ITEMS[currentIndex];
+
+  const paginate = (newDirection: number) => {
+    setDirection(newDirection);
+    setCurrentIndex((prevIndex) => {
+      let nextIndex = prevIndex + newDirection;
+      if (nextIndex < 0) nextIndex = GALLERY_ITEMS.length - 1;
+      if (nextIndex >= GALLERY_ITEMS.length) nextIndex = 0;
+      return nextIndex;
+    });
+  };
+
+  const setSlide = (index: number) => {
+    setDirection(index > currentIndex ? 1 : -1);
+    setCurrentIndex(index);
+  };
+
+  // Continuous auto-play loop switching left-to-right every 4.5 seconds
+  useEffect(() => {
+    if (isPaused) {
+      if (autoPlayRef.current) clearInterval(autoPlayRef.current);
+      return;
+    }
+
+    autoPlayRef.current = setInterval(() => {
+      paginate(1);
+    }, 4500);
+
+    return () => {
+      if (autoPlayRef.current) clearInterval(autoPlayRef.current);
+    };
+  }, [currentIndex, isPaused]);
 
   return (
-    <div className="rounded-2xl border border-[#DEE2E6] bg-white p-6 sm:p-8 shadow-card text-left space-y-6">
+    <div
+      className="relative text-left space-y-6 select-none py-2"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#DEE2E6] pb-5">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#DEE2E6] pb-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#EBF3FC] text-[#0056B3]">
-              <Sparkles className="h-3.5 w-3.5 text-[#0056B3]" />
-            </span>
-            <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#0056B3]">
-              Real-World Clinical Deployment
-            </p>
-          </div>
-          <h3 className="font-heading text-xl sm:text-2xl font-bold text-[#2C3E50] mt-1">
+          <h3 className="font-heading text-xl sm:text-2xl font-bold text-[#2C3E50]">
             Visualizing the MediKiosk Ecosystem
           </h3>
           <p className="text-xs sm:text-sm text-[#6C7A89] mt-1">
@@ -87,92 +140,125 @@ export function HospitalVisualGallery() {
           </p>
         </div>
 
-        {/* Quick Tabs (Eka.care inspiration) */}
-        <div className="flex flex-wrap gap-1.5">
-          {GALLERY_ITEMS.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveId(item.id)}
-              className={cn(
-                "px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer",
-                activeId === item.id
-                  ? "bg-[#0056B3] text-white shadow-xs"
-                  : "bg-[#F8F9FA] text-[#2C3E50] hover:bg-[#EBF3FC] hover:text-[#0056B3] border border-[#DEE2E6]"
-              )}
-            >
-              {item.title.split(" ")[0]} {item.title.split(" ")[1]}
-            </button>
-          ))}
+        {/* Slide Counter */}
+        <div className="flex items-center text-xs font-mono font-bold text-[#6C7A89]">
+          <span className="px-3 py-1 rounded-full bg-white border border-[#DEE2E6] text-[#0056B3] shadow-xs">
+            {currentIndex + 1} / {GALLERY_ITEMS.length}
+          </span>
         </div>
       </div>
 
-      {/* Main Image Display + Storytelling Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-        {/* Left: High-Res Image with Glow Card (7 cols) */}
-        <div className="lg:col-span-7">
-          <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-[#DEE2E6] shadow-sm bg-slate-900 group">
-            <img
-              src={activeItem.imageSrc}
-              alt={activeItem.title}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-            />
-            {/* Top Overlay Badge */}
-            <div className="absolute top-3 left-3 z-10">
-              <span className={cn("text-[10px] font-mono font-bold uppercase px-3 py-1 rounded-full shadow-sm", activeItem.tagColor)}>
-                {activeItem.tag}
-              </span>
-            </div>
+      {/* Main Showcase Area With Side Navigation Buttons */}
+      <div className="relative">
+        {/* Left Side Arrow Button */}
+        <button
+          onClick={() => paginate(-1)}
+          className="absolute -left-3 sm:-left-5 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white border border-[#DEE2E6] shadow-md hover:bg-[#EBF3FC] hover:text-[#0056B3] hover:border-[#0056B3] hover:scale-105 active:scale-95 text-[#2C3E50] flex items-center justify-center transition-all z-30 cursor-pointer"
+          aria-label="Previous slide"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
 
-            {/* Bottom Gradient Bar */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-4 text-white">
-              <p className="text-xs font-mono font-bold text-[#17A2B8] uppercase">
-                {activeItem.stats}
-              </p>
-            </div>
+        {/* Right Side Arrow Button */}
+        <button
+          onClick={() => paginate(1)}
+          className="absolute -right-3 sm:-right-5 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white border border-[#DEE2E6] shadow-md hover:bg-[#EBF3FC] hover:text-[#0056B3] hover:border-[#0056B3] hover:scale-105 active:scale-95 text-[#2C3E50] flex items-center justify-center transition-all z-30 cursor-pointer"
+          aria-label="Next slide"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+
+        {/* Main Content Grid (Cardless Clean Layout) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center min-h-[360px] overflow-hidden px-1 sm:px-2">
+          {/* Left: High-Res Image (7 cols) */}
+          <div className="lg:col-span-7 relative h-[260px] sm:h-[350px] rounded-2xl overflow-hidden border border-[#DEE2E6] shadow-md bg-slate-900">
+            <AnimatePresence initial={false} custom={direction} mode="wait">
+              <motion.div
+                key={activeItem.id}
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                className="absolute inset-0 w-full h-full"
+              >
+                <img
+                  src={activeItem.imageSrc}
+                  alt={activeItem.title}
+                  className="w-full h-full object-cover"
+                />
+
+                {/* Top Overlay Badge */}
+                <div className="absolute top-3.5 left-3.5 z-10">
+                  <span className={cn("text-[10px] font-mono font-bold uppercase px-3 py-1 rounded-full shadow-sm", activeItem.tagColor)}>
+                    {activeItem.tag}
+                  </span>
+                </div>
+
+                {/* Bottom Gradient Bar */}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-4 text-white">
+                  <p className="text-xs font-mono font-bold text-[#17A2B8] uppercase tracking-wide">
+                    {activeItem.stats}
+                  </p>
+                </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
-        </div>
 
-        {/* Right: Narrative Details Card (5 cols) */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="space-y-2">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#0056B3]">
-              Deployment Spotlight
-            </span>
-            <h4 className="font-heading text-lg sm:text-xl font-bold text-[#2C3E50]">
-              {activeItem.title}
-            </h4>
-            <p className="text-xs sm:text-sm text-[#5A6B7C] leading-relaxed">
-              {activeItem.description}
-            </p>
-          </div>
+          {/* Right: Narrative Details (5 cols - Cardless Clean Typography) */}
+          <div className="lg:col-span-5 relative h-full flex flex-col justify-between space-y-5">
+            <AnimatePresence initial={false} custom={direction} mode="wait">
+              <motion.div
+                key={activeItem.id}
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                className="space-y-4"
+              >
+                <div className="space-y-2">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#0056B3]">
+                    Deployment Spotlight · {activeItem.id.toUpperCase()}
+                  </span>
+                  <h4 className="font-heading text-xl sm:text-2xl font-bold text-[#2C3E50] leading-tight">
+                    {activeItem.title}
+                  </h4>
+                  <p className="text-sm text-[#5A6B7C] leading-relaxed">
+                    {activeItem.description}
+                  </p>
+                </div>
 
-          <div className="p-4 bg-[#F8F9FA] rounded-xl border border-[#DEE2E6] space-y-2">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-[#28A745] shrink-0" />
-              <p className="text-xs font-bold text-[#0056B3]">Key Clinical Advantage:</p>
+                {/* Clean Feature Callout (Cardless Accent Bar) */}
+                <div className="border-l-3 border-[#0056B3] pl-3.5 py-1 space-y-1">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-[#0056B3]">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#28A745] shrink-0" />
+                    Key Clinical Advantage
+                  </div>
+                  <p className="text-xs text-[#5A6B7C] leading-snug">
+                    {activeItem.clinicalFeature}
+                  </p>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Carousel Progress Indicator Dots */}
+            <div className="pt-2 flex items-center gap-2">
+              {GALLERY_ITEMS.map((item, idx) => (
+                <button
+                  key={item.id}
+                  onClick={() => setSlide(idx)}
+                  className={cn(
+                    "h-2 rounded-full transition-all duration-300 cursor-pointer",
+                    currentIndex === idx ? "w-8 bg-[#0056B3]" : "w-2 bg-[#DEE2E6] hover:bg-[#0056B3]/40"
+                  )}
+                  aria-label={`Go to slide ${idx + 1}`}
+                />
+              ))}
             </div>
-            <p className="text-xs text-[#5A6B7C] leading-snug pl-6">
-              {activeItem.clinicalFeature}
-            </p>
-          </div>
-
-          {/* Quick Interactive Nav Pill */}
-          <div className="pt-2 flex items-center gap-2">
-            {GALLERY_ITEMS.map((item, idx) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveId(item.id)}
-                className={cn(
-                  "h-2 rounded-full transition-all cursor-pointer",
-                  activeId === item.id ? "w-8 bg-[#0056B3]" : "w-2 bg-[#DEE2E6] hover:bg-[#0056B3]/40"
-                )}
-                aria-label={`Slide ${idx + 1}`}
-              />
-            ))}
           </div>
         </div>
       </div>
     </div>
   );
 }
-

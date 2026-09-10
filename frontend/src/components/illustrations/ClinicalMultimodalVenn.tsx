@@ -1,469 +1,219 @@
 "use client";
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React from "react";
+import { motion } from "framer-motion";
 import {
   Mic,
   FileScan,
   ShieldCheck,
+  Cpu,
+  Activity,
+  CheckCircle2,
   Sparkles,
   Zap,
-  Activity,
-  Layers,
-  CheckCircle2,
-  Lock,
-  Stethoscope,
-  Info,
-  ChevronRight
+  Globe2,
+  ArrowUpRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface VennSector {
-  id: "indic" | "ocr" | "abdm" | "voice_ocr" | "ocr_abdm" | "voice_abdm" | "core";
-  title: string;
-  badge: string;
-  badgeColor: string;
-  description: string;
-  features: string[];
-  metric: string;
-  metricLabel: string;
-  clinicalImpact: string;
-}
-
-const VENN_SECTORS: Record<string, VennSector> = {
-  core: {
-    id: "core",
-    title: "MediKiosk Autonomous Clinical Engine",
-    badge: "Epicenter · Multimodal Convergence",
-    badgeColor: "bg-[#1D2A8F] text-white",
-    description:
-      "The unified convergence point where vernacular speech, physical paper records, and national digital health infrastructure fuse into verified, structured physician consultation notes.",
-    features: [
-      "Zero-Hallucination Triaging with cross-modal validation",
-      "Dynamic SOCRATES & OPQRST conversational extraction",
-      "Automated FHIR R4 Bundle generation with SNOMED CT codes",
-      "Sub-3 second end-to-end token generation & queue push"
-    ],
-    metric: "2.8 min",
-    metricLabel: "Avg Complete Patient Intake",
-    clinicalImpact: "Reduces OPD queue backlog by 68% and relieves doctors from manual documentation."
-  },
-  indic: {
-    id: "indic",
-    title: "Indic Voice Intelligence (Bhashini)",
-    badge: "Domain 1 · Vernacular NLP",
-    badgeColor: "bg-[#FB923C]/20 text-[#C2410C]",
-    description:
-      "State-of-the-art acoustic models fine-tuned on 8+ Indian regional languages and dialectal medical terminology with background hospital noise cancellation.",
-    features: [
-      "Hindi, Telugu, Tamil, Bengali, Marathi, Kannada, English",
-      "Colloquial symptom translation to clinical terminology",
-      "Real-time acoustic emotion & acute distress detection",
-      "Continuous push-to-talk with live visual feedback"
-    ],
-    metric: "98.4%",
-    metricLabel: "Indic Medical Term Accuracy",
-    clinicalImpact: "Empowers non-English literate and elderly rural patients to triage with dignity."
-  },
-  ocr: {
-    id: "ocr",
-    title: "Multimodal Document & Vision OCR",
-    badge: "Domain 2 · Document AI",
-    badgeColor: "bg-[#1D2A8F]/10 text-[#1D2A8F]",
-    description:
-      "Deep optical character recognition and clinical layout analysis specifically trained on messy doctor handwriting, regional pharmacy printouts, and lab panels.",
-    features: [
-      "Physical paper prescription digitization in seconds",
-      "Drug dosage, frequency, and duration entity parsing",
-      "Abnormal biomarker highlighting (HbA1c, Creatinine, ECG)",
-      "Pharmacological purpose decoding ('What is this drug for?')"
-    ],
-    metric: "96.8%",
-    metricLabel: "Handwriting Extraction Rate",
-    clinicalImpact: "Prevents adverse drug-drug interactions by digitizing legacy physical records."
-  },
-  abdm: {
-    id: "abdm",
-    title: "ABDM & National Digital Health Stack",
-    badge: "Domain 3 · Gov. Standard",
-    badgeColor: "bg-emerald-100 text-emerald-800",
-    description:
-      "Native compliance with the Ayushman Bharat Digital Mission (NHA), DPDP Act 2023, and FHIR R4 standard for seamless health record interoperability.",
-    features: [
-      "ABHA ID 14-digit biometric & OTP validation",
-      "Milestone M1, M2, M3 certified health repository",
-      "Explicit, auditable patient consent management",
-      "Interoperable longitudinal EHR record federation"
-    ],
-    metric: "100%",
-    metricLabel: "ABDM / FHIR Compliance",
-    clinicalImpact: "Guarantees nationwide portability of patient OPD consultations across any hospital."
-  },
-  voice_ocr: {
-    id: "voice_ocr",
-    title: "Voice + Document Cross-Validation",
-    badge: "Intersection A+B · Safety Guardrails",
-    badgeColor: "bg-purple-100 text-purple-800",
-    description:
-      "Cross-references what the patient reports verbally against their physical prescriptions to detect omitted medications or conflicting statements.",
-    features: [
-      "Verbal symptom verification against prescribed drugs",
-      "Active medication compliance check",
-      "Allergy alert cross-referencing",
-      "Red-flag discrepancy detection"
-    ],
-    metric: "99.1%",
-    metricLabel: "Safety Discrepancy Capture",
-    clinicalImpact: "Catches critical dosage mismatches before the patient enters the consultation cabin."
-  },
-  ocr_abdm: {
-    id: "ocr_abdm",
-    title: "Automated PHR & Cloud Ingestion",
-    badge: "Intersection B+C · Interoperability",
-    badgeColor: "bg-blue-100 text-blue-800",
-    description:
-      "Transforms unstructured physical paper scans into standardized FHIR R4 resources deposited directly into the patient's Ayushman Bharat Health Locker.",
-    features: [
-      "Physical paper to digital FHIR Bundle transform",
-      "SNOMED CT & ICD-10 diagnostic tagging",
-      "Automatic timeline chronology reconstruction",
-      "Encrypted cloud sync with consent ledger"
-    ],
-    metric: "< 1.2s",
-    metricLabel: "FHIR Bundle Generation",
-    clinicalImpact: "Eliminates lost paper files and builds a lifelong digital health history."
-  },
-  voice_abdm: {
-    id: "voice_abdm",
-    title: "Consent-Governed Dynamic Intake",
-    badge: "Intersection A+C · Security & Privacy",
-    badgeColor: "bg-amber-100 text-amber-800",
-    description:
-      "Governs voice recordings under DPDP Act 2023 with ephemeral in-memory processing, zero permanent audio storage without patient consent.",
-    features: [
-      "Ephemeral audio processing pipeline",
-      "Encrypted voice tokens with auto-purging",
-      "Voice-guided ABHA OTP authentication",
-      "Strict data localization & privacy boundaries"
-    ],
-    metric: "DPDP 2023",
-    metricLabel: "Privacy Act Compliant",
-    clinicalImpact: "Builds unshakeable patient trust with secure, privacy-first biometric intake."
-  }
-};
-
 export function ClinicalMultimodalVenn() {
-  const [activeSectorId, setActiveSectorId] = useState<string>("core");
-  const activeSector = VENN_SECTORS[activeSectorId] || VENN_SECTORS.core;
-
   return (
-    <div className="rounded-[20px] border border-[#FDEBD0] bg-white p-6 sm:p-8 shadow-sm text-left">
+    <div className="relative w-full text-left select-none">
+      
+      {/* Background Cinematic Glow Orbs matching Hero */}
+      <div className="absolute top-0 left-1/4 -translate-y-1/2 w-96 h-96 bg-[#0056B3]/20 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 translate-y-1/2 w-96 h-96 bg-[#17A2B8]/15 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#38BDF8_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
+
       {/* Section Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#FDEBD0]/80 pb-5">
+      <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-800/80 pb-6 mb-6">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-[6px] bg-[#1D2A8F]/10 text-[#1D2A8F]">
-              <Layers className="h-3.5 w-3.5 text-[#FB923C]" />
-            </span>
-            <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#1D2A8F]">
-              Interactive Multimodal Architecture
-            </p>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white text-xs font-semibold backdrop-blur-md mb-2.5">
+            <Sparkles className="w-3.5 h-3.5 text-[#38BDF8]" />
+            <span>AI Convergence Architecture</span>
           </div>
-          <h3 className="font-heading text-xl sm:text-2xl font-bold text-[#374151] mt-1">
+          <h3 className="font-heading text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
             Why MediKiosk is Uniquely Positioned
           </h3>
-          <p className="text-xs sm:text-sm text-[#374151]/70 mt-1">
-            Explore how Indic Voice AI, Optical Vision OCR, and the ABDM National Health Stack converge at the clinical core.
+          <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl leading-relaxed">
+            Triple-stream multimodal synthesis across Indic vernacular voice, handwriting vision OCR, and the ABDM health grid.
           </p>
         </div>
 
-        {/* Quick Sector Selector Buttons */}
-        <div className="flex flex-wrap gap-1.5">
-          <button
-            onClick={() => setActiveSectorId("core")}
-            className={cn(
-              "px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer",
-              activeSectorId === "core"
-                ? "bg-[#1D2A8F] text-white shadow-xs"
-                : "bg-[#FDFBF7] text-[#374151]/80 hover:bg-[#FDEBD0] hover:text-[#1D2A8F] border border-[#FDEBD0]"
-            )}
-          >
-            ★ Core Convergence
-          </button>
-          <button
-            onClick={() => setActiveSectorId("indic")}
-            className={cn(
-              "px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer",
-              activeSectorId === "indic"
-                ? "bg-[#FB923C] text-white shadow-xs"
-                : "bg-[#FDFBF7] text-[#374151]/80 hover:bg-[#FDEBD0] hover:text-[#1D2A8F] border border-[#FDEBD0]"
-            )}
-          >
-            Indic Voice
-          </button>
-          <button
-            onClick={() => setActiveSectorId("ocr")}
-            className={cn(
-              "px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer",
-              activeSectorId === "ocr"
-                ? "bg-[#1D2A8F] text-white shadow-xs"
-                : "bg-[#FDFBF7] text-[#374151]/80 hover:bg-[#FDEBD0] hover:text-[#1D2A8F] border border-[#FDEBD0]"
-            )}
-          >
-            Vision OCR
-          </button>
-          <button
-            onClick={() => setActiveSectorId("abdm")}
-            className={cn(
-              "px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer",
-              activeSectorId === "abdm"
-                ? "bg-emerald-600 text-white shadow-xs"
-                : "bg-[#FDFBF7] text-[#374151]/80 hover:bg-[#FDEBD0] hover:text-[#1D2A8F] border border-[#FDEBD0]"
-            )}
-          >
-            ABDM Stack
-          </button>
+        <div className="flex items-center gap-2 text-xs font-mono font-bold text-slate-400">
+          <span className="w-2 h-2 rounded-full bg-[#34D399] animate-pulse" />
+          <span>Real-Time Clinical Fusion Active</span>
         </div>
       </div>
 
-      {/* Main Two-Column Diagram + Detail Inspector */}
-      <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-        {/* Left Column: Interactive SVG Venn Diagram (6 cols) */}
-        <div className="lg:col-span-6 flex flex-col items-center justify-center relative">
-          <div className="w-full max-w-[420px] aspect-square relative">
-            <svg viewBox="0 0 400 400" className="w-full h-full drop-shadow-sm select-none">
-              <defs>
-                <radialGradient id="gradIndic" cx="35%" cy="35%" r="65%">
-                  <stop offset="0%" stopColor="#FB923C" stopOpacity="0.35" />
-                  <stop offset="100%" stopColor="#EA580C" stopOpacity="0.15" />
-                </radialGradient>
-                <radialGradient id="gradOcr" cx="65%" cy="35%" r="65%">
-                  <stop offset="0%" stopColor="#1D2A8F" stopOpacity="0.35" />
-                  <stop offset="100%" stopColor="#141E66" stopOpacity="0.15" />
-                </radialGradient>
-                <radialGradient id="gradAbdm" cx="50%" cy="75%" r="65%">
-                  <stop offset="0%" stopColor="#10B981" stopOpacity="0.35" />
-                  <stop offset="100%" stopColor="#047857" stopOpacity="0.15" />
-                </radialGradient>
-                <radialGradient id="gradCore" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#1D2A8F" stopOpacity="0.95" />
-                  <stop offset="100%" stopColor="#141E66" stopOpacity="1" />
-                </radialGradient>
-              </defs>
+      {/* Modern Dark Bento Grid Layout */}
+      <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+        
+        {/* Bento Box 1: Core Autonomous Engine (Hero Card - Spans 2 cols on lg) */}
+        <div className="lg:col-span-2 p-6 sm:p-7 rounded-2xl bg-gradient-to-br from-blue-900/50 via-slate-900/90 to-slate-950 border border-blue-500/40 text-white shadow-xl flex flex-col justify-between space-y-6 group hover:border-blue-400 hover:shadow-blue-500/10 transition-all duration-300 relative overflow-hidden backdrop-blur-md">
+          {/* Subtle Inner Highlight */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
 
-              {/* Circle 1: Indic Voice (Top Left) */}
-              <g
-                className="cursor-pointer transition-all duration-200"
-                onClick={() => setActiveSectorId("indic")}
-              >
-                <circle
-                  cx="155"
-                  cy="165"
-                  r="115"
-                  fill="url(#gradIndic)"
-                  stroke="#FB923C"
-                  strokeWidth={activeSectorId === "indic" ? "3.5" : "2"}
-                  strokeDasharray={activeSectorId === "indic" ? "none" : "4 2"}
-                  className="transition-all"
-                />
-                <text x="95" y="115" fontSize="13" fontWeight="800" fill="#C2410C" textAnchor="middle">
-                  Indic Voice AI
-                </text>
-                <text x="95" y="132" fontSize="9.5" fontWeight="600" fill="#756F73" textAnchor="middle">
-                  Bhashini / ASR
-                </text>
-              </g>
+          <div className="space-y-3 relative z-10">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 backdrop-blur-xs">
+                Central Synthesis Nexus
+              </span>
+              <div className="w-9 h-9 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Cpu className="w-5 h-5 text-[#38BDF8]" />
+              </div>
+            </div>
 
-              {/* Circle 2: Document OCR (Top Right) */}
-              <g
-                className="cursor-pointer transition-all duration-200"
-                onClick={() => setActiveSectorId("ocr")}
-              >
-                <circle
-                  cx="245"
-                  cy="165"
-                  r="115"
-                  fill="url(#gradOcr)"
-                  stroke="#1D2A8F"
-                  strokeWidth={activeSectorId === "ocr" ? "3.5" : "2"}
-                  strokeDasharray={activeSectorId === "ocr" ? "none" : "4 2"}
-                  className="transition-all"
-                />
-                <text x="305" y="115" fontSize="13" fontWeight="800" fill="#1D2A8F" textAnchor="middle">
-                  Document Vision
-                </text>
-                <text x="305" y="132" fontSize="9.5" fontWeight="600" fill="#756F73" textAnchor="middle">
-                  Prescription OCR
-                </text>
-              </g>
-
-              {/* Circle 3: ABDM National Stack (Bottom Center) */}
-              <g
-                className="cursor-pointer transition-all duration-200"
-                onClick={() => setActiveSectorId("abdm")}
-              >
-                <circle
-                  cx="200"
-                  cy="245"
-                  r="115"
-                  fill="url(#gradAbdm)"
-                  stroke="#10B981"
-                  strokeWidth={activeSectorId === "abdm" ? "3.5" : "2"}
-                  strokeDasharray={activeSectorId === "abdm" ? "none" : "4 2"}
-                  className="transition-all"
-                />
-                <text x="200" y="325" fontSize="13" fontWeight="800" fill="#047857" textAnchor="middle">
-                  ABDM &amp; FHIR R4
-                </text>
-                <text x="200" y="342" fontSize="9.5" fontWeight="600" fill="#756F73" textAnchor="middle">
-                  Consent / ABHA ID
-                </text>
-              </g>
-
-              {/* Intersection 1: Voice + OCR (Top Center) */}
-              <g
-                className="cursor-pointer"
-                onClick={() => setActiveSectorId("voice_ocr")}
-              >
-                <circle
-                  cx="200"
-                  cy="150"
-                  r="26"
-                  fill={activeSectorId === "voice_ocr" ? "#7E22CE" : "#A855F7"}
-                  fillOpacity="0.4"
-                  stroke="#7E22CE"
-                  strokeWidth="1.5"
-                />
-                <text x="200" y="153" fontSize="8" fontWeight="800" fill="#581C87" textAnchor="middle">
-                  Safety Cross
-                </text>
-              </g>
-
-              {/* Intersection 2: OCR + ABDM (Right) */}
-              <g
-                className="cursor-pointer"
-                onClick={() => setActiveSectorId("ocr_abdm")}
-              >
-                <circle
-                  cx="235"
-                  cy="215"
-                  r="24"
-                  fill={activeSectorId === "ocr_abdm" ? "#1D4ED8" : "#3B82F6"}
-                  fillOpacity="0.4"
-                  stroke="#1D4ED8"
-                  strokeWidth="1.5"
-                />
-                <text x="235" y="218" fontSize="8" fontWeight="800" fill="#1E3A8A" textAnchor="middle">
-                  FHIR Sync
-                </text>
-              </g>
-
-              {/* Intersection 3: Voice + ABDM (Left) */}
-              <g
-                className="cursor-pointer"
-                onClick={() => setActiveSectorId("voice_abdm")}
-              >
-                <circle
-                  cx="165"
-                  cy="215"
-                  r="24"
-                  fill={activeSectorId === "voice_abdm" ? "#D97706" : "#F59E0B"}
-                  fillOpacity="0.4"
-                  stroke="#D97706"
-                  strokeWidth="1.5"
-                />
-                <text x="165" y="218" fontSize="8" fontWeight="800" fill="#78350F" textAnchor="middle">
-                  DPDP Consent
-                </text>
-              </g>
-
-              {/* Central Epicenter Core */}
-              <g
-                className="cursor-pointer transition-transform hover:scale-105"
-                onClick={() => setActiveSectorId("core")}
-              >
-                <circle
-                  cx="200"
-                  cy="195"
-                  r="34"
-                  fill="url(#gradCore)"
-                  stroke="#FDEBD0"
-                  strokeWidth="2.5"
-                  filter="drop-shadow(0 4px 6px rgba(29,42,143,0.3))"
-                />
-                <text x="200" y="192" fontSize="9.5" fontWeight="900" fill="#FFFFFF" textAnchor="middle">
-                  MediKiosk
-                </text>
-                <text x="200" y="204" fontSize="7.5" fontWeight="700" fill="#FB923C" textAnchor="middle">
-                  CORE
-                </text>
-              </g>
-            </svg>
+            <div>
+              <h4 className="font-heading text-xl sm:text-2xl font-bold text-white tracking-tight">
+                Autonomous Clinical Fusion Engine
+              </h4>
+              <p className="text-xs sm:text-sm text-slate-300 mt-1.5 leading-relaxed max-w-xl">
+                Synthesizes patient vernacular voice, handwritten prescriptions, and historical ABHA EMR records into validated consultation summaries in seconds.
+              </p>
+            </div>
           </div>
-          <p className="text-[11px] text-[#374151]/60 mt-2 text-center font-medium">
-            💡 Click any sector or intersection above to view deep clinical architecture &amp; metrics.
-          </p>
+
+          <div className="pt-4 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-3 gap-4 relative z-10">
+            <div>
+              <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Avg Intake Time</span>
+              <span className="text-2xl font-extrabold font-heading text-white mt-0.5 block">2.8 min</span>
+            </div>
+            <div>
+              <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Queue Reduction</span>
+              <span className="text-2xl font-extrabold font-heading text-[#38BDF8] mt-0.5 block">68%</span>
+            </div>
+            <div className="col-span-2 sm:col-span-1">
+              <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Extraction Model</span>
+              <span className="text-xs font-bold text-slate-200 mt-1.5 block">Zero-Hallucination SOCRATES</span>
+            </div>
+          </div>
         </div>
 
-        {/* Right Column: Dynamic Deep Telemetry Inspector (6 cols) */}
-        <div className="lg:col-span-6">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeSector.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-              className="rounded-[16px] border border-[#FDEBD0] bg-[#FDFBF7] p-6 space-y-4"
-            >
-              {/* Badge & Title */}
-              <div className="space-y-1.5 border-b border-[#FDEBD0] pb-3">
-                <span className={cn("inline-block text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full", activeSector.badgeColor)}>
-                  {activeSector.badge}
-                </span>
-                <h4 className="font-heading text-lg font-bold text-[#374151]">
-                  {activeSector.title}
-                </h4>
-                <p className="text-xs text-[#374151]/80 leading-relaxed">
-                  {activeSector.description}
-                </p>
+        {/* Bento Box 2: Indic Voice Intelligence */}
+        <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 text-white shadow-lg flex flex-col justify-between space-y-4 hover:border-cyan-500/60 hover:shadow-cyan-500/10 transition-all duration-300 group backdrop-blur-md">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                Bhashini ASR
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-[#38BDF8] flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Mic className="w-4 h-4" />
               </div>
+            </div>
 
-              {/* Core Features List */}
-              <div className="space-y-2">
-                <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#1D2A8F]">
-                  Architectural Capabilities:
-                </p>
-                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-[#374151]">
-                  {activeSector.features.map((feat, idx) => (
-                    <li key={idx} className="flex items-start gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                      <span className="leading-tight">{feat}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+            <div>
+              <h4 className="font-heading text-lg font-bold text-white group-hover:text-[#38BDF8] transition-colors">
+                Indic Voice Intelligence
+              </h4>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                Fine-tuned speech models across 8+ Indian regional languages with hospital ambient noise suppression.
+              </p>
+            </div>
+          </div>
 
-              {/* Metric Callout Card */}
-              <div className="rounded-[12px] bg-white border border-[#FDEBD0] p-4 flex items-center justify-between shadow-2xs">
-                <div>
-                  <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#374151]/60">
-                    {activeSector.metricLabel}
-                  </p>
-                  <p className="text-xl sm:text-2xl font-black text-[#1D2A8F] mt-0.5">
-                    {activeSector.metric}
-                  </p>
-                </div>
-                <div className="max-w-[180px] text-right">
-                  <span className="text-[10px] font-bold text-[#C2410C] block">Clinical Impact:</span>
-                  <p className="text-[11px] text-[#374151]/80 leading-snug">
-                    {activeSector.clinicalImpact}
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
+          <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-mono text-slate-400 uppercase block">Dialect Accuracy</span>
+              <span className="text-xl font-extrabold font-heading text-[#38BDF8]">98.4%</span>
+            </div>
+            <span className="text-[11px] font-mono font-bold text-slate-400">Hindi, Tamil, Te, Mr, Bn</span>
+          </div>
         </div>
+
+        {/* Bento Box 3: Prescription Vision OCR */}
+        <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 text-white shadow-lg flex flex-col justify-between space-y-4 hover:border-sky-400/60 hover:shadow-sky-500/10 transition-all duration-300 group backdrop-blur-md">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30">
+                Document AI
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-sky-500/15 border border-sky-500/30 text-[#38BDF8] flex items-center justify-center group-hover:scale-110 transition-transform">
+                <FileScan className="w-4 h-4" />
+              </div>
+            </div>
+
+            <div>
+              <h4 className="font-heading text-lg font-bold text-white group-hover:text-sky-300 transition-colors">
+                Prescription Vision OCR
+              </h4>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                Optical parsing of handwritten doctor prescriptions, dosages, lab abnormal biomarkers, and pharmacological intent.
+              </p>
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-mono text-slate-400 uppercase block">Handwriting OCR</span>
+              <span className="text-xl font-extrabold font-heading text-[#38BDF8]">96.8%</span>
+            </div>
+            <span className="text-[11px] font-mono font-bold text-slate-400">Active Drug Sync</span>
+          </div>
+        </div>
+
+        {/* Bento Box 4: ABDM & Health Stack */}
+        <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 text-white shadow-lg flex flex-col justify-between space-y-4 hover:border-emerald-500/60 hover:shadow-emerald-500/10 transition-all duration-300 group backdrop-blur-md">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                National Health Stack
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-[#34D399] flex items-center justify-center group-hover:scale-110 transition-transform">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+            </div>
+
+            <div>
+              <h4 className="font-heading text-lg font-bold text-white group-hover:text-emerald-300 transition-colors">
+                ABDM &amp; FHIR R4 Grid
+              </h4>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                14-digit ABHA ID authentication, DPDP Act 2023 consent ledger, and interoperable health record federation.
+              </p>
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-mono text-slate-400 uppercase block">FHIR R4 / ABHA</span>
+              <span className="text-xl font-extrabold font-heading text-[#34D399]">100%</span>
+            </div>
+            <span className="text-[11px] font-mono font-bold text-slate-400">NHA M1/M2/M3</span>
+          </div>
+        </div>
+
+        {/* Bento Box 5: Cross-Modal Safety Guardrails */}
+        <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 text-white shadow-lg flex flex-col justify-between space-y-4 hover:border-indigo-400/60 hover:shadow-indigo-500/10 transition-all duration-300 group backdrop-blur-md">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                Safety Cross-Check
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Activity className="w-4 h-4" />
+              </div>
+            </div>
+
+            <div>
+              <h4 className="font-heading text-lg font-bold text-white group-hover:text-indigo-300 transition-colors">
+                Cross-Modal Guardrails
+              </h4>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                Reconciles spoken verbal symptoms against physical prescriptions to catch dosage mismatches and red flags.
+              </p>
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-mono text-slate-400 uppercase block">Discrepancy Capture</span>
+              <span className="text-xl font-extrabold font-heading text-indigo-300">99.1%</span>
+            </div>
+            <span className="text-[11px] font-mono font-bold text-slate-400">Zero Red-Flag Leak</span>
+          </div>
+        </div>
+
       </div>
     </div>
   );

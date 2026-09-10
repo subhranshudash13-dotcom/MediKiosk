@@ -25,13 +25,8 @@ import {
   BrainCircuit,
   Bot
 } from "lucide-react";
-import { HospitalMetricsChart } from "@/components/analytics/HospitalMetricsChart";
-import { ClinicalArchitectureDiagram } from "@/components/illustrations/ClinicalArchitectureDiagram";
-import { LiveTriageSimulator } from "@/components/interactive/LiveTriageSimulator";
 import { HeroMedicalRecordDropzone } from "@/components/documents/HeroMedicalRecordDropzone";
 import { ClinicalMultimodalVenn } from "@/components/illustrations/ClinicalMultimodalVenn";
-import { HospitalEfficiencyFlow } from "@/components/illustrations/HospitalEfficiencyFlow";
-import { EmergencyTriageMatrix } from "@/components/illustrations/EmergencyTriageMatrix";
 import { SocratesFrameworkExplorer } from "@/components/illustrations/SocratesFrameworkExplorer";
 import { HospitalVisualGallery } from "@/components/illustrations/HospitalVisualGallery";
 import { RotatingHeroText } from "@/components/brand/RotatingHeroText";
@@ -41,6 +36,7 @@ import { Footer } from "@/components/brand/Footer";
 
 import { VoiceIntakeHeroShowcase } from "@/components/patient/VoiceIntakeHeroShowcase";
 import { PrescriptionOCRImageShowcase } from "@/components/documents/PrescriptionOCRImageShowcase";
+import { OpdIntakeRoadmap } from "@/components/clinical/OpdIntakeRoadmap";
 
 export default function Home() {
   return (
@@ -116,7 +112,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* CONTAINER FOR MODULES & WORKSPACES */}
+        {/* CONTAINER 1: PATIENT VOICE INTAKE, PRESCRIPTION OCR, HOSPITAL DEPLOYMENT */}
         <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 space-y-24 sm:space-y-28">
           
           {/* ========================================================================= */}
@@ -292,387 +288,64 @@ export default function Home() {
             </div>
           </section>
 
-        {/* ========================================================================= */}
-        {/* SECTION 1: REAL-WORLD CLINICAL DEPLOYMENT GALLERY */}
-        {/* ========================================================================= */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2.5">
-            <span className="px-3 py-1 rounded-full bg-[#EBF3FC] text-[#0056B3] text-xs font-bold uppercase tracking-wider">
-              Module Showcase
-            </span>
-            <span className="text-xs font-bold text-[#6C7A89]">Live Hospital Deployment</span>
-          </div>
-          <HospitalVisualGallery />
-        </section>
-
-        {/* ========================================================================= */}
-        {/* SECTION 2: MULTIMODAL CONVERGENCE VENN DIAGRAM */}
-        {/* ========================================================================= */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2.5">
-            <span className="px-3 py-1 rounded-full bg-[#E8F7F9] text-[#17A2B8] text-xs font-bold uppercase tracking-wider">
-              AI Convergence
-            </span>
-            <span className="text-xs font-bold text-[#6C7A89]">Voice + Vision OCR Synthesis</span>
-          </div>
-          <ClinicalMultimodalVenn />
-        </section>
-
-        {/* ========================================================================= */}
-        {/* SECTION 3: HOSPITAL OPD EFFICIENCY & JOURNEY COMPARISON */}
-        {/* ========================================================================= */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2.5">
-            <span className="px-3 py-1 rounded-full bg-[#EAF7ED] text-[#28A745] text-xs font-bold uppercase tracking-wider">
-              Impact &amp; Metrics
-            </span>
-            <span className="text-xs font-bold text-[#6C7A89]">OPD Time Savings</span>
-          </div>
-          <HospitalEfficiencyFlow />
-        </section>
-
-        {/* ========================================================================= */}
-        {/* SECTION 4: 8-FACTOR SOCRATES DIAGNOSTIC FRAMEWORK */}
-        {/* ========================================================================= */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2.5">
-            <span className="px-3 py-1 rounded-full bg-[#EBF3FC] text-[#0056B3] text-xs font-bold uppercase tracking-wider">
-              Clinical Core
-            </span>
-            <span className="text-xs font-bold text-[#6C7A89]">Standardized HPI Engine</span>
-          </div>
-          <SocratesFrameworkExplorer />
-        </section>
-
-        {/* ========================================================================= */}
-        {/* SECTION 5: MANCHESTER & ESI EMERGENCY TRIAGE MATRIX */}
-        {/* ========================================================================= */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2.5">
-            <span className="px-3 py-1 rounded-full bg-[#FCEBEC] text-[#DC3545] text-xs font-bold uppercase tracking-wider">
-              Safety Guardrails
-            </span>
-            <span className="text-xs font-bold text-[#6C7A89]">Triage Stratification</span>
-          </div>
-          <EmergencyTriageMatrix />
-        </section>
-
-        {/* ========================================================================= */}
-        {/* SECTION 6: CLINICAL WORKFLOW ARCHITECTURE — 4-Stage Journey */}
-        {/* ========================================================================= */}
-        <section className="space-y-6">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-2 pb-4 border-b border-[#DEE2E6]">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EBF3FC] text-[#0056B3] text-[11px] font-mono font-bold uppercase tracking-wider mb-2">
-                End-to-End Clinical Flow
-              </div>
-              <h2 className="font-heading font-extrabold text-2xl sm:text-3xl text-[#2C3E50]">
-                The 4-Stage Hospital OPD Intake Journey
-              </h2>
-            </div>
-            <span className="text-xs text-[#6C7A89] font-medium">
-              From patient speech to verified physician consultation note
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Stage 1 */}
-            <div className="p-6 rounded-2xl bg-white border border-[#DEE2E6] shadow-card flex flex-col justify-between space-y-4 text-left hover:border-[#0056B3] transition-all group">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-[#F8F9FA] border border-[#DEE2E6] text-[#6C7A89]">
-                    STAGE 01
-                  </span>
-                  <div className="w-9 h-9 rounded-xl bg-[#EBF3FC] text-[#0056B3] flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Mic className="w-4 h-4" />
-                  </div>
-                </div>
-                <h3 className="font-heading font-bold text-base text-[#2C3E50] group-hover:text-[#0056B3] transition-colors">
-                  Vernacular Patient Triage
-                </h3>
-                <p className="text-xs text-[#5A6B7C] leading-relaxed">
-                  Patient speaks in their mother tongue at the kiosk. AI structures pain location, duration, and character without medical jargon.
-                </p>
-              </div>
-              <div className="pt-3 border-t border-[#DEE2E6] text-xs font-mono font-bold text-[#0056B3] flex items-center gap-1">
-                <Check className="w-3.5 h-3.5 text-[#28A745]" /> Hindi, Telugu, Tamil, EN
-              </div>
-            </div>
-
-            {/* Stage 2 */}
-            <div className="p-6 rounded-2xl bg-white border border-[#DEE2E6] shadow-card flex flex-col justify-between space-y-4 text-left hover:border-[#17A2B8] transition-all group">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-[#F8F9FA] border border-[#DEE2E6] text-[#6C7A89]">
-                    STAGE 02
-                  </span>
-                  <div className="w-9 h-9 rounded-xl bg-[#E8F7F9] text-[#17A2B8] flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <FileScan className="w-4 h-4" />
-                  </div>
-                </div>
-                <h3 className="font-heading font-bold text-base text-[#2C3E50] group-hover:text-[#17A2B8] transition-colors">
-                  Prescription Vision OCR
-                </h3>
-                <p className="text-xs text-[#5A6B7C] leading-relaxed">
-                  Paper prescriptions and lab slips are digitized instantly. Drug names, dosages, and abnormal lab flags are parsed.
-                </p>
-              </div>
-              <div className="pt-3 border-t border-[#DEE2E6] text-xs font-mono font-bold text-[#17A2B8] flex items-center gap-1">
-                <Check className="w-3.5 h-3.5 text-[#28A745]" /> Active Drug Reconciliation
-              </div>
-            </div>
-
-            {/* Stage 3 */}
-            <div className="p-6 rounded-2xl bg-white border border-[#DEE2E6] shadow-card flex flex-col justify-between space-y-4 text-left hover:border-[#0056B3] transition-all group">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-[#F8F9FA] border border-[#DEE2E6] text-[#6C7A89]">
-                    STAGE 03
-                  </span>
-                  <div className="w-9 h-9 rounded-xl bg-[#EBF3FC] text-[#0056B3] flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Stethoscope className="w-4 h-4" />
-                  </div>
-                </div>
-                <h3 className="font-heading font-bold text-base text-[#2C3E50] group-hover:text-[#0056B3] transition-colors">
-                  Doctor OPD Cockpit
-                </h3>
-                <p className="text-xs text-[#5A6B7C] leading-relaxed">
-                  Attending physician receives a pre-populated clinical summary in seconds, eliminating manual typing during consultation.
-                </p>
-              </div>
-              <div className="pt-3 border-t border-[#DEE2E6] text-xs font-mono font-bold text-[#0056B3] flex items-center gap-1">
-                <Check className="w-3.5 h-3.5 text-[#28A745]" /> 30-Second EMR Briefing
-              </div>
-            </div>
-
-            {/* Stage 4 */}
-            <div className="p-6 rounded-2xl bg-white border border-[#DEE2E6] shadow-card flex flex-col justify-between space-y-4 text-left hover:border-[#28A745] transition-all group">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-[#F8F9FA] border border-[#DEE2E6] text-[#6C7A89]">
-                    STAGE 04
-                  </span>
-                  <div className="w-9 h-9 rounded-xl bg-[#EAF7ED] text-[#28A745] flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <ShieldCheck className="w-4 h-4" />
-                  </div>
-                </div>
-                <h3 className="font-heading font-bold text-base text-[#2C3E50] group-hover:text-[#28A745] transition-colors">
-                  ABHA &amp; FHIR R4 Record
-                </h3>
-                <p className="text-xs text-[#5A6B7C] leading-relaxed">
-                  Encounter is structured into standard HL7 FHIR R4 bundles and linked to patient&apos;s ABHA record with explicit DPDP consent.
-                </p>
-              </div>
-              <div className="pt-3 border-t border-[#DEE2E6] text-xs font-mono font-bold text-[#28A745] flex items-center gap-1">
-                <Check className="w-3.5 h-3.5 text-[#28A745]" /> Interoperable Health Grid
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ========================================================================= */}
-        {/* 4 CORE MODULES WORKSPACES NAVIGATION */}
-        {/* ========================================================================= */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between pb-3 border-b border-[#DEE2E6]">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EBF3FC] text-[#0056B3] text-[11px] font-mono font-bold uppercase tracking-wider mb-1">
-                Platform Workspaces
-              </div>
-              <h2 className="font-heading font-bold text-xl sm:text-2xl text-[#2C3E50]">
-                Hospital Operational Modules
-              </h2>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {/* 1. Patient Voice Kiosk */}
-            <Link
-              href="/kiosk"
-              className="p-6 bg-white rounded-2xl border border-[#DEE2E6] hover:border-[#0056B3] transition-all flex flex-col justify-between group shadow-card cursor-pointer text-left hover:shadow-elevated"
-            >
-              <div className="space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-[#EBF3FC] text-[#0056B3] flex items-center justify-center shadow-xs">
-                  <Mic className="w-5 h-5 text-[#0056B3]" />
-                </div>
-                <h3 className="font-heading font-bold text-base text-[#2C3E50] group-hover:text-[#0056B3] transition-colors">
-                  Patient Intake Kiosk
-                </h3>
-                <p className="text-xs text-[#5A6B7C] leading-relaxed">
-                  Push-to-talk voice triage station with pain scoring, red flag alerts, and vernacular speech recognition.
-                </p>
-              </div>
-              <div className="mt-5 pt-3 border-t border-[#DEE2E6] flex items-center justify-between text-xs font-bold text-[#0056B3]">
-                <span>Open Kiosk</span>
-                <ArrowRight className="w-3.5 h-3.5 text-[#0056B3] group-hover:translate-x-1.5 transition-transform" />
-              </div>
-            </Link>
-
-            {/* 2. Doctor Workstation */}
-            <Link
-              href="/doctor"
-              className="p-6 bg-white rounded-2xl border border-[#DEE2E6] hover:border-[#0056B3] transition-all flex flex-col justify-between group shadow-card cursor-pointer text-left hover:shadow-elevated"
-            >
-              <div className="space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-[#EBF3FC] text-[#0056B3] flex items-center justify-center shadow-xs">
-                  <Stethoscope className="w-5 h-5 text-[#0056B3]" />
-                </div>
-                <h3 className="font-heading font-bold text-base text-[#2C3E50] group-hover:text-[#0056B3] transition-colors">
-                  Doctor Cockpit
-                </h3>
-                <p className="text-xs text-[#5A6B7C] leading-relaxed">
-                  Real-time triage queue, pre-consultation HPI, prescription studio, and diagnostic investigation orders.
-                </p>
-              </div>
-              <div className="mt-5 pt-3 border-t border-[#DEE2E6] flex items-center justify-between text-xs font-bold text-[#0056B3]">
-                <span>Open Cockpit</span>
-                <ArrowRight className="w-3.5 h-3.5 text-[#0056B3] group-hover:translate-x-1.5 transition-transform" />
-              </div>
-            </Link>
-
-            {/* 3. Document Intelligence & OCR */}
-            <Link
-              href="/documents"
-              className="p-6 bg-white rounded-2xl border border-[#DEE2E6] hover:border-[#17A2B8] transition-all flex flex-col justify-between group shadow-card cursor-pointer text-left hover:shadow-elevated"
-            >
-              <div className="space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-[#E8F7F9] text-[#17A2B8] flex items-center justify-center shadow-xs">
-                  <FileScan className="w-5 h-5 text-[#17A2B8]" />
-                </div>
-                <h3 className="font-heading font-bold text-base text-[#2C3E50] group-hover:text-[#17A2B8] transition-colors">
-                  Document Studio
-                </h3>
-                <p className="text-xs text-[#5A6B7C] leading-relaxed">
-                  Prescription handwriting OCR, lab result parsing, drug indications, and longitudinal health timeline.
-                </p>
-              </div>
-              <div className="mt-5 pt-3 border-t border-[#DEE2E6] flex items-center justify-between text-xs font-bold text-[#17A2B8]">
-                <span>Scan Records</span>
-                <ArrowRight className="w-3.5 h-3.5 text-[#17A2B8] group-hover:translate-x-1.5 transition-transform" />
-              </div>
-            </Link>
-
-            {/* 4. ABHA & ABDM Consent Gateway */}
-            <Link
-              href="/abha"
-              className="p-6 bg-white rounded-2xl border border-[#DEE2E6] hover:border-[#28A745] transition-all flex flex-col justify-between group shadow-card cursor-pointer text-left hover:shadow-elevated"
-            >
-              <div className="space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-[#EAF7ED] text-[#28A745] flex items-center justify-center shadow-xs">
-                  <ShieldCheck className="w-5 h-5 text-[#28A745]" />
-                </div>
-                <h3 className="font-heading font-bold text-base text-[#2C3E50] group-hover:text-[#28A745] transition-colors">
-                  ABHA Consent Desk
-                </h3>
-                <p className="text-xs text-[#5A6B7C] leading-relaxed">
-                  ABDM OTP verification, QR Scan &amp; Share counter, DPDP Act consent logging, and record linking.
-                </p>
-              </div>
-              <div className="mt-5 pt-3 border-t border-[#DEE2E6] flex items-center justify-between text-xs font-bold text-[#28A745]">
-                <span>Manage Consent</span>
-                <ArrowRight className="w-3.5 h-3.5 text-[#28A745] group-hover:translate-x-1.5 transition-transform" />
-              </div>
-            </Link>
-          </div>
-        </section>
-
-        {/* ========================================================================= */}
-        {/* SECTION 7: LIVE TRIAGE SIMULATOR */}
-        {/* ========================================================================= */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2.5">
-            <span className="px-3 py-1 rounded-full bg-[#EBF3FC] text-[#0056B3] text-xs font-bold uppercase tracking-wider">
-              Interactive Tool
-            </span>
-            <span className="text-xs font-bold text-[#6C7A89]">Live Case Simulator</span>
-          </div>
-          <LiveTriageSimulator />
-        </section>
-
-        {/* ========================================================================= */}
-        {/* SECTION 8: CLINICAL ARCHITECTURE & ANALYTICS */}
-        {/* ========================================================================= */}
-        <section className="space-y-10">
-          <div className="space-y-4">
+          {/* ========================================================================= */}
+          {/* SECTION 3: REAL-WORLD CLINICAL DEPLOYMENT GALLERY */}
+          {/* ========================================================================= */}
+          <section className="space-y-4">
             <div className="flex items-center gap-2.5">
               <span className="px-3 py-1 rounded-full bg-[#EBF3FC] text-[#0056B3] text-xs font-bold uppercase tracking-wider">
-                System Topology
+                Module Showcase
               </span>
-              <span className="text-xs font-bold text-[#6C7A89]">5-Layer Resilient Stack</span>
+              <span className="text-xs font-bold text-[#6C7A89]">Live Hospital Deployment</span>
             </div>
-            <ClinicalArchitectureDiagram />
-          </div>
+            <HospitalVisualGallery />
+          </section>
+        </div>
 
-          <div className="space-y-4">
-            <div className="flex items-center gap-2.5">
-              <span className="px-3 py-1 rounded-full bg-[#E8F7F9] text-[#17A2B8] text-xs font-bold uppercase tracking-wider">
-                Real-Time Telemetry
-              </span>
-              <span className="text-xs font-bold text-[#6C7A89]">OPD Metrics &amp; Throughput</span>
-            </div>
-            <HospitalMetricsChart />
+        {/* ========================================================================= */}
+        {/* FULL-BLEED EDGE-TO-EDGE SECTION: MULTIMODAL CONVERGENCE BENTO GRID */}
+        {/* ========================================================================= */}
+        <section className="w-full bg-slate-950 border-y border-slate-800 py-16 sm:py-24 text-white relative overflow-hidden">
+          <div className="max-w-6xl mx-auto w-full px-4 sm:px-6">
+            <ClinicalMultimodalVenn />
           </div>
         </section>
 
-        {/* ========================================================================= */}
-        {/* SECTION 9: CLINICAL SAFETY & COMPLIANCE STANDARDS */}
-        {/* ========================================================================= */}
-        <section className="bg-white border border-[#DEE2E6] rounded-2xl p-6 sm:p-8 shadow-card text-left">
-          <div className="flex items-center justify-between pb-4 border-b border-[#DEE2E6] mb-6">
+        {/* CONTAINER 2: SOCRATES DIAGNOSTIC FRAMEWORK & 4-STAGE OPD ROADMAP */}
+        <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 space-y-24 sm:space-y-28">
+          {/* ========================================================================= */}
+          {/* SECTION 4: 8-FACTOR SOCRATES DIAGNOSTIC FRAMEWORK */}
+          {/* ========================================================================= */}
+          <section className="space-y-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#EBF3FC] text-[#0056B3] flex items-center justify-center">
-                <Building2 className="w-4 h-4 text-[#0056B3]" />
-              </div>
+              <span className="px-3 py-1 rounded-full bg-[#EBF3FC] text-[#0056B3] text-xs font-bold uppercase tracking-wider">
+                Clinical Core
+              </span>
+              <span className="text-xs font-bold text-[#6C7A89]">Standardized HPI Engine</span>
+            </div>
+            <SocratesFrameworkExplorer />
+          </section>
+
+          {/* ========================================================================= */}
+          {/* SECTION 5: CLINICAL WORKFLOW ARCHITECTURE — 4-Stage Journey */}
+          {/* ========================================================================= */}
+          <section className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-2 pb-4 border-b border-[#DEE2E6]">
               <div>
-                <h3 className="font-heading font-bold text-base text-[#2C3E50]">
-                  Clinical Interoperability &amp; Regulatory Frameworks
-                </h3>
-                <span className="text-xs text-[#6C7A89]">Audited &amp; Standardized Hospital Healthcare Stack</span>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EBF3FC] text-[#0056B3] text-[11px] font-mono font-bold uppercase tracking-wider mb-2">
+                  End-to-End Clinical Flow
+                </div>
+                <h2 className="font-heading font-extrabold text-2xl sm:text-3xl text-[#2C3E50]">
+                  The 4-Stage Hospital OPD Intake Journey
+                </h2>
               </div>
-            </div>
-            <span className="text-xs font-bold text-[#28A745] px-3.5 py-1 rounded-full bg-[#EAF7ED] border border-[#D4EDDA] flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-[#28A745]" /> Verified Compliance
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3.5 text-center">
-            <div className="p-4 rounded-xl bg-[#F8F9FA] border border-[#DEE2E6] hover:border-[#0056B3] transition-colors">
-              <span className="text-[10px] font-mono font-bold text-[#6C7A89] uppercase block mb-1">Clinical Protocol</span>
-              <h4 className="text-xs font-bold text-[#0056B3]">SOCRATES</h4>
-              <p className="text-[10px] text-[#6C7A89] mt-0.5">8-Factor History</p>
+              <span className="text-xs text-[#6C7A89] font-medium">
+                From patient speech to verified physician consultation note
+              </span>
             </div>
 
-            <div className="p-4 rounded-xl bg-[#F8F9FA] border border-[#DEE2E6] hover:border-[#0056B3] transition-colors">
-              <span className="text-[10px] font-mono font-bold text-[#6C7A89] uppercase block mb-1">Data Standard</span>
-              <h4 className="text-xs font-bold text-[#0056B3]">HL7 FHIR R4</h4>
-              <p className="text-[10px] text-[#6C7A89] mt-0.5">Diagnostic Bundles</p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-[#F8F9FA] border border-[#DEE2E6] hover:border-[#0056B3] transition-colors">
-              <span className="text-[10px] font-mono font-bold text-[#6C7A89] uppercase block mb-1">Health Grid</span>
-              <h4 className="text-xs font-bold text-[#0056B3]">NHA ABDM</h4>
-              <p className="text-[10px] text-[#6C7A89] mt-0.5">ABHA M1/M2/M3</p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-[#F8F9FA] border border-[#DEE2E6] hover:border-[#0056B3] transition-colors">
-              <span className="text-[10px] font-mono font-bold text-[#6C7A89] uppercase block mb-1">Privacy Law</span>
-              <h4 className="text-xs font-bold text-[#0056B3]">DPDP Act 2023</h4>
-              <p className="text-[10px] text-[#6C7A89] mt-0.5">Consent Governance</p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-[#F8F9FA] border border-[#DEE2E6] hover:border-[#0056B3] transition-colors">
-              <span className="text-[10px] font-mono font-bold text-[#6C7A89] uppercase block mb-1">Speech Engine</span>
-              <h4 className="text-xs font-bold text-[#0056B3]">Bhashini AI</h4>
-              <p className="text-[10px] text-[#6C7A89] mt-0.5">Indic Dialect ASR</p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-[#F8F9FA] border border-[#DEE2E6] hover:border-[#0056B3] transition-colors">
-              <span className="text-[10px] font-mono font-bold text-[#6C7A89] uppercase block mb-1">Terminology</span>
-              <h4 className="text-xs font-bold text-[#0056B3]">ICD-10 / SNOMED</h4>
-              <p className="text-[10px] text-[#6C7A89] mt-0.5">Standard Coding</p>
-            </div>
-          </div>
-        </section>
+            <OpdIntakeRoadmap />
+          </section>
         </div>
       </main>
 
