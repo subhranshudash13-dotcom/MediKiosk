@@ -28,7 +28,7 @@ export function HeroMedicalRecordDropzone() {
     docName: "Cardiology_Hypertension_Rx.pdf",
     docPurpose: "Cardiovascular & Metabolic Risk Mitigation",
     drugs: ["Tab Amlodipine 5mg OD (Hypertension)", "Tab Metformin 500mg BD (Glycemic)"],
-    confidence: "98.4%"
+    confidence: "Verified"
   });
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -124,7 +124,7 @@ export function HeroMedicalRecordDropzone() {
   };
 
   return (
-    <div className="w-full bg-white border border-[#FDEBD0] rounded-[16px] p-6 shadow-sm space-y-4 text-left flex flex-col justify-between">
+    <div className="w-full h-full bg-[#FCFDFD] border border-[#DEE2E6] rounded-3xl p-7 sm:p-8 shadow-card flex flex-col justify-between space-y-6 text-left relative overflow-hidden">
       {/* Hidden File Input */}
       <input
         type="file"
@@ -136,62 +136,62 @@ export function HeroMedicalRecordDropzone() {
 
       <div className="space-y-4">
         {/* Card Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-[#FDEBD0]/80">
+        <div className="flex items-center justify-between pb-3 border-b border-[#DEE2E6]">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-[8px] bg-[#1D2A8F]/10 text-[#1D2A8F] flex items-center justify-center font-bold">
-              <FileText className="w-4 h-4" />
+            <div className="w-9 h-9 rounded-lg bg-[#EBF3FC] text-[#0056B3] flex items-center justify-center font-bold">
+              <FileText className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-heading font-semibold text-sm text-[#374151]">
+              <h3 className="font-heading font-bold text-sm text-[#2C3E50]">
                 Prescription Vision OCR
               </h3>
-              <span className="text-[11px] text-[#374151]/70">
+              <span className="text-xs text-[#6C7A89]">
                 Handwriting optical parsing &amp; dosage schedule
               </span>
             </div>
           </div>
-          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-[#EAF7ED] text-[#28A745] border border-[#D4EDDA]">
             Vision OCR Active
           </span>
         </div>
 
-        {/* Dropzone Area */}
+        {/* Dropzone Area (Eka.care style clean dropzone) */}
         <div
           onDragOver={onDragOver}
           onDragLeave={onDragLeave}
           onDrop={onDrop}
           onClick={() => fileInputRef.current?.click()}
-          className={`p-4 rounded-[10px] border-2 border-dashed text-center flex flex-col items-center justify-center transition-all cursor-pointer ${
+          className={`p-5 rounded-xl border-2 border-dashed text-center flex flex-col items-center justify-center transition-all cursor-pointer ${
             isDragging
-              ? "border-[#1D2A8F] bg-[#FDEBD0]/40"
-              : "border-[#FDEBD0] bg-[#FDFBF7] hover:border-[#1D2A8F] hover:bg-white"
+              ? "border-[#0056B3] bg-[#EBF3FC]"
+              : "border-[#DEE2E6] bg-[#F8F9FA] hover:border-[#0056B3] hover:bg-white"
           }`}
         >
-          <div className="w-9 h-9 rounded-full bg-[#1D2A8F]/10 text-[#1D2A8F] flex items-center justify-center mb-1.5">
-            <UploadCloud className="w-4 h-4" />
+          <div className="w-10 h-10 rounded-full bg-[#EBF3FC] text-[#0056B3] flex items-center justify-center mb-2 shadow-xs">
+            <UploadCloud className="w-5 h-5" />
           </div>
-          <span className="font-heading font-medium text-xs text-[#374151] block">
+          <span className="font-heading font-bold text-xs text-[#2C3E50] block">
             Drop prescription or lab slip here
           </span>
-          <span className="text-[11px] text-[#374151]/70 block mt-0.5">
-            or click to upload (PDF, PNG, JPG)
+          <span className="text-xs text-[#6C7A89] block mt-0.5">
+            or click to browse from device (PDF, PNG, JPG)
           </span>
         </div>
 
         {/* 1-Click Sample Pill Buttons */}
         <div className="flex items-center gap-2 pt-1">
-          <span className="text-[11px] text-[#374151]/70 font-medium">Quick Test:</span>
+          <span className="text-xs text-[#6C7A89] font-semibold">Quick Test:</span>
           <button
             type="button"
             onClick={() => handleLoadSample("prescription")}
-            className="px-2.5 py-1 rounded-full bg-[#FDFBF7] border border-[#FDEBD0] hover:border-[#1D2A8F] text-[10px] font-medium text-[#1D2A8F] transition-all hover:bg-white"
+            className="px-3 py-1 rounded-full bg-[#F8F9FA] border border-[#DEE2E6] hover:border-[#0056B3] text-xs font-semibold text-[#0056B3] transition-all hover:bg-white cursor-pointer shadow-xs"
           >
             + Rx Sample
           </button>
           <button
             type="button"
             onClick={() => handleLoadSample("diabetic_lab_report")}
-            className="px-2.5 py-1 rounded-full bg-[#FDFBF7] border border-[#FDEBD0] hover:border-[#1D2A8F] text-[10px] font-medium text-[#1D2A8F] transition-all hover:bg-white"
+            className="px-3 py-1 rounded-full bg-[#F8F9FA] border border-[#DEE2E6] hover:border-[#0056B3] text-xs font-semibold text-[#0056B3] transition-all hover:bg-white cursor-pointer shadow-xs"
           >
             + Lab Sample
           </button>
@@ -199,31 +199,31 @@ export function HeroMedicalRecordDropzone() {
 
         {/* Processed Snippet Container */}
         {uploadState === "uploading" ? (
-          <div className="p-3.5 rounded-[10px] bg-[#FDFBF7] border border-[#FDEBD0] flex items-center gap-3">
-            <div className="w-4 h-4 rounded-full border-2 border-[#1D2A8F] border-t-transparent animate-spin" />
-            <span className="text-xs text-[#374151]/80">Extracting clinical entities &amp; drugs...</span>
+          <div className="p-4 rounded-xl bg-[#F8F9FA] border border-[#DEE2E6] flex items-center gap-3">
+            <div className="w-4 h-4 rounded-full border-2 border-[#0056B3] border-t-transparent animate-spin" />
+            <span className="text-xs font-medium text-[#2C3E50]">Extracting clinical entities &amp; drugs...</span>
           </div>
         ) : (
-          <div className="p-3.5 rounded-[10px] bg-[#FDFBF7] border border-[#FDEBD0] space-y-2">
+          <div className="p-4 rounded-xl bg-[#F8F9FA] border border-[#DEE2E6] space-y-2.5">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-medium text-[#374151] flex items-center gap-1.5 truncate max-w-[200px]">
-                <FileText className="w-3.5 h-3.5 text-[#FB923C]" />
+              <span className="font-semibold text-[#2C3E50] flex items-center gap-1.5 truncate max-w-[200px]">
+                <FileText className="w-4 h-4 text-[#17A2B8]" />
                 {extractedSnippet.docName}
               </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#EAF7ED] text-[#28A745] border border-[#D4EDDA]">
                 {extractedSnippet.confidence} confidence
               </span>
             </div>
 
-            <p className="text-[11px] text-[#374151]/80 italic">
+            <p className="text-xs text-[#5A6B7C] italic">
               "{extractedSnippet.docPurpose}"
             </p>
 
-            <div className="space-y-1 pt-1">
+            <div className="space-y-1.5 pt-1">
               {extractedSnippet.drugs.map((d, i) => (
-                <div key={i} className="flex items-center gap-1.5 text-[11px] text-[#374151] bg-white px-2.5 py-1 rounded-[6px] border border-[#FDEBD0]">
-                  <Pill className="w-3 h-3 text-[#C2410C]" />
-                  <span className="font-mono text-[11px]">{d}</span>
+                <div key={i} className="flex items-center gap-2 text-xs text-[#2C3E50] bg-white px-3 py-1.5 rounded-lg border border-[#DEE2E6]">
+                  <Pill className="w-3.5 h-3.5 text-[#17A2B8]" />
+                  <span className="font-mono text-xs">{d}</span>
                 </div>
               ))}
             </div>
@@ -234,11 +234,12 @@ export function HeroMedicalRecordDropzone() {
       {/* Action Button */}
       <Link
         href="/documents"
-        className="w-full py-2.5 rounded-full bg-[#1D2A8F] hover:bg-[#15206B] text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-all shadow-xs"
+        className="w-full py-3 rounded-full bg-[#17A2B8] hover:bg-[#117A8B] text-white text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer"
       >
         <span>Open Clinical Document Studio</span>
-        <ArrowRight className="w-3.5 h-3.5 text-[#FB923C]" />
+        <ArrowRight className="w-3.5 h-3.5 text-white" />
       </Link>
     </div>
   );
 }
+

@@ -23,11 +23,9 @@ import {
   Info,
   ChevronRight,
 } from "lucide-react";
-import { DotAccent } from "@/components/illustrations/CareImagery";
 import { MedicalDocument, ExtractedMedication, ExtractedLabResult } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+import { getBackendUrl } from "@/lib/config";
 
 interface PrescriptionScannerProps {
   patientId?: string;
@@ -131,7 +129,8 @@ export function PrescriptionScanner({
       formData.append("auto_sync_timeline", "true");
 
       setScanStage("Multilingual OCR & Entity Recognition...");
-      const res = await fetch(`${BACKEND_URL}/api/v1/documents/upload`, {
+      const backendUrl = getBackendUrl();
+      const res = await fetch(`${backendUrl}/api/v1/documents/upload`, {
         method: "POST",
         body: formData,
       });
@@ -146,7 +145,6 @@ export function PrescriptionScanner({
       onScanComplete?.(data);
     } catch (err: any) {
       console.warn("Upload endpoint failed, falling back to local clinical engine:", err);
-      // Seamless fallback to realistic sample processing
       await processSampleDocument("prescription", selectedFile.name);
     } finally {
       setIsScanning(false);
@@ -160,8 +158,9 @@ export function PrescriptionScanner({
     setScanStage("Loading clinical reference document...");
 
     try {
+      const backendUrl = getBackendUrl();
       const res = await fetch(
-        `${BACKEND_URL}/api/v1/documents/process-sample?sample_type=${sampleType}&patient_id=${patientId}`,
+        `${backendUrl}/api/v1/documents/process-sample?sample_type=${sampleType}&patient_id=${patientId}`,
         { method: "POST" }
       );
 
@@ -178,7 +177,6 @@ export function PrescriptionScanner({
       onScanComplete?.(data);
     } catch (err: any) {
       console.error("Sample process failed:", err);
-      // Deterministic emergency fallback in frontend if backend server is offline
       const mockDoc: MedicalDocument = {
         document_id: "DOC-LOCAL-SAMPLE",
         patient_id: patientId,
@@ -287,9 +285,7 @@ export function PrescriptionScanner({
   };
 
   return (
-    <div className={cn("card-arch-top relative overflow-hidden text-left", className)}>
-      <DotAccent className="absolute top-5 right-5" />
-
+    <div className={cn("rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-xs relative overflow-hidden text-left", className)}>
       {/* Hidden File Inputs */}
       <input
         ref={fileInputRef}
@@ -308,20 +304,22 @@ export function PrescriptionScanner({
       />
 
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line/60 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E2E8F0] pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-olive-soft text-olive">
+            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#EBF5FF] text-[#0056B3]">
               <FileSearch className="h-4 w-4" />
             </span>
-            <p className="label-eyebrow">Multimodal Document Intelligence</p>
+            <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#0056B3]">
+              Multimodal Document Intelligence
+            </p>
           </div>
-          <h3 className="font-serif text-xl font-bold text-ink mt-1">
-            Prescription & Medical Document Intake
+          <h3 className="font-heading text-xl font-bold text-[#1E293B] mt-1">
+            Prescription &amp; Medical Document Intake
           </h3>
-          <p className="text-xs text-ink-muted mt-0.5">
+          <p className="text-xs text-[#64748B] mt-0.5">
             Attach any prescription, lab report, or discharge summary. MediKiosk decodes{" "}
-            <strong className="text-olive font-bold">what it is exactly for</strong>, its clinical intent, and pharmacological purpose.
+            <strong className="text-[#0056B3] font-bold">what it is exactly for</strong>, its clinical intent, and pharmacological purpose.
           </p>
         </div>
 
@@ -329,16 +327,16 @@ export function PrescriptionScanner({
           <button
             onClick={() => cameraInputRef.current?.click()}
             disabled={isScanning}
-            className="btn-pill-secondary text-xs py-2 px-3.5 flex items-center gap-1.5"
+            className="rounded-full border border-[#CBD5E1] bg-[#F8F9FA] hover:bg-white text-xs font-bold text-[#1E293B] py-2 px-3.5 flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
             title="Open camera to capture paper prescription"
           >
-            <Camera className="h-3.5 w-3.5 text-olive" />
+            <Camera className="h-3.5 w-3.5 text-[#0056B3]" />
             <span>Camera</span>
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isScanning}
-            className="btn-pill-primary text-xs py-2 px-4 flex items-center gap-1.5 shadow-xs"
+            className="rounded-full bg-[#0056B3] hover:bg-[#004494] text-white text-xs font-bold py-2 px-4 flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
           >
             <UploadCloud className="h-4 w-4" />
             <span>Attach Image / Document</span>
@@ -358,8 +356,8 @@ export function PrescriptionScanner({
             onClick={() => !selectedFile && fileInputRef.current?.click()}
             className={cn(
               "relative rounded-2xl border-2 border-dashed p-5 transition-all text-center flex flex-col items-center justify-center min-h-[220px]",
-              selectedFile ? "border-olive/60 bg-olive-soft/20" : "cursor-pointer hover:border-olive hover:bg-oat/40",
-              isDragging ? "border-olive bg-olive-soft/40 scale-[1.01]" : "border-line bg-oat/30"
+              selectedFile ? "border-[#0056B3]/60 bg-[#F0F7FF]/50" : "cursor-pointer hover:border-[#0056B3] hover:bg-[#F8F9FA]",
+              isDragging ? "border-[#0056B3] bg-[#EBF5FF] scale-[1.01]" : "border-[#CBD5E1] bg-[#F8F9FA]/60"
             )}
           >
             {/* Laser Scanning Animation */}
@@ -368,20 +366,20 @@ export function PrescriptionScanner({
                 initial={{ top: "0%" }}
                 animate={{ top: "100%" }}
                 transition={{ repeat: Infinity, duration: 1.4, ease: "linear" }}
-                className="absolute left-0 right-0 h-1 bg-olive shadow-[0_0_12px_rgba(66,87,45,0.9)] z-20"
+                className="absolute left-0 right-0 h-1 bg-[#0056B3] shadow-[0_0_12px_rgba(0,86,179,0.9)] z-20"
               />
             )}
 
             {selectedFile ? (
               <div className="w-full space-y-3">
-                <div className="flex items-center justify-between bg-paper p-3 rounded-xl border border-line shadow-xs">
+                <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-[#E2E8F0] shadow-xs">
                   <div className="flex items-center gap-2.5 truncate">
-                    <div className="h-9 w-9 rounded-lg bg-olive-soft text-olive flex items-center justify-center flex-shrink-0">
+                    <div className="h-9 w-9 rounded-lg bg-[#EBF5FF] text-[#0056B3] flex items-center justify-center flex-shrink-0">
                       <FileCheck className="h-5 w-5" />
                     </div>
                     <div className="text-left truncate">
-                      <p className="text-xs font-bold text-ink truncate">{selectedFile.name}</p>
-                      <p className="text-[10px] text-ink-muted">
+                      <p className="text-xs font-bold text-[#1E293B] truncate">{selectedFile.name}</p>
+                      <p className="text-[10px] text-[#64748B]">
                         {(selectedFile.size / 1024).toFixed(1)} KB · {selectedFile.type || "Medical Doc"}
                       </p>
                     </div>
@@ -391,14 +389,14 @@ export function PrescriptionScanner({
                       e.stopPropagation();
                       clearSelectedFile();
                     }}
-                    className="h-7 w-7 rounded-full bg-oat text-ink-muted hover:bg-rose-100 hover:text-rose-600 flex items-center justify-center transition-colors"
+                    className="h-7 w-7 rounded-full bg-[#F1F5F9] text-[#64748B] hover:bg-red-50 hover:text-red-600 flex items-center justify-center transition-colors"
                   >
                     <X className="h-4 w-4" />
                   </button>
                 </div>
 
                 {previewUrl && (
-                  <div className="relative max-h-40 overflow-hidden rounded-xl border border-line bg-paper">
+                  <div className="relative max-h-40 overflow-hidden rounded-xl border border-[#E2E8F0] bg-white">
                     <img
                       src={previewUrl}
                       alt="Document Preview"
@@ -413,7 +411,7 @@ export function PrescriptionScanner({
                     processUploadedFile();
                   }}
                   disabled={isScanning}
-                  className="w-full btn-pill-primary py-2.5 text-xs font-bold shadow-xs flex items-center justify-center gap-2"
+                  className="w-full rounded-full bg-[#0056B3] hover:bg-[#004494] text-white py-2.5 text-xs font-bold shadow-sm flex items-center justify-center gap-2 cursor-pointer transition-all"
                 >
                   {isScanning ? (
                     <>
@@ -423,30 +421,30 @@ export function PrescriptionScanner({
                   ) : (
                     <>
                       <Sparkles className="h-3.5 w-3.5" />
-                      <span>Analyze Document & Decode Clinical Intent</span>
+                      <span>Analyze Document &amp; Decode Clinical Intent</span>
                     </>
                   )}
                 </button>
               </div>
             ) : (
               <div className="space-y-2 py-4">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-olive-soft text-olive">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EBF5FF] text-[#0056B3]">
                   <UploadCloud className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-ink">
-                    Drag & drop your prescription or report here
+                  <p className="text-xs font-bold text-[#1E293B]">
+                    Drag &amp; drop your prescription or report here
                   </p>
-                  <p className="text-[11px] text-ink-muted mt-0.5">
+                  <p className="text-[11px] text-[#64748B] mt-0.5">
                     Supports JPG, PNG, WEBP, and PDF documents
                   </p>
                 </div>
                 <div className="pt-2 flex justify-center gap-2">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-oat px-3 py-1 text-[10px] font-bold text-ink-muted">
-                    <ShieldCheck className="h-3 w-3 text-olive" /> ABDM Linked
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#F1F5F9] px-3 py-1 text-[10px] font-bold text-[#64748B]">
+                    <ShieldCheck className="h-3 w-3 text-[#0056B3]" /> ABDM Linked
                   </span>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-oat px-3 py-1 text-[10px] font-bold text-ink-muted">
-                    <Stethoscope className="h-3 w-3 text-olive" /> Clinical Intent
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#F1F5F9] px-3 py-1 text-[10px] font-bold text-[#64748B]">
+                    <Stethoscope className="h-3 w-3 text-[#0056B3]" /> Clinical Intent
                   </span>
                 </div>
               </div>
@@ -454,10 +452,10 @@ export function PrescriptionScanner({
           </div>
 
           {/* Quick Instant Test Samples */}
-          <div className="rounded-2xl border border-line bg-paper p-4">
+          <div className="rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-xs">
             <div className="flex items-center justify-between mb-2.5">
-              <p className="label-eyebrow text-ink">Quick Test Samples:</p>
-              <span className="text-[10px] text-ink-muted font-medium">1-Click Evaluation</span>
+              <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#0056B3]">Quick Test Samples:</p>
+              <span className="text-[10px] text-[#64748B] font-medium">1-Click Evaluation</span>
             </div>
             <div className="space-y-2">
               {SAMPLE_DOCS.map((sample) => (
@@ -465,22 +463,22 @@ export function PrescriptionScanner({
                   key={sample.id}
                   onClick={() => processSampleDocument(sample.id)}
                   disabled={isScanning}
-                  className="w-full text-left p-2.5 rounded-xl border border-line hover:border-olive hover:bg-olive-soft/30 transition-all flex items-center justify-between group"
+                  className="w-full text-left p-2.5 rounded-xl border border-[#E2E8F0] hover:border-[#0056B3] hover:bg-[#F0F7FF] transition-all flex items-center justify-between group cursor-pointer"
                 >
                   <div className="truncate pr-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-ink group-hover:text-olive">
+                      <span className="text-xs font-bold text-[#1E293B] group-hover:text-[#0056B3]">
                         {sample.label}
                       </span>
-                      <span className="text-[9px] font-bold bg-oat text-ink-muted px-1.5 py-0.5 rounded">
+                      <span className="text-[9px] font-bold bg-[#F1F5F9] text-[#64748B] px-1.5 py-0.5 rounded">
                         {sample.badge}
                       </span>
                     </div>
-                    <p className="text-[10px] text-ink-muted truncate mt-0.5">
+                    <p className="text-[10px] text-[#64748B] truncate mt-0.5">
                       {sample.description}
                     </p>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-ink-muted group-hover:text-olive flex-shrink-0 transition-transform group-hover:translate-x-0.5" />
+                  <ChevronRight className="h-4 w-4 text-[#94A3B8] group-hover:text-[#0056B3] flex-shrink-0 transition-transform group-hover:translate-x-0.5" />
                 </button>
               ))}
             </div>
@@ -491,49 +489,49 @@ export function PrescriptionScanner({
         <div className="lg:col-span-7 space-y-4">
           {extractedDoc ? (
             <div className="space-y-4">
-              {/* Document Clinical Purpose & Intent Banner (THE CORE USER REQUIREMENT) */}
-              <div className="rounded-2xl border-2 border-olive/30 bg-olive-soft/40 p-5 shadow-xs relative overflow-hidden">
+              {/* Document Clinical Purpose & Intent Banner */}
+              <div className="rounded-2xl border-2 border-[#0056B3]/30 bg-[#F0F7FF] p-5 shadow-xs relative overflow-hidden">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="rounded-full bg-olive text-white px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider">
+                      <span className="rounded-full bg-[#0056B3] text-white px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider">
                         {extractedDoc.document_type.replace("_", " ")}
                       </span>
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-olive">
-                        <CheckCircle2 className="h-3.5 w-3.5" />
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#0056B3]">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-[#28A745]" />
                         {extractedDoc.confidence_score || 96}% Verified
                       </span>
                     </div>
-                    <h4 className="font-serif text-lg font-bold text-ink mt-1.5 leading-snug">
+                    <h4 className="font-heading text-lg font-bold text-[#1E293B] mt-1.5 leading-snug">
                       {extractedDoc.document_purpose || "Outpatient Clinical Management"}
                     </h4>
                   </div>
 
                   {extractedDoc.is_abdm_linked && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-olive bg-white/80 px-2.5 py-1 rounded-full border border-olive/20 shadow-2xs">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#0056B3] bg-white px-2.5 py-1 rounded-full border border-[#0056B3]/20 shadow-2xs">
                       <ShieldCheck className="h-3 w-3" /> ABDM Linked
                     </span>
                   )}
                 </div>
 
                 {/* What This Document Is Exactly For Section */}
-                <div className="mt-4 rounded-xl bg-white p-4 border border-olive/20 shadow-2xs">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-olive mb-1">
+                <div className="mt-4 rounded-xl bg-white p-4 border border-[#0056B3]/20 shadow-2xs">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-[#0056B3] mb-1">
                     <Info className="h-4 w-4" />
                     <span>WHAT THIS DOCUMENT IS EXACTLY FOR (CLINICAL INTENT):</span>
                   </div>
-                  <p className="text-xs text-ink leading-relaxed font-medium">
+                  <p className="text-xs text-[#1E293B] leading-relaxed font-medium">
                     {extractedDoc.clinical_intent ||
                       "This document provides the therapeutic treatment regimen for stabilizing patient symptoms, controlling elevated blood pressure, and optimizing glycemic metabolic parameters."}
                   </p>
 
                   {/* Physician Action Plan */}
                   {extractedDoc.physician_action_plan && (
-                    <div className="mt-3 pt-3 border-t border-line/60">
-                      <p className="text-[11px] font-bold text-olive-deep uppercase tracking-wider mb-1">
+                    <div className="mt-3 pt-3 border-t border-[#E2E8F0]">
+                      <p className="text-[11px] font-bold text-[#0056B3] uppercase tracking-wider mb-1">
                         Physician Action Directives:
                       </p>
-                      <p className="text-xs text-ink-muted leading-relaxed">
+                      <p className="text-xs text-[#64748B] leading-relaxed">
                         {extractedDoc.physician_action_plan}
                       </p>
                     </div>
@@ -541,22 +539,22 @@ export function PrescriptionScanner({
                 </div>
 
                 {/* Metadata Row */}
-                <div className="mt-3 flex flex-wrap items-center gap-4 text-[11px] text-ink-muted">
+                <div className="mt-3 flex flex-wrap items-center gap-4 text-[11px] text-[#64748B]">
                   {extractedDoc.doctor_name && (
                     <span className="flex items-center gap-1 font-medium">
-                      <UserCheck className="h-3 w-3 text-olive" />
+                      <UserCheck className="h-3 w-3 text-[#0056B3]" />
                       {extractedDoc.doctor_name}
                     </span>
                   )}
                   {extractedDoc.facility_name && (
                     <span className="flex items-center gap-1 font-medium">
-                      <Building2 className="h-3 w-3 text-olive" />
+                      <Building2 className="h-3 w-3 text-[#0056B3]" />
                       {extractedDoc.facility_name}
                     </span>
                   )}
                   {extractedDoc.document_date && (
                     <span className="flex items-center gap-1 font-medium">
-                      <Calendar className="h-3 w-3 text-olive" />
+                      <Calendar className="h-3 w-3 text-[#0056B3]" />
                       {String(extractedDoc.document_date)}
                     </span>
                   )}
@@ -564,19 +562,19 @@ export function PrescriptionScanner({
               </div>
 
               {/* Navigation Tabs for Extracted Entities */}
-              <div className="flex items-center gap-2 border-b border-line pb-2">
+              <div className="flex items-center gap-2 border-b border-[#E2E8F0] pb-2">
                 <button
                   onClick={() => setActiveTab("purpose")}
                   className={cn(
-                    "rounded-lg px-3 py-1.5 text-xs font-bold transition-all",
+                    "rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer",
                     activeTab === "purpose"
-                      ? "bg-olive text-white shadow-xs"
-                      : "text-ink-muted hover:bg-oat"
+                      ? "bg-[#0056B3] text-white shadow-xs"
+                      : "text-[#64748B] hover:bg-[#F1F5F9]"
                   )}
                 >
                   <span className="flex items-center gap-1.5">
                     <Stethoscope className="h-3.5 w-3.5" />
-                    Clinical Summary & Intent
+                    Clinical Summary &amp; Intent
                   </span>
                 </button>
 
@@ -584,10 +582,10 @@ export function PrescriptionScanner({
                   <button
                     onClick={() => setActiveTab("meds")}
                     className={cn(
-                      "rounded-lg px-3 py-1.5 text-xs font-bold transition-all",
+                      "rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer",
                       activeTab === "meds"
-                        ? "bg-olive text-white shadow-xs"
-                        : "text-ink-muted hover:bg-oat"
+                        ? "bg-[#0056B3] text-white shadow-xs"
+                        : "text-[#64748B] hover:bg-[#F1F5F9]"
                     )}
                   >
                     <span className="flex items-center gap-1.5">
@@ -601,10 +599,10 @@ export function PrescriptionScanner({
                   <button
                     onClick={() => setActiveTab("labs")}
                     className={cn(
-                      "rounded-lg px-3 py-1.5 text-xs font-bold transition-all",
+                      "rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer",
                       activeTab === "labs"
-                        ? "bg-olive text-white shadow-xs"
-                        : "text-ink-muted hover:bg-oat"
+                        ? "bg-[#0056B3] text-white shadow-xs"
+                        : "text-[#64748B] hover:bg-[#F1F5F9]"
                     )}
                   >
                     <span className="flex items-center gap-1.5">
@@ -620,8 +618,8 @@ export function PrescriptionScanner({
                 <div className="space-y-3">
                   {/* Diagnoses */}
                   {extractedDoc.extracted_diagnoses && extractedDoc.extracted_diagnoses.length > 0 && (
-                    <div className="rounded-xl border border-line bg-paper p-3.5 shadow-xs">
-                      <p className="label-eyebrow mb-2">Identified Diagnoses & Health Conditions:</p>
+                    <div className="rounded-xl border border-[#E2E8F0] bg-white p-3.5 shadow-xs">
+                      <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#0056B3] mb-2">Identified Diagnoses &amp; Health Conditions:</p>
                       <div className="flex flex-wrap gap-2">
                         {extractedDoc.extracted_diagnoses.map((diag, i) => {
                           const name = typeof diag === "string" ? diag : diag.condition;
@@ -629,12 +627,12 @@ export function PrescriptionScanner({
                           return (
                             <span
                               key={i}
-                              className="inline-flex items-center gap-1.5 rounded-full bg-oat border border-line px-3 py-1 text-xs font-bold text-ink"
+                              className="inline-flex items-center gap-1.5 rounded-full bg-[#F8F9FA] border border-[#E2E8F0] px-3 py-1 text-xs font-bold text-[#1E293B]"
                             >
-                              <CheckCircle2 className="h-3 w-3 text-olive" />
+                              <CheckCircle2 className="h-3 w-3 text-[#28A745]" />
                               {name}
                               {icd && (
-                                <span className="font-mono text-[9px] font-bold text-olive-deep bg-olive-soft px-1.5 py-0.2 rounded">
+                                <span className="font-mono text-[9px] font-bold text-[#0056B3] bg-[#EBF5FF] px-1.5 py-0.2 rounded">
                                   {icd}
                                 </span>
                               )}
@@ -647,16 +645,16 @@ export function PrescriptionScanner({
 
                   {/* Vitals */}
                   {extractedDoc.extracted_vitals && extractedDoc.extracted_vitals.length > 0 && (
-                    <div className="rounded-xl border border-line bg-paper p-3.5 shadow-xs">
-                      <p className="label-eyebrow mb-2">Recorded Vitals:</p>
+                    <div className="rounded-xl border border-[#E2E8F0] bg-white p-3.5 shadow-xs">
+                      <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#0056B3] mb-2">Recorded Vitals:</p>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                         {extractedDoc.extracted_vitals.map((v, i) => (
-                          <div key={i} className="bg-oat/50 p-2.5 rounded-lg border border-line/60">
-                            <p className="text-[10px] uppercase font-bold text-ink-muted">
+                          <div key={i} className="bg-[#F8F9FA] p-2.5 rounded-lg border border-[#E2E8F0]">
+                            <p className="text-[10px] uppercase font-bold text-[#64748B]">
                               {v.vital_name}
                             </p>
-                            <p className="text-sm font-bold text-ink mt-0.5">
-                              {v.value} <span className="text-[10px] text-ink-muted font-normal">{v.unit}</span>
+                            <p className="text-sm font-bold text-[#1E293B] mt-0.5">
+                              {v.value} <span className="text-[10px] text-[#64748B] font-normal">{v.unit}</span>
                             </p>
                           </div>
                         ))}
@@ -664,30 +662,30 @@ export function PrescriptionScanner({
                     </div>
                   )}
 
-                  {/* Highlight of Active Medications & Why */}
-                  <div className="rounded-xl border border-line bg-paper p-3.5 shadow-xs space-y-2">
+                  {/* Highlight of Active Medications */}
+                  <div className="rounded-xl border border-[#E2E8F0] bg-white p-3.5 shadow-xs space-y-2">
                     <div className="flex items-center justify-between">
-                      <p className="label-eyebrow">Pharmacotherapy Purpose Breakdown:</p>
+                      <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#0056B3]">Pharmacotherapy Purpose Breakdown:</p>
                       <button
                         onClick={() => setActiveTab("meds")}
-                        className="text-[11px] font-bold text-olive hover:underline"
+                        className="text-[11px] font-bold text-[#0056B3] hover:underline cursor-pointer"
                       >
                         View Full Details →
                       </button>
                     </div>
                     {extractedDoc.extracted_medications.slice(0, 3).map((med, i) => (
-                      <div key={i} className="p-2.5 rounded-lg bg-oat/30 border border-line/60">
+                      <div key={i} className="p-2.5 rounded-lg bg-[#F8F9FA] border border-[#E2E8F0]">
                         <div className="flex items-center justify-between">
-                          <p className="text-xs font-bold text-ink">
+                          <p className="text-xs font-bold text-[#1E293B]">
                             {med.name} {med.dosage && `(${med.dosage})`}
                           </p>
-                          <span className="text-[10px] font-semibold text-olive bg-olive-soft px-2 py-0.5 rounded">
+                          <span className="text-[10px] font-semibold text-[#0056B3] bg-[#EBF5FF] px-2 py-0.5 rounded">
                             {med.indication || med.therapeutic_class || "Prescribed Regimen"}
                           </span>
                         </div>
                         {med.clinical_purpose && (
-                          <p className="text-[11px] text-ink-muted mt-1 leading-snug">
-                            <strong className="text-ink">Purpose:</strong> {med.clinical_purpose}
+                          <p className="text-[11px] text-[#64748B] mt-1 leading-snug">
+                            <strong className="text-[#1E293B]">Purpose:</strong> {med.clinical_purpose}
                           </p>
                         )}
                       </div>
@@ -696,12 +694,12 @@ export function PrescriptionScanner({
                 </div>
               )}
 
-              {/* TAB 2: Medications Breakdown with Clinical Purpose per drug */}
+              {/* TAB 2: Medications Breakdown */}
               {activeTab === "meds" && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="label-eyebrow">Extracted Active Regimen & Exact Clinical Purpose:</p>
-                    <span className="text-[10px] font-bold text-olive">
+                    <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#0056B3]">Extracted Active Regimen &amp; Exact Clinical Purpose:</p>
+                    <span className="text-[10px] font-bold text-[#0056B3]">
                       {extractedDoc.extracted_medications.length} Drugs Analyzed
                     </span>
                   </div>
@@ -709,23 +707,23 @@ export function PrescriptionScanner({
                   {extractedDoc.extracted_medications.map((med, idx) => (
                     <div
                       key={idx}
-                      className="rounded-2xl border border-line bg-paper p-4 hover:border-olive transition-all shadow-xs space-y-2"
+                      className="rounded-2xl border border-[#E2E8F0] bg-white p-4 hover:border-[#0056B3] transition-all shadow-xs space-y-2"
                     >
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="h-6 w-6 rounded-md bg-olive-soft text-olive flex items-center justify-center font-bold text-xs">
+                            <span className="h-6 w-6 rounded-md bg-[#EBF5FF] text-[#0056B3] flex items-center justify-center font-bold text-xs">
                               {idx + 1}
                             </span>
-                            <h5 className="text-sm font-bold text-ink">{med.name}</h5>
+                            <h5 className="text-sm font-bold text-[#1E293B]">{med.name}</h5>
                             {med.dosage && (
-                              <span className="rounded-full bg-oat px-2 py-0.5 text-[10px] font-bold text-ink">
+                              <span className="rounded-full bg-[#F1F5F9] px-2 py-0.5 text-[10px] font-bold text-[#1E293B]">
                                 {med.dosage}
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-ink-muted mt-1">
-                            Timing: <span className="font-semibold text-ink">{med.frequency || "OD"}</span>
+                          <p className="text-xs text-[#64748B] mt-1">
+                            Timing: <span className="font-semibold text-[#1E293B]">{med.frequency || "OD"}</span>
                             {med.instructions && ` · ${med.instructions}`}
                             {med.duration && ` · Duration: ${med.duration}`}
                           </p>
@@ -733,24 +731,23 @@ export function PrescriptionScanner({
 
                         <div className="text-right">
                           {med.therapeutic_class && (
-                            <span className="inline-block rounded-md bg-oat px-2 py-0.5 text-[10px] font-bold text-ink-muted border border-line/60">
+                            <span className="inline-block rounded-md bg-[#F8F9FA] px-2 py-0.5 text-[10px] font-bold text-[#64748B] border border-[#E2E8F0]">
                               {med.therapeutic_class}
                             </span>
                           )}
                           {med.confidence && (
-                            <p className="text-[9px] font-bold text-olive mt-0.5">
+                            <p className="text-[9px] font-bold text-[#28A745] mt-0.5">
                               {med.confidence}% Match
                             </p>
                           )}
                         </div>
                       </div>
 
-                      {/* Exact Clinical Purpose Callout Card */}
-                      <div className="rounded-xl bg-olive-soft/40 border border-olive/20 p-2.5">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-olive-deep">
+                      <div className="rounded-xl bg-[#F0F7FF] border border-[#0056B3]/20 p-2.5">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#0056B3]">
                           What This Drug Is Exactly For:
                         </p>
-                        <p className="text-xs text-ink mt-0.5 leading-snug">
+                        <p className="text-xs text-[#1E293B] mt-0.5 leading-snug">
                           {med.clinical_purpose ||
                             `Prescribed for clinical management of ${med.indication || "the diagnosed presentation"}.`}
                         </p>
@@ -760,12 +757,12 @@ export function PrescriptionScanner({
                 </div>
               )}
 
-              {/* TAB 3: Laboratory Results & Diagnostic Purpose */}
+              {/* TAB 3: Laboratory Results */}
               {activeTab === "labs" && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="label-eyebrow">Laboratory Diagnostics & Reference Range Analysis:</p>
-                    <span className="text-[10px] font-bold text-olive">
+                    <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#0056B3]">Laboratory Diagnostics &amp; Reference Range Analysis:</p>
+                    <span className="text-[10px] font-bold text-[#0056B3]">
                       {extractedDoc.extracted_labs.length} Tests Evaluated
                     </span>
                   </div>
@@ -777,45 +774,44 @@ export function PrescriptionScanner({
                         "rounded-2xl border p-4 shadow-xs space-y-2 transition-all",
                         lab.is_abnormal
                           ? "border-amber-300 bg-amber-50/40"
-                          : "border-line bg-paper"
+                          : "border-[#E2E8F0] bg-white"
                       )}
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div>
                           <div className="flex items-center gap-2">
-                            <h5 className="text-sm font-bold text-ink">{lab.test_name}</h5>
+                            <h5 className="text-sm font-bold text-[#1E293B]">{lab.test_name}</h5>
                             {lab.is_abnormal ? (
                               <span className="rounded-full bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
                                 <AlertTriangle className="h-3 w-3" />
                                 {lab.severity_flag || "Elevated"}
                               </span>
                             ) : (
-                              <span className="rounded-full bg-olive-soft text-olive border border-olive/30 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider">
+                              <span className="rounded-full bg-[#EAF7ED] text-[#28A745] border border-[#28A745]/30 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider">
                                 Normal
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-ink-muted mt-0.5">
+                          <p className="text-xs text-[#64748B] mt-0.5">
                             Reference Range:{" "}
-                            <span className="font-mono text-ink font-semibold">
+                            <span className="font-mono text-[#1E293B] font-semibold">
                               {lab.reference_range || "Standard"}
                             </span>
                           </p>
                         </div>
 
                         <div className="text-right">
-                          <p className="text-base font-extrabold text-ink">
-                            {lab.value} <span className="text-xs font-normal text-ink-muted">{lab.unit}</span>
+                          <p className="text-base font-extrabold text-[#1E293B]">
+                            {lab.value} <span className="text-xs font-normal text-[#64748B]">{lab.unit}</span>
                           </p>
                         </div>
                       </div>
 
-                      {/* Exact Diagnostic Purpose Callout Card */}
-                      <div className="rounded-xl bg-white p-2.5 border border-line/60">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-olive-deep">
+                      <div className="rounded-xl bg-white p-2.5 border border-[#E2E8F0]">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#0056B3]">
                           What This Test Investigates:
                         </p>
-                        <p className="text-xs text-ink mt-0.5 leading-snug">
+                        <p className="text-xs text-[#1E293B] mt-0.5 leading-snug">
                           {lab.clinical_purpose ||
                             "Diagnostic biomarker test ordered to assess metabolic organ function."}
                         </p>
@@ -831,49 +827,48 @@ export function PrescriptionScanner({
               )}
             </div>
           ) : (
-            /* Empty State: Explaining what OCR intelligence does */
-            <div className="rounded-2xl border border-line bg-paper p-6 text-center space-y-4">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-olive-soft text-olive">
+            <div className="rounded-2xl border border-[#E2E8F0] bg-white p-6 text-center space-y-4 shadow-xs">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EBF5FF] text-[#0056B3]">
                 <FileSearch className="h-7 w-7" />
               </div>
               <div>
-                <h4 className="font-serif text-lg font-bold text-ink">
+                <h4 className="font-heading text-lg font-bold text-[#1E293B]">
                   Awaiting Prescription or Document
                 </h4>
-                <p className="text-xs text-ink-muted max-w-md mx-auto mt-1 leading-relaxed">
+                <p className="text-xs text-[#64748B] max-w-md mx-auto mt-1 leading-relaxed">
                   Attach an image/PDF or click one of the quick test samples on the left.
                   MediKiosk will automatically extract medications, evaluate labs against clinical ranges,
-                  and explain <span className="font-bold text-olive">what the document is exactly for</span>.
+                  and explain <span className="font-bold text-[#0056B3]">what the document is exactly for</span>.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 text-left">
-                <div className="rounded-xl border border-line/70 bg-oat/40 p-3">
-                  <div className="flex items-center gap-1.5 text-olive font-bold text-xs">
+                <div className="rounded-xl border border-[#E2E8F0] bg-[#F8F9FA] p-3">
+                  <div className="flex items-center gap-1.5 text-[#0056B3] font-bold text-xs">
                     <Stethoscope className="h-3.5 w-3.5" />
                     <span>Clinical Purpose</span>
                   </div>
-                  <p className="text-[11px] text-ink-muted mt-1 leading-snug">
+                  <p className="text-[11px] text-[#64748B] mt-1 leading-snug">
                     Explains the underlying clinical reason and therapeutic intent.
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-line/70 bg-oat/40 p-3">
-                  <div className="flex items-center gap-1.5 text-olive font-bold text-xs">
+                <div className="rounded-xl border border-[#E2E8F0] bg-[#F8F9FA] p-3">
+                  <div className="flex items-center gap-1.5 text-[#0056B3] font-bold text-xs">
                     <Pill className="h-3.5 w-3.5" />
                     <span>Pharmacology</span>
                   </div>
-                  <p className="text-[11px] text-ink-muted mt-1 leading-snug">
+                  <p className="text-[11px] text-[#64748B] mt-1 leading-snug">
                     Details drug indications, therapeutic classes, and patient dosages.
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-line/70 bg-oat/40 p-3">
-                  <div className="flex items-center gap-1.5 text-olive font-bold text-xs">
+                <div className="rounded-xl border border-[#E2E8F0] bg-[#F8F9FA] p-3">
+                  <div className="flex items-center gap-1.5 text-[#0056B3] font-bold text-xs">
                     <ShieldCheck className="h-3.5 w-3.5" />
                     <span>ABDM Ready</span>
                   </div>
-                  <p className="text-[11px] text-ink-muted mt-1 leading-snug">
+                  <p className="text-[11px] text-[#64748B] mt-1 leading-snug">
                     Syncs with patient longitudinal history for instant physician consult.
                   </p>
                 </div>

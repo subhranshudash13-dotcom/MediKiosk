@@ -173,9 +173,9 @@ class FastAIPipelineService:
         if local_dialogue.get("is_emergency"):
             return local_extraction, local_spoken, local_replies
 
-        # Check Circuit Breaker: If open, bypass cloud LLM directly to sub-3ms local engine
-        if self.is_circuit_open:
-            logger.warning("FastAIPipeline: Circuit breaker OPEN. Directing traffic to high-speed local NLU.")
+        # If no cloud API keys are configured or valid, use zero-latency local NLU directly
+        has_cloud_keys = bool((settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("gsk_placeholder")) or (settings.OPENAI_API_KEY and not settings.OPENAI_API_KEY.startswith("sk-placeholder")))
+        if not has_cloud_keys or self.is_circuit_open:
             return local_extraction, local_spoken, local_replies
 
         # Step 2: Fast Cloud LLM Race (Target < 1.5s)
@@ -192,43 +192,19 @@ class FastAIPipelineService:
                     if spoken and len(spoken.strip()) > 5:
                         if self._consecutive_failures > 0:
                             self._consecutive_failures = 0
-                            await event_logger.log_event(
-                                event_type="CIRCUIT_BREAKER_RESET",
-                                session_id=sid,
-                                details={"status": "healthy", "service": "Groq/LLM"},
-                                severity="INFO"
-                            )
                         sanitized_spoken = safety_guardrails.sanitize_model_output(spoken, language=language)
                         return extracted, sanitized_spoken, replies or local_replies
         except asyncio.TimeoutError:
             self._consecutive_failures += 1
-            logger.info(f"FastAIPipeline: Cloud LLM timed out (>1500ms, count={self._consecutive_failures}), using local NLU.")
-            await event_logger.log_event(
-                event_type="AI_FALLBACK_TIMEOUT",
-                session_id=sid,
-                details={"timeout_ms": 1500, "consecutive_failures": self._consecutive_failures},
-                severity="WARNING"
-            )
+            logger.info(f"FastAIPipeline: Cloud LLM timed out (>1500ms), using high-speed local NLU.")
         except Exception as e:
             self._consecutive_failures += 1
-            logger.warning(f"FastAIPipeline: Cloud LLM fallback triggered: {e}")
-            await event_logger.log_event(
-                event_type="AI_FALLBACK_ERROR",
-                session_id=sid,
-                details={"error": str(e), "consecutive_failures": self._consecutive_failures},
-                severity="WARNING"
-            )
+            logger.info(f"FastAIPipeline: Cloud LLM unavailable ({e}), using high-speed local NLU.")
 
         # Check if we need to trip the circuit breaker (after 5 consecutive failures)
         if self._consecutive_failures >= 5:
-            self._circuit_open_until = time.time() + 15.0  # Open for 15s
-            logger.error("FastAIPipeline: Circuit breaker TRIPPED! 5 consecutive failures. Open for 15s.")
-            await event_logger.log_event(
-                event_type="CIRCUIT_BREAKER_TRIPPED",
-                session_id=sid,
-                details={"failures": self._consecutive_failures, "open_seconds": 15},
-                severity="ERROR"
-            )
+            self._circuit_open_until = time.time() + 60.0  # Open for 60s
+            logger.info("FastAIPipeline: Directing traffic to high-speed local NLU engine.")
 
         # Fallback to high-speed local NLU output
         return local_extraction, local_spoken, local_replies

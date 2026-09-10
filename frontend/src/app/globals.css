@@ -6,42 +6,43 @@
 
 @layer base {
   :root {
-    /* Natural Clinical Palette: Forest Pine + Botanical Sage + Mineral Charcoal + Warm Linen Paper */
-    --pine-primary: #1B4332;
-    --pine-dark: #081C15;
-    --pine-light: #2D6A4F;
-    --sage-accent: #40916C;
-    --terracotta: #9C4124;
-    --terracotta-dark: #7A3119;
-    --linen-bg: #FBF9F5;
-    --linen-card: #FFFFFF;
-    --linen-subtle: #F3EFE8;
-    --linen-border: #E0D7C9;
-    --linen-border-strong: #C9BEAC;
-    --charcoal-ink: #1F2421;
-    --charcoal-muted: #606963;
-    --laurel-verified: #2D6A4F;
+    /* v2 Accessibility-First Healthcare Palette */
+    --clinical-primary: #0056B3;
+    --clinical-dark: #004085;
+    --clinical-light: #CCE5FF;
+    --clinical-subtle: #EBF3FC;
+    --teal-accent: #17A2B8;
+    --teal-dark: #117A8B;
+    --teal-light: #D1ECF1;
+    --teal-subtle: #E8F7F9;
+    --canvas-bg: #F8F9FA;
+    --canvas-card: #FFFFFF;
+    --canvas-border: #DEE2E6;
+    --charcoal-text: #2C3E50;
+    --charcoal-muted: #6C7A89;
+    --success-green: #28A745;
+    --warning-red: #DC3545;
 
-    /* Semantic HSL tokens */
-    --background: 40 33% 97%;    /* #FBF9F5 Warm Natural Linen */
-    --foreground: 144 6% 13%;    /* #1F2421 Deep Mineral Charcoal */
-    --card: 0 0% 100%;           /* #FFFFFF Crisp Paper Card */
-    --card-foreground: 144 6% 13%;
+    /* Semantic HSL tokens for shadcn / Tailwind */
+    --background: 210 17% 98%;     /* #F8F9FA Anti-glare Cool Off-White */
+    --foreground: 210 29% 24%;     /* #2C3E50 Deep Midnight Charcoal */
+    --card: 0 0% 100%;             /* #FFFFFF Pure White */
+    --card-foreground: 210 29% 24%;
     --popover: 0 0% 100%;
-    --popover-foreground: 144 6% 13%;
-    --primary: 154 42% 18%;      /* #1B4332 Forest Pine */
+    --popover-foreground: 210 29% 24%;
+    --primary: 211 100% 35%;       /* #0056B3 Clinical Blue */
     --primary-foreground: 0 0% 100%;
-    --secondary: 14 62% 38%;     /* #9C4124 Terracotta */
+    --secondary: 188 78% 41%;      /* #17A2B8 Calming Teal */
     --secondary-foreground: 0 0% 100%;
-    --muted: 40 22% 93%;         /* #F3EFE8 */
-    --muted-foreground: 147 5% 39%;
-    --accent: 14 62% 38%;        /* #9C4124 */
+    --muted: 210 16% 95%;          /* #F1F3F5 */
+    --muted-foreground: 210 12% 48%;/* #6C7A89 */
+    --accent: 188 78% 41%;         /* #17A2B8 */
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 68% 42%;
+    --destructive: 354 70% 54%;    /* #DC3545 */
     --destructive-foreground: 0 0% 100%;
-    --border: 37 25% 83%;        /* #E0D7C9 */
-    --input: 37 25% 83%;
-    --ring: 154 42% 18%;
+    --border: 210 14% 89%;         /* #DEE2E6 */
+    --input: 210 14% 89%;
+    --ring: 211 100% 35%;
 
     --radius: 1rem;
 
@@ -50,8 +51,8 @@
   }
 
   body {
-    background-color: #FBF9F5;
-    color: #1F2421;
+    background-color: #F8F9FA;
+    color: #2C3E50;
     font-family: var(--font-inter);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
@@ -60,20 +61,22 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-dm-sans);
     letter-spacing: -0.02em;
-    color: #1F2421;
+    color: #2C3E50;
   }
 }
 
-/* Tactile Clinical Paper Card */
+/* Premium Clinical Modular Card (Eka.care inspiration) */
 .tactile-card {
   background-color: #FFFFFF;
-  border: 1px solid #E0D7C9;
-  box-shadow: 0 2px 8px -1px rgba(31, 36, 33, 0.05), 0 1px 3px -1px rgba(31, 36, 33, 0.03);
+  border: 1px solid #DEE2E6;
+  box-shadow: 0 2px 10px -1px rgba(44, 62, 80, 0.06), 0 1px 3px -1px rgba(44, 62, 80, 0.03);
   border-radius: 1rem;
+  transition: all 0.2s ease-in-out;
 }
 
 .tactile-card:hover {
-  border-color: #C9BEAC;
+  border-color: #0056B3;
+  box-shadow: 0 8px 24px -4px rgba(0, 86, 179, 0.1), 0 2px 6px -1px rgba(44, 62, 80, 0.04);
 }
 
 /* Physical Kiosk Touch Button */
@@ -88,18 +91,63 @@
   transform: translateY(1px);
 }
 
-/* Custom Scrollbar in Warm Linen Theme */
+/* Custom Scrollbar in Cool Clinical Theme */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #F3EFE8;
+  background: #F1F3F5;
 }
 ::-webkit-scrollbar-thumb {
-  background: #D5CDC2;
+  background: #CED4DA;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #B8ADA0;
+  background: #ADB5BD;
 }
+
+/* Eka.care Style Animated Hero Background Drift */
+@keyframes heroDrift {
+  0% {
+    transform: scale(1.04) translate(0px, 0px);
+  }
+  50% {
+    transform: scale(1.1) translate(-15px, -10px);
+  }
+  100% {
+    transform: scale(1.04) translate(0px, 0px);
+  }
+}
+
+@keyframes floatOrb1 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(40px, -30px) scale(1.15);
+  }
+}
+
+@keyframes floatOrb2 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-30px, 40px) scale(1.1);
+  }
+}
+
+.animate-hero-drift {
+  animation: heroDrift 24s ease-in-out infinite alternate;
+}
+
+.animate-float-orb-1 {
+  animation: floatOrb1 14s ease-in-out infinite alternate;
+}
+
+.animate-float-orb-2 {
+  animation: floatOrb2 18s ease-in-out infinite alternate;
+}
+
+
