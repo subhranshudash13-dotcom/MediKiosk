@@ -3,11 +3,11 @@
 import { useState, useEffect } from "react";
 
 const KEYWORDS = [
-  { text: "Insights", color: "from-[#7C3AED] to-[#9333EA] text-[#7C3AED]" },
-  { text: "Triage", color: "from-[#0056B3] to-[#0284C7] text-[#0056B3]" },
-  { text: "Rx Intake", color: "from-[#059669] to-[#10B981] text-[#059669]" },
-  { text: "Histories", color: "from-[#D97706] to-[#F59E0B] text-[#D97706]" },
-  { text: "ABDM", color: "from-[#DB2777] to-[#EC4899] text-[#DB2777]" },
+  { text: "Insights", color: "from-[#9333EA] to-[#C084FC] text-[#C084FC]" },
+  { text: "Triage", color: "from-[#0056B3] to-[#38BDF8] text-[#38BDF8]" },
+  { text: "Rx Intake", color: "from-[#059669] to-[#34D399] text-[#34D399]" },
+  { text: "Histories", color: "from-[#D97706] to-[#FBBF24] text-[#FBBF24]" },
+  { text: "ABDM", color: "from-[#DB2777] to-[#F472B6] text-[#F472B6]" },
 ];
 
 export function RotatingHeroText() {
