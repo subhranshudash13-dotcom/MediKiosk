@@ -89,6 +89,12 @@ export interface PatientQueueItem {
     abnormalLabs: Array<{ test: string; value: string; refRange: string; status: "HIGH" | "LOW" | "CRITICAL"; source?: string }>;
     timeline: Array<{ year: string; event: string; type: string }>;
   };
+  historicalCorrelation?: {
+    correlated_past_condition?: string;
+    clinical_rationale?: string;
+    significance_level?: string;
+    recommended_physician_focus?: string;
+  };
 }
 
 const DEFAULT_DOCTOR_QUEUE: PatientQueueItem[] = [

@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { useKioskStore, PatientQueueItem } from "@/lib/store";
 import { KioskAPI } from "@/lib/api";
+import { UniversalAudioRecorder } from "@/lib/audioRecorder";
 
 interface ClinicalExtraction {
   chiefComplaint: string;
@@ -102,6 +103,7 @@ export function PatientVoiceWaveKiosk() {
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const universalRecorderRef = useRef<UniversalAudioRecorder | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -292,46 +294,47 @@ export function PatientVoiceWaveKiosk() {
 
   const handleToggleVoice = async () => {
     if (voiceState === "listening") {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        audioChunksRef.current = [];
-        const mediaRecorder = new MediaRecorder(stream);
-        mediaRecorderRef.current = mediaRecorder;
-
-        mediaRecorder.ondataavailable = (e) => {
-          if (e.data.size > 0) audioChunksRef.current.push(e.data);
-        };
-
-        mediaRecorder.onstop = async () => {
-          const audioBlob = new Blob(audioChunksRef.current, { type: "audio/wav" });
-          setVoiceState("processing");
-          try {
-            const resp = await KioskAPI.sendVoiceIntake(
-              audioBlob,
-              "kiosk_live_session",
-              selectedLanguage
-            );
-            if (resp.clinical_state?.raw_transcripts?.length) {
-              setTranscript(resp.clinical_state.raw_transcripts.slice(-1)[0]);
-            }
-            if (resp.spoken_response) {
-              playAudioResponse(resp.audio_base64, resp.spoken_response);
-            } else {
-              setVoiceState("idle");
-            }
-          } catch {
+      if (universalRecorderRef.current) {
+        // Stop recording and send audio
+        setVoiceState("processing");
+        try {
+          const audioBlob = await universalRecorderRef.current.stop();
+          universalRecorderRef.current = null;
+          const resp = await KioskAPI.sendVoiceIntake(
+            audioBlob,
+            "kiosk_live_session",
+            selectedLanguage
+          );
+          if (resp.clinical_state?.raw_transcripts?.length) {
+            setTranscript(resp.clinical_state.raw_transcripts.slice(-1)[0]);
+          }
+          if (resp.spoken_response) {
+            playAudioResponse(resp.audio_base64, resp.spoken_response);
+          } else {
             setVoiceState("idle");
           }
-        };
-
-        mediaRecorder.start();
-        setVoiceState("listening");
-      } catch {
-        // Fallback: cycle states
-        setVoiceState("processing");
-        setTimeout(() => setVoiceState("speaking"), 600);
+        } catch (err) {
+          console.error("Voice intake error:", err);
+          universalRecorderRef.current = null;
+          setVoiceState("idle");
+        }
+      } else {
+        // Start recording
+        try {
+          const recorder = new UniversalAudioRecorder();
+          universalRecorderRef.current = recorder;
+          await recorder.start();
+          setVoiceState("listening");
+        } catch (err) {
+          console.warn("Microphone access failed, falling back to mock dialogue:", err);
+          setVoiceState("processing");
+          setTimeout(() => setVoiceState("speaking"), 600);
+        }
       }
     } else if (voiceState === "speaking") {
+      if (audioElementRef.current) {
+        audioElementRef.current.pause();
+      }
       setVoiceState("idle");
     } else {
       setVoiceState("listening");

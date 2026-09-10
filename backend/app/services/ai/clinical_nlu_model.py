@@ -125,16 +125,25 @@ class ClinicalNLUModel:
         t = text.lower().strip()
 
         # Bengali identity / greetings: "Tumára nám kjá er?", "Apnar naam ki?", "Tomar nam ki?"
-        if any(w in t for w in ["tumára nám", "tumara nam", "tomar nam", "apnar naam", "apnar nam", "nám kjá", "nam ki", "nám ki", "নাম কি", "তোমার নাম"]):
+        if any(w in t for w in ["tumára nám", "tumara nam", "tomar nam", "apnar naam", "apnar nam", "nám kjá", "nam ki", "nám ki", "নাম কি", "তোমার নাম", "আপনার নাম"]):
             return {"type": "identity", "detected_lang": "bn"}
 
         # Identity questions in English, Hindi, Telugu, Tamil, Marathi
         if any(w in t for w in [
             "what is your name", "what's your name", "who are you", "who r u", "whats your name",
             "aapka naam kya hai", "aapka naam", "naam kya hai", "aap kaun ho", "aap kaun hain",
+            "तुम्हारा नाम क्या है", "तुम्हारा नाम", "तुम कौन हो", "tumhara naam", "tumhara name", "apna naam", "naam batao",
             "mee peru emiti", "mee peru", "me peru", "ungal peyar enna", "ungal peyar", "tuza naav kay", "tumche naav kay"
         ]):
             return {"type": "identity", "detected_lang": None}
+
+        # Medication / self-treatment inquiry (e.g. "Can I take paracetamol", "Dawa kha sakta hu", "पैरासिटामोल ले लूं")
+        if any(w in t for w in [
+            "paracetamol", "पैरासिटामोल", "पैराासिटमॉल", "crocin", "calpol", "combiflam",
+            "medicine kha", "dawa kha", "dawa le", "medicine le", "tablet le", "tablet kha",
+            "can i take", "should i take", "dawa le sakta", "medicine le sakta", "kya dava lu", "kya dawai", "kya dawa"
+        ]):
+            return {"type": "medication_inquiry", "detected_lang": None}
 
         # Capability / Service questions: "How can you help me", "What do you do", "Kese madad karoge"
         if any(w in t for w in ["how can you help", "how do you help", "kya madad", "sahajjo", "sahayam", "help me out"]):
@@ -432,6 +441,32 @@ class ClinicalNLUModel:
                         "is_emergency": False
                     }
 
+            elif mtype == "medication_inquiry":
+                if language == "hi":
+                    return {
+                        "spoken_response": "जी हाँ, पैरासिटामोल जैसी सामान्य दवा से हल्के-से-मध्यम दर्द में अस्थायी राहत मिल सकती है, बशर्ते आपको कोई एलर्जी या लिवर की समस्या न हो। लेकिन सही खुराक और कारण के लिए डॉक्टर से परामर्श लेना सबसे सुरक्षित रहेगा। कृपया बताएं आपको दर्द शरीर के किस हिस्से में और कितना तेज महसूस हो रहा है?",
+                        "quick_replies": ["सिर में तेज दर्द है", "पेट में दर्द है", "सीने में भारीपन है"],
+                        "is_emergency": False
+                    }
+                elif language == "bn":
+                    return {
+                        "spoken_response": "হ্যাঁ, প্যারাসিটামলের মতো ওষুধ সাময়িক উপশম দিতে পারে, তবে সঠিক মাত্রা ও কারণ জানার জন্য ডাক্তারের পরামর্শ নেওয়াই সবচেয়ে নিরাপদ। আপনার শরীরে ঠিক কোথায় এবং কতটা তীব্র কষ্ট হচ্ছে বলুন?",
+                        "quick_replies": ["মাথায় তীব্র ব্যথা", "পেটে যন্ত্রণা", "বুকে অস্বস্তি"],
+                        "is_emergency": False
+                    }
+                elif language == "te":
+                    return {
+                        "spoken_response": "అవును, పారాసిటమాల్ వంటి మందులు తాత్కాలికంగా ఉపశమనం ఇవ్వగలవు, కానీ సరైన మోతాదు కోసం డాక్టర్‌ను సంప్రదించడం మంచిది. మీకు నొప్పి ఎక్కడ మరియు ఎంత తీవ్రంగా ఉందో చెప్పండి?",
+                        "quick_replies": ["తల నొప్పిగా ఉంది", "కడుపు నొప్పి", "ఛాతీలో నొప్పి"],
+                        "is_emergency": False
+                    }
+                else:
+                    return {
+                        "spoken_response": "Yes, over-the-counter paracetamol can provide temporary relief for mild-to-moderate pain, provided you have no allergies or liver conditions. However, consulting the physician for the exact dosage and root cause is safest. Where specifically in your body is the pain located and how severe is it?",
+                        "quick_replies": ["Severe headache", "Stomach pain", "Chest discomfort"],
+                        "is_emergency": False
+                    }
+
             elif mtype == "help":
                 if language == "hi":
                     return {
@@ -486,7 +521,7 @@ class ClinicalNLUModel:
                     msg = "Sure, let's continue in English. Please tell me about your symptoms."
                 return {"spoken_response": msg, "quick_replies": ["Describe symptoms"], "is_emergency": False}
 
-        # 3. Evaluate merged SOCRATES state
+        # 3. Evaluate merged SOCRATES state & historical context
         has_site = bool(state.socrates.site or extracted.site)
         has_duration = bool(
             state.socrates.onset or
@@ -496,152 +531,298 @@ class ClinicalNLUModel:
             extracted.onset
         )
         has_character = bool(state.socrates.character or extracted.character)
-        has_severity = bool(state.socrates.severity_score is not None or extracted.severity_score is not None)
         has_radiation = bool(state.socrates.radiation or extracted.radiation)
+        has_aggravating = bool(state.socrates.exacerbating_relieving or extracted.exacerbating_relieving)
         has_associated = bool(state.associated_symptoms or state.socrates.associations or extracted.associated_symptoms)
-        has_history = bool(state.past_history or state.current_medications or extracted.past_history or extracted.current_medications)
+        has_history_corr = bool(state.historical_correlation or (state.past_history and len(state.asked_questions) >= 5))
+        has_severity = bool(state.socrates.severity_score is not None or extracted.severity_score is not None)
 
         site_val = state.socrates.site or extracted.site or ""
+        site_lower = site_val.lower()
 
-        # Slot evaluation with repeat prevention and strict turn capping (7-8 questions max)
-        if state.is_triage_complete or state.turn_count >= 7:
-            target_slot = "complete"
+        # Check turn budget: Target 7-8 comprehensive clinical questions before conclusion
+        if state.is_triage_complete or state.turn_count >= 8:
+            state.is_triage_complete = True
+            if language == "hi":
+                spoken = "आपकी सभी जानकारियाँ, शारीरिक लक्षण और पुराना मेडिकल इतिहास विस्तार से नोट कर लिया गया है। डॉक्टर साहब के लिए विस्तृत क्लिनिकल रिपोर्ट तैयार हो गई है। कृपया ओपीडी टोकन के साथ डॉक्टर के केबिन में जाएं।"
+                replies = ["डॉक्टर वर्कस्टेशन खोलें", "टोकन नंबर दिखाएं", "पीडीएफ रिपोर्ट डाउनलोड करें"]
+            elif language == "bn":
+                spoken = "আপনার সমস্ত শারীরিক লক্ষণ, উপসর্গ ও পূর্বের চিকিৎসার ইতিহাস বিশদভাবে রেকর্ড করা হয়েছে। ডাক্তারের জন্য সম্পূর্ণ ক্লিনিকাল রিপোর্ট তৈরি। অনুগ্রহ করে ওপিডি টোকেন নিয়ে অপেক্ষা করুন।"
+                replies = ["ওপিডি টোকেন দেখুন", "ডাক্তার পোর্টাল খুলুন", "রিপোর্ট ডাউনলোড"]
+            elif language == "te":
+                spoken = "మీ అన్ని ఆరోగ్య వివరాలు, పూర్వ అనారోగ్య చరిత్ర వివరంగా నమోదు చేయబడ్డాయి. డాక్టర్ గారి కోసం పూర్తి నివేదిక సిద్ధమైంది. దయచేసి OPD టోకెన్‌తో వేచి ఉండండి."
+                replies = ["టోకెన్ సంఖ్య చూడండి", "డాక్టర్ పోర్టల్", "PDF రిపోర్ట్ డౌన్‌లోడ్"]
+            elif language == "ta":
+                spoken = "உங்கள் உடல்நல அறிகுறிகள் மற்றும் முந்தைய மருத்துவ பதிவுகள் முழுமையாக பதிவு செய்யப்பட்டுள்ளன. மருத்துவருக்கான முழு அறிக்கை தயார்."
+                replies = ["OPD டோக்கன்", "மருத்துவர் பார்வை", "PDF பதிவிறக்கம்"]
+            elif language == "mr":
+                spoken = "तुमची सर्व लक्षणे आणि जुना वैद्यकीय इतिहास तपशीलवार नोंदवला गेला आहे. डॉक्टरांसाठी क्लिनिकल रिपोर्ट तयार आहे."
+                replies = ["टोकन क्रमांक पहा", "डॉक्टर पोर्टल उघडा"]
+            else:
+                spoken = "Your comprehensive clinical presentation, symptom progression, and past medical history have been compiled into a structured summary for the consulting physician. Please proceed with your OPD token."
+                replies = ["View OPD Token", "Open Doctor Cockpit", "Download PDF Report"]
+
+            return {
+                "spoken_response": spoken,
+                "quick_replies": replies,
+                "is_emergency": False
+            }
+
+        # Determine clinical specialty domain based on site & keywords
+        t_all = (transcript + " " + (state.chief_complaints[0] if state.chief_complaints else "") + " " + site_val).lower()
+        
+        if any(k in t_all for k in ["chest", "seene", "chhati", "heart", "cardiac", "palpitation", "घबराहट", "धड़कन", "छाती", "सीना", "ఛాతీ", "గుండె", "நெஞ்சு", "বুক"]):
+            domain = "cardio"
+        elif any(k in t_all for k in ["cough", "khansi", "saans", "breath", "wheeze", "sputum", "phlegm", "asthma", "tb", "खांसी", "सांस", "दम", "దగ్గు", "శ్వాస", "কাশি", "শ্বাস"]):
+            domain = "pulmo"
+        elif any(k in t_all for k in ["stomach", "pet", "abdomen", "ulcer", "vomit", "motion", "loose", "acidity", "gas", "jalan", "पेट", "कడుపు", "വയிறு", "পেট", "জ্বালা"]):
+            domain = "gi"
+        elif any(k in t_all for k in ["head", "sar", "sir", "migraine", "chakkar", "dizziness", "stroke", "paralysis", "सिर", "सर", "चक्कर", "తల", "মাথা"]):
+            domain = "neuro"
+        elif any(k in t_all for k in ["joint", "ghutna", "kamar", "back", "knee", "bone", "swelling", "stiffness", "कमर", "घुटना", "पीठ", "जोड़ों", "నడుము", "కీళ్ల", "হাঁটু"]):
+            domain = "ortho"
+        elif any(k in t_all for k in ["sugar", "diabetes", "peshab", "urine", "thirst", "pyas", "weight", "thyroid", "शुगर", "प्यास", "पेशाब", "షుగర్", "మూత్రం"]):
+            domain = "endo"
+        elif any(k in t_all for k in ["fever", "bukhar", "taap", "temperature", "chills", "jhad", "dengue", "malaria", "बुखार", "ठंड", "జ్వరం", "জ্বর", "কাঁপনি"]):
+            domain = "fever"
+        elif any(k in t_all for k in ["rash", "khujli", "itch", "skin", "allergy", "daane", "खुजली", "दाने", "त्वचा", "దురద", "চুলকানি"]):
+            domain = "derma"
         else:
-            candidate_slots = []
-            if not has_site: candidate_slots.append("site")
-            if not has_duration: candidate_slots.append("duration")
-            if not has_severity: candidate_slots.append("severity")
-            if not has_character: candidate_slots.append("character")
-            if not has_associated: candidate_slots.append("associated")
-            if not has_history: candidate_slots.append("history")
-            if not has_radiation and "chest" in site_val.lower(): candidate_slots.append("radiation")
+            domain = "general"
 
-            target_slot = "complete"
-            for slot in candidate_slots:
-                if slot != state.last_target_slot:
-                    target_slot = slot
-                    break
-            if target_slot == "complete" and candidate_slots:
-                target_slot = candidate_slots[0]
+        # Select sequential unique probing slot (8 distinct clinical axes)
+        candidate_slots = []
+        if not has_site and "site" not in state.asked_questions:
+            candidate_slots.append("site")
+        if not has_duration and "duration" not in state.asked_questions:
+            candidate_slots.append("duration")
+        if not has_character and "character" not in state.asked_questions:
+            candidate_slots.append("character")
+        if not has_radiation and "radiation" not in state.asked_questions:
+            candidate_slots.append("radiation")
+        if not has_aggravating and "aggravating" not in state.asked_questions:
+            candidate_slots.append("aggravating")
+        if not has_associated and "associated" not in state.asked_questions:
+            candidate_slots.append("associated")
+        if not has_history_corr and "history_correlation" not in state.asked_questions:
+            candidate_slots.append("history_correlation")
+        if not has_severity and "severity" not in state.asked_questions:
+            candidate_slots.append("severity")
 
+        if not candidate_slots:
+            remaining = [s for s in ["site", "duration", "character", "radiation", "aggravating", "associated", "history_correlation", "severity"] if s not in state.asked_questions]
+            target_slot = remaining[0] if remaining else "severity"
+        else:
+            target_slot = candidate_slots[0]
+
+        state.asked_questions.append(target_slot)
         state.last_target_slot = target_slot
 
-        # 4. Formulate Specialty-Aware Vernacular Probing Question
+        # 4. Formulate Deep Specialty-Aware Vernacular Dynamic Question (7-8 Turn Tree)
         if language == "bn":
-            if target_slot == "site":
-                spoken = "আপনার সমস্যাটি শরীরের কোন অংশে হচ্ছে দয়া করে বলুন।"
-                replies = ["পেটে ব্যথা হচ্ছে", "বুকে ব্যথা বা চাপ", "মাথায় তীব্র যন্ত্রণা"]
-            elif target_slot == "duration":
-                spoken = "এই শারীরিক সমস্যাটি কত দিন বা কত ঘণ্টা ধরে হচ্ছে?"
-                replies = ["আজ সকাল থেকে", "২-৩ দিন ধরে", "এক সপ্তাহের বেশি"]
-            elif target_slot == "severity":
-                spoken = "১ থেকে ১০ স্কেলে আপনি এই ব্যথা বা কষ্টকে কত নম্বর দেবেন?"
-                replies = ["১০ এ ৮ (তীব্র কষ্ট)", "১০ এ ৫ (মাঝারি কষ্ট)", "১০ এ ৩ (হালকা কষ্ট)"]
-            elif target_slot == "character":
-                if "পেট" in site_val or "stomach" in site_val.lower() or "abdomen" in site_val.lower():
-                    spoken = "পেটের ব্যথাটা কেমন ধরণের — জ্বালাপোড়া, মোচড় দিয়ে ব্যথা, না ভারী চাপ?"
-                    replies = ["জ্বালাপোড়া করছে", "মোচড় দিয়ে ব্যথা", "টানা ভারী ব্যথা"]
-                else:
-                    spoken = "এই ব্যথার অনুভূতি কেমন — ভারী চাপ, তীব্র খোঁচা মারা, না জ্বালা ভাব?"
-                    replies = ["ভারী চাপ লাগার মতো", "তীব্র খোঁচা মারা", "জ্বালা ভাব"]
-            elif target_slot == "associated":
-                spoken = "এর সাথে কি বমি, জ্বর, দুর্বলতা বা অন্য কোনও উপসর্গ রয়েছে?"
-                replies = ["বমি বমি ভাব ও দুর্বলতা", "জ্বর এবং সর্দি", "অন্য কোনও উপসর্গ নেই"]
-            elif target_slot == "history":
-                spoken = "আপনার কি আগে থেকেই প্রেসার, সুগার বা অন্য কোনও রোগ রয়েছে, অথবা নিয়মিত ওষুধ চলছে?"
-                replies = ["প্রেসার ও সুগারের ওষুধ খাই", "আগে কোনও রোগ নেই", "গ্যাস্ট্রিকের সমস্যা আছে"]
+            if domain == "cardio":
+                questions = {
+                    "site": ("বুকের ঠিক কোন অংশে ভারী ভাব বা ব্যথা হচ্ছে — মাঝখানে, বাঁ দিকে, নাকি ওপরের দিকে?", ["বুকের মাঝখানে", "বাঁ দিকে", "ঘাড়ের দিকে"]),
+                    "duration": ("এই ব্যথা বা চাপটি কখন শুরু হয়েছিল এবং একটানা হচ্ছে না থেমে থেমে?", ["গত ২ দিন ধরে", "আজ সকালে হঠাৎ", "একটানা হচ্ছে"]),
+                    "character": ("বুকের অনুভুতিটি কেমন — পাথর চাপা ভার, চেপে ধরা চাপ, নাকি জ্বালাপোড়া?", ["ভারী পাথরের মতো চাপ", "তীব্র জ্বালাপোড়া", "ছুঁচ ফোটানোর মতো"]),
+                    "radiation": ("এই ব্যথা কি বাঁ হাত, কাঁধ, পিঠ বা চোয়ালের দিকে ছড়িয়ে পড়ছে?", ["হ্যাঁ, বাঁ হাতে ছড়াচ্ছে", "চোয়াল ও পিঠে ছড়াচ্ছে", "না, শুধু বুকেই আছে"]),
+                    "aggravating": ("হাঁটলে, সিঁড়ি চড়লে বা পরিশ্রম করলে কি এই চাপ ও অস্বস্তি বাড়ে?", ["সিঁড়ি চড়লে বাড়ে", "ভারী কাজ করলে বাড়ে", "বিশ্রামেও থাকে"]),
+                    "associated": ("এর সাথে কি অতিরিক্ত ঠান্ডা ঘাম, শ্বাসকষ্ট বা বুক ধড়ফড় করার মতো লক্ষণ আছে?", ["প্রচণ্ড ঘাম ও শ্বাসকষ্ট", "বুক ধড়ফড় করছে", "না, অন্য সমস্যা নেই"]),
+                    "history_correlation": ("আপনার কি পূর্বে উচ্চ রক্তচাপ, ডায়াবেটিস বা হার্টের কোনো সমস্যা আছে এবং নিয়মিত ওষুধ খাচ্ছেন?", ["প্রেসার ও সুগারের ওষুধ খাই", "আগে হার্টের সমস্যা ছিল", "পূর্বে কোনো রোগ ছিল না"]),
+                    "severity": ("১ থেকে ১০ স্কেলে এই কষ্ট বা যন্ত্রণাকে আপনি কত তীব্র বলবেন?", ["১০ এ ৮ (তীব্র কষ্ট)", "১০ এ ৬ (মাঝারি কষ্ট)", "১০ এ ৪ (হালকা)"])
+                }
+            elif domain == "gi":
+                questions = {
+                    "site": ("পেটের ঠিক কোন জায়গায় ব্যথা বা অস্বস্তি — ওপরের পেটে, নাভির কাছে, না নিচের দিকে?", ["ওপরের পেটে", "নাভির চারপাশে", "তলপেটে"]),
+                    "duration": ("এই পেটের সমস্যা কত দিন ধরে চলছে এবং খাবারের সাথে কোনো সম্পর্ক আছে কি?", ["৩-৪ দিন ধরে", "আজ সকাল থেকে", "১ সপ্তাহ ধরে"]),
+                    "character": ("ব্যথার ধরন কেমন — তীব্র জ্বালাপোড়া, মোচড় দেওয়া পেটব্যথা, নাকি ফাঁপা ভার?", ["তীব্র জ্বালাপোড়া", "মোচড় দিয়ে উঠছে", "পেট ফাঁপা ও ভার"]),
+                    "radiation": ("পেটের এই ব্যথা কি পিঠের দিকে বা কাঁধের দিকে ছড়িয়ে যায়?", ["পিঠের দিকে ছড়িয়ে যায়", "না, পেটের ভেতরেই থাকে"]),
+                    "aggravating": ("মশলাদার খাবার খেলে বা খালি পেটে থাকলে কি ব্যথা বাড়ে?", ["মশলাদার খাবারে বাড়ে", "খালি পেটে বাড়ে", "খাওয়ার পর কমে"]),
+                    "associated": ("বমি ভাব, টক ঢেঁকুর, পেট ফাঁপা বা পায়খানার কোনো পরিবর্তন (পাতলা/কালো পায়খানা) হয়েছে?", ["টক ঢেঁকুর ও বমি ভাব", "পাতলা পায়খানা হচ্ছে", "না, স্বাভাবিক"]),
+                    "history_correlation": ("আপনার কি পূর্বে গ্যাস-অম্বল, আলসার বা গলব্লাডারের পাথর হয়েছিল?", ["আগে আলসার ও গ্যাসের সমস্যা ছিল", "পিত্তথলিতে পাথর ছিল", "না, আগে ছিল না"]),
+                    "severity": ("১ থেকে ১০ স্কেলে পেটের এই ব্যথার তীব্রতা কত?", ["১০ এ ৭ (তীব্র)", "১০ এ ৫ (মাঝারি)", "১০ এ ৩ (হালকা)"])
+                }
             else:
-                spoken = "আপনার সকল তথ্য যথাযথভাবে রেকর্ড করে কনসাল্টিং ডাক্তারের কাছে পাঠিয়ে দেওয়া হয়েছে। অনুগ্রহ করে ওপিডি টোকেন নিয়ে অপেক্ষা করুন।"
-                replies = ["ওপিডি টোকেন দেখুন", "ডাক্তার পোর্টাল খুলুন"]
+                questions = {
+                    "site": ("আপনার শারীরিক সমস্যা শরীরের কোন অংশে সবচেয়ে বেশি অনুভূত হচ্ছে?", ["মাথায়", "বুকে", "পেটে", "শরীরের বিভিন্ন গাঁটে"]),
+                    "duration": ("এই সমস্যা কত দিন বা কত সময় ধরে হচ্ছে?", ["আজ সকাল থেকে", "২-৩ দিন ধরে", "অনেক দিন ধরে"]),
+                    "character": ("সমস্যার লক্ষণটি কেমন — টানা অস্বস্তি, তীব্র ব্যথা, নাকি দুর্বলতা?", ["টানা অস্বস্তি", "তীব্র যন্ত্রণা", "দুর্বলতা ও জ্বর"]),
+                    "radiation": ("এই কষ্ট শরীরের অন্য কোনো দিকে ছড়িয়ে পড়ছে কি?", ["হ্যাঁ, অন্য অংশে ছড়াচ্ছে", "না, এক জায়গাতেই আছে"]),
+                    "aggravating": ("কোনো বিশেষ কাজের পর বা নড়াচড়া করলে কি কষ্ট বাড়ে?", ["নড়াচড়া করলে বাড়ে", "বিশ্রামে আরাম পাই"]),
+                    "associated": ("এর সাথে জ্বর, বমি, শ্বাসকষ্ট বা দুর্বলতা আছে কি?", ["জ্বর ও শরীর ব্যথা", "বমি ভাব", "না, অন্য লক্ষণ নেই"]),
+                    "history_correlation": ("আপনার কি আগে থেকে প্রেসার, সুগার, টিবি বা অ্যাজমার মতো কোনো পুরোনো রোগ আছে?", ["প্রেসার ও সুগারের ওষুধ চলছে", "আগে টিবি হয়েছিল", "না, কোনো রোগ নেই"]),
+                    "severity": ("১ থেকে ১০ নম্বরের মধ্যে কষ্টের মাত্রা কত দেবেন?", ["১০ এ ৮", "১০ এ ৫", "১০ এ ৩"])
+                }
+            q_data = questions.get(target_slot, questions["severity"])
+            spoken, replies = q_data[0], q_data[1]
 
         elif language == "hi":
-            if target_slot == "site":
-                spoken = "आपकी तकलीफ़ नोट कर ली गई है। यह दर्द या समस्या शरीर के किस हिस्से में हो रही है?"
-                replies = ["सीने में दर्द है", "पेट में दर्द है", "सिर में तेज दर्द"]
-            elif target_slot == "duration":
-                spoken = "आपकी समस्या दर्ज कर ली गई है। यह तकलीफ़ आपको कितने दिनों या घंटों से हो रही है?"
-                replies = ["आज सुबह से है", "2-3 दिनों से है", "1 हफ्ते से ज्यादा"]
-            elif target_slot == "severity":
-                spoken = "1 से 10 के पैमाने पर आप इस दर्द या तकलीफ़ को कितना नंबर देंगे?"
-                replies = ["10 में से 8 (तेज दर्द)", "10 में से 5 (मध्यम)", "10 में से 3 (हल्का)"]
-            elif target_slot == "character":
-                if "pet" in site_val.lower() or "stomach" in site_val.lower() or "abdomen" in site_val.lower():
-                    spoken = "पेट का दर्द कैसा महसूस हो रहा है — जलन जैसा, मरोड़ उठने वाला, या भारी दर्द?"
-                    replies = ["जलन महसूस हो रही है", "मरोड़ उठ रही है", "लगातार भारी दर्द है"]
-                elif "chest" in site_val.lower() or "chhati" in site_val.lower():
-                    spoken = "सीने का दर्द कैसा है — भारी दबाव जैसा लग रहा है या तेज चुभन वाला दर्द है?"
-                    replies = ["भारी दबाव जैसा लग रहा है", "तेज चुभन वाला दर्द है", "जलन जैसी तकलीफ़"]
-                else:
-                    spoken = "इस दर्द का अहसास कैसा है — भारी दबाव, तेज चुभन, या जलन जैसा?"
-                    replies = ["भारी दबाव लग रहा है", "तेज चुभन है", "हल्का दर्द"]
-            elif target_slot == "associated":
-                spoken = "क्या इसके साथ आपको बुखार, उल्टी, सांस फूलना या कमजोरी जैसी कोई और शिकायत भी है?"
-                replies = ["उल्टी और कमजोरी महसूस हो रही है", "सांस फूलने की शिकायत है", "कोई अन्य लक्षण नहीं है"]
-            elif target_slot == "history":
-                spoken = "क्या आपको पहले से बीपी, शुगर या कोई पुरानी बीमारी है, या कोई नियमित दवा चल रही है?"
-                replies = ["बीपी और शुगर की दवा चल रही है", "पहले से कोई बीमारी नहीं है", "थायराइड की समस्या है"]
+            if domain == "cardio":
+                questions = {
+                    "site": ("सीने के ठीक किस हिस्से में दर्द या भारीपन लग रहा है — बीच में, बाईं तरफ, या ऊपर की ओर?", ["सीने के बिल्कुल बीच में", "बाईं तरफ ज्यादा है", "ऊपर गले की तरफ"]),
+                    "duration": ("यह सीने का भारीपन या दर्द कब से शुरू हुआ है — आज सुबह से या पिछले 2-3 दिनों से?", ["आज सुबह से अचानक", "पिछले 2-3 दिनों से", "1 हफ्ते से"]),
+                    "character": ("सीने में किस तरह का अहसास है — पत्थर जैसा भारी दबाव, जलन, या चुभने वाला तेज दर्द?", ["पत्थर जैसा भारी दबाव है", "जलन जैसी तकलीफ़ है", "तेज चुभन हो रही है"]),
+                    "radiation": ("क्या यह दर्द सीने से होकर आपके बाएं हाथ, कंधे, जबड़े या पीठ की तरफ भी फैलता है?", ["हाँ, बाएं हाथ में जा रहा है", "जबड़े और पीठ की तरफ", "नहीं, सिर्फ सीने में है"]),
+                    "aggravating": ("क्या पैदल चलने, सीढ़ियां चढ़ने या कोई भारी काम करने पर यह दबाव और दर्द बढ़ता है?", ["सीढ़ियां चढ़ने पर बढ़ता है", "थोड़ा चलने पर भी बढ़ता है", "बैठे रहने पर भी रहता है"]),
+                    "associated": ("क्या इसके साथ आपको ठंडा पसीना आना, सांस फूलना, घबराहट या चक्कर जैसा महसूस हो रहा है?", ["पसीना और सांस फूल रही है", "दिल की धड़कन तेज है", "कोई अन्य लक्षण नहीं है"]),
+                    "history_correlation": ("क्या आपको पहले से हाई बीपी, शुगर, कोलेस्ट्रॉल या दिल की बीमारी का इतिहास है और क्या नियमित दवा ले रहे हैं?", ["बीपी और शुगर की दवा चल रही है", "पहले स्टेंट या हार्ट की समस्या थी", "पहले से कोई बीमारी नहीं है"]),
+                    "severity": ("1 से 10 के पैमाने पर आप इस दर्द या भारीपन को कितना स्कोर (तीव्रता) देंगे?", ["10 में से 8 (तेज दर्द)", "10 में से 6 (मध्यम)", "10 में से 4 (हल्का दर्द)"])
+                }
+            elif domain == "pulmo":
+                questions = {
+                    "site": ("खांसी और सांस की तकलीफ़ छाती के किस हिस्से में ज्यादा महसूस हो रही है?", ["दोनों तरफ छाती में जकड़न", "गले और ऊपरी छाती में", "पीठ की तरफ दर्द"]),
+                    "duration": ("यह खांसी या सांस फूलने की समस्या कितने दिनों या हफ्तों से चल रही है?", ["पिछले 3-4 दिनों से", "2 हफ्तों से ज्यादा समय से", "1 महीने से"]),
+                    "character": ("खांसी कैसी है — सूखी खांसी है, या बलगम (कफ) आ रहा है? कफ का रंग कैसा है?", ["सूखी खांसी है", "सफेद/पीला बलगम आ रहा है", "बलगम में खून का अंश है"]),
+                    "radiation": ("क्या गहरी सांस लेने या खांसने पर सीने में सुई जैसी चुभन या पीठ में दर्द होता है?", ["गहरी सांस पर सुई जैसी चुभन", "खांसने पर सीने में दर्द", "नहीं, ऐसा दर्द नहीं है"]),
+                    "aggravating": ("क्या रात में लेटने पर, धूल-मिट्टी या ठंडी हवा में सांस की तकलीफ़ बढ़ जाती है?", ["रात में लेटने पर बढ़ती है", "धूल और ठंड में बढ़ती है", "हर समय एक जैसी है"]),
+                    "associated": ("क्या इसके साथ शाम को हल्का बुखार, रात में पसीना, या वजन घटने की शिकायत है?", ["शाम को बुखार और पसीना", "बहुत ज्यादा कमजोरी है", "कोई बुखार नहीं है"]),
+                    "history_correlation": ("क्या आपको पहले कभी टीबी (TB), दमा (Asthma), या एलर्जी की बीमारी रही है या किसी का इलाज चला था?", ["2 साल पहले टीबी का इलाज पूरा हुआ", "दमे/इन्हेलर की समस्या है", "पहले कोई फेफड़ों की बीमारी नहीं थी"]),
+                    "severity": ("1 से 10 के पैमाने पर सांस की इस तकलीफ़ को आप कितना गंभीर मानेंगे?", ["10 में से 8 (सांस लेने में भारी दिक्कत)", "10 में से 5 (मध्यम)", "10 में से 3 (हल्की खांसी)"])
+                }
+            elif domain == "gi":
+                questions = {
+                    "site": ("पेट के किस हिस्से में दर्द या जलन सबसे ज्यादा है — नाभि के ऊपर, दाईं तरफ, या नीचे?", ["नाभि के ऊपर (पेट के बीच में)", "दाईं तरफ पसलियों के नीचे", "निचले पेट में"]),
+                    "duration": ("यह पेट की तकलीफ़ कितने दिनों से हो रही है?", ["पिछले 2-3 दिनों से", "आज सुबह से अचानक", "1 हफ्ते से"]),
+                    "character": ("दर्द का अहसास कैसा है — तेज जलन, मरोड़ उठना, या लगातार भारी चुभन?", ["तेज जलन और खट्टी डकार", "पेट में मरोड़ उठ रही है", "लगातार भारी दर्द है"]),
+                    "radiation": ("क्या यह दर्द पेट से होकर आपकी पीठ या कंधे की तरफ भी जाता है?", ["पीठ की तरफ जाता है", "नहीं, सिर्फ पेट में रहता है"]),
+                    "aggravating": ("क्या खाना खाने के तुरंत बाद दर्द बढ़ता है, या खाली पेट रहने पर ज्यादा जलन होती है?", ["खाना खाने के बाद बढ़ता है", "खाली पेट ज्यादा जलन होती है", "मसालेदार खाने से बढ़ता है"]),
+                    "associated": ("क्या उल्टी, जी मिचलाना, पेट फूलना, या दस्त/मल में कोई बदलाव (काला मल) है?", ["उल्टी और जी मिचलाना", "पेट बहुत फूल रहा है", "दस्त लग रहे हैं", "कोई अन्य लक्षण नहीं"]),
+                    "history_correlation": ("क्या आपको पहले से एसिडिटी, पेट में अल्सर, पथरी या लिवर की कोई पुरानी समस्या रही है?", ["अल्सर और गैस की पुरानी समस्या है", "पित्त की थैली में पथरी थी", "पहले ऐसी कोई बीमारी नहीं थी"]),
+                    "severity": ("1 से 10 के पैमाने पर पेट के इस दर्द की तीव्रता कितनी है?", ["10 में से 7 (तेज दर्द)", "10 में से 5 (मध्यम)", "10 में से 3 (हल्का दर्द)"])
+                }
+            elif domain == "ortho":
+                questions = {
+                    "site": ("तकलीफ़ किस जोड़ या हिस्से में है — घुटने, कमर, कंधे, या हाथ-पैर के जोड़ों में?", ["घुटनों में दर्द है", "कमर के निचले हिस्से में", "हाथ और उंगलियों के जोड़ों में"]),
+                    "duration": ("यह जोड़ों या कमर का दर्द कितने समय से चल रहा है?", ["पिछले कुछ दिनों से", "2-3 महीनों से", "सालों पुरानी समस्या है"]),
+                    "character": ("दर्द का अहसास कैसा है — सुबह उठने पर जकड़न होती है, या चलने पर तेज कसक उठती है?", ["सुबह उठने पर भारी जकड़न", "चलने पर हड्डियों में घिसाव/दर्द", "लगातार टीस उठती है"]),
+                    "radiation": ("क्या कमर का दर्द कूल्हे से होते हुए पैर या उंगलियों की तरफ नीचे उतरता है?", ["हाँ, पैर के नीचे तक जाता है", "नहीं, सिर्फ कमर/घुटने में है"]),
+                    "aggravating": ("क्या सीढ़ियां चढ़ने, जमीन पर बैठने, या वजन उठाने से दर्द ज्यादा बढ़ जाता है?", ["सीढ़ियां चढ़ने और बैठने में", "लगातार खड़े रहने पर", "झुकने पर दर्द बढ़ता है"]),
+                    "associated": ("क्या जोड़ पर सूजन, लालिमा, गर्माहट, या चलने में लड़खड़ाहट महसूस होती है?", ["घुटने पर सूजन और गर्माहट", "चलने में लचक आ रही है", "कोई सूजन नहीं है"]),
+                    "history_correlation": ("क्या आपको पहले कभी यूरिक एसिड (Gout), गठिया (Arthritis), चोट लगने या फ्रैक्चर का इतिहास है?", ["यूरिक एसिड/गठिया की समस्या है", "पहले चोट लगी थी", "पहले से कोई बीमारी नहीं है"]),
+                    "severity": ("1 से 10 के पैमाने पर इस दर्द से आपकी दिनचर्या कितनी प्रभावित है?", ["10 में से 8 (चलना-फिरना मुश्किल)", "10 में से 5 (मध्यम दर्द)", "10 में से 3 (हल्का)"])
+                }
+            elif domain == "neuro":
+                questions = {
+                    "site": ("सिर में दर्द किस तरफ ज्यादा है — पूरे सिर में, आधे हिस्से में, या माथे व आंखों के पीछे?", ["आधे सिर में एक तरफ", "माथे और आंखों के पीछे", "पूरे सिर में भारीपन"]),
+                    "duration": ("यह सिरदर्द कब से शुरू हुआ है और कितने घंटे या दिन रहता है?", ["आज सुबह से अचानक", "पिछले 2 दिनों से", "अक्सर बार-बार होता है"]),
+                    "character": ("दर्द कैसा लग रहा है — नसें फड़कने जैसा धड़कन वाला दर्द, या कसकर पट्टी बांधने जैसा तनाव?", ["धड़कन जैसी टीस (धप-धप)", "कसकर जकड़ने जैसा तनाव", "तेज चुभन"]),
+                    "radiation": ("क्या दर्द गर्दन या कंधों की मांसपेशियों की तरफ भी खिंच रहा है?", ["गर्दन और कंधों में खिंचाव", "आंखों में भारीपन", "सिर्फ सिर में है"]),
+                    "aggravating": ("क्या तेज रोशनी, तेज आवाज, धूप, या कंप्यूटर स्क्रीन देखने से सिरदर्द बढ़ता है?", ["तेज रोशनी और आवाज से बढ़ता है", "तनाव और धूप से बढ़ता है", "झुकने पर बढ़ता है"]),
+                    "associated": ("क्या आंखों के आगे चमक, उल्टी जैसा लगना, चक्कर आना, या हाथ-पैर में सुन्नपन है?", ["उल्टी जैसा लगना और चक्कर", "आंखों के आगे धुंधलापन", "कोई अन्य लक्षण नहीं"]),
+                    "history_correlation": ("क्या आपको पहले माइग्रेन, हाई ब्लड प्रेशर, साइनसाइटिस या अनिद्रा (नींद की कमी) की समस्या रही है?", ["माइग्रेन और बीपी की समस्या है", "साइनस का इतिहास है", "पहले ऐसा सिरदर्द नहीं हुआ"]),
+                    "severity": ("1 से 10 के पैमाने पर इस सिरदर्द की तीव्रता कितनी है?", ["10 में से 8 (असहनीय सिरदर्द)", "10 में से 5 (मध्यम)", "10 में से 3 (हल्का)"])
+                }
+            elif domain == "fever":
+                questions = {
+                    "site": ("बुखार के साथ शरीर के किस हिस्से में सबसे ज्यादा दर्द या जकड़न लग रही है?", ["पूरे शरीर और जोड़ों में", "गले में और सिर में", "आंखों के पीछे दर्द"]),
+                    "duration": ("बुखार कितने दिनों से आ रहा है और क्या लगातार तेज रहता है?", ["पिछले 2-3 दिनों से", "आज से शुरू हुआ", "1 हफ्ते से"]),
+                    "character": ("बुखार का प्रकार कैसा है — ठंड व कंपकंपी लगकर तेज चढ़ता है, या हल्का गरम रहता है?", ["ठंड और कंपकंपी लगकर चढ़ता है", "लगातार तेज बुखार है", "शाम को हल्का बुखार"]),
+                    "radiation": ("क्या मांसपेशियों और आंखों के पीछे तेज टूटन जैसा दर्द हो रहा है?", ["आंखों के पीछे और हड्डियों में तेज दर्द", "गले में तेज दर्द", "सिर्फ हल्का बुखार है"]),
+                    "aggravating": ("क्या ठंड में जाने या दवा का असर खत्म होने पर बुखार फिर से तेज हो जाता है?", ["दवा खत्म होते ही फिर बढ़ता है", "रात में ज्यादा तेज होता है"]),
+                    "associated": ("क्या शरीर पर लाल चकत्ते/दाने, उल्टी, खांसी, या पेशाब में जलन की समस्या है?", ["शरीर पर दाने और कमजोरी", "पेशाब में जलन और उल्टी", "खांसी और जुकाम है"]),
+                    "history_correlation": ("क्या आपके घर के आसपास हाल में डेंगू, मलेरिया, या टाइफाइड का कोई मरीज रहा है?", ["आसपास डेंगू/मलेरिया के केस हैं", "हाल में बाहर का खाना खाया था", "कोई विशेष जानकारी नहीं"]),
+                    "severity": ("1 से 10 के पैमाने पर बुखार और कमजोरी से होने वाली परेशानी कितनी है?", ["10 में से 8 (बहुत तेज बुखार और कमजोरी)", "10 में से 5 (मध्यम)", "10 में से 3 (हल्का)"])
+                }
             else:
-                spoken = "आपकी सभी जानकारियाँ नोट कर ली गई हैं और विस्तृत रिपोर्ट डॉक्टर साहब को भेज दी गई है। कृपया ओपीडी टोकन के साथ प्रतीक्षा करें।"
-                replies = ["डॉक्टर वर्कस्टेशन खोलें", "टोकन नंबर दिखाएं"]
-
-        elif language == "te":
-            if target_slot == "site":
-                spoken = "మీ సమస్య నమోదు చేయబడింది. ఈ నొప్పి శరీరంలో ఏ భాగంలో ఉంది?"
-                replies = ["ఛాతీలో నొప్పి ఉంది", "కడుపు నొప్పి ఉంది", "తల నొప్పి ఉంది"]
-            elif target_slot == "duration":
-                spoken = "మీ వివరాలు నమోదు చేయబడ్డాయి. ఈ సమస్య మీకు ఎన్ని రోజుల నుండి ఉంది?"
-                replies = ["ఈ రోజు నుండి", "2-3 రోజుల నుండి", "వారం రోజుల నుండి"]
-            elif target_slot == "severity":
-                spoken = "1 నుండి 10 స్కేలులో మీ నొప్పి తీవ్రత ఎంత?"
-                replies = ["10 లో 8 (తీవ్రమైన నొప్పి)", "10 లో 5 (మధ్యస్థం)", "10 లో 3 (తేలికపాటి)"]
-            elif target_slot == "character":
-                spoken = "ఈ నొప్పి ఎలాంటిది — బరువుగా ఉందా, మంటలా ఉందా, లేదా పోటులా ఉందా?"
-                replies = ["బరువుగా ఉంది", "మంటలా ఉంది", "తీవ్రమైన పోటు"]
-            elif target_slot == "associated":
-                spoken = "దీనితో పాటు జ్వరం, వాంతులు లేదా శ్వాస ఇబ్బంది ఉందా?"
-                replies = ["వాంతులు మరియు నీరసం", "శ్వాస తీసుకోవడంలో ఇబ్బంది", "ఇతర సమస్యలు లేవు"]
-            elif target_slot == "history":
-                spoken = "మీకు ముందు నుండి బిపి, షుగర్ లేదా ఇతర అనారోగ్య సమస్యలు ఉన్నాయా, లేదా మందులు వాడుతున్నారా?"
-                replies = ["మందులు వాడుతున్నాను", "ఏమీ లేవు", "థైరాయిడ్ సమస్య"]
-            else:
-                spoken = "మీ వివరాలన్నీ నమోదు చేయబడ్డాయి మరియు రిపోర్ట్ డాక్టర్ గారికి పంపబడింది. దయచేసి OPD టోకెన్‌తో వేచి ఉండండి."
-                replies = ["టోకెన్ సంఖ్య చూడండి"]
+                questions = {
+                    "site": ("आपकी यह शारीरिक तकलीफ़ मुख्य रूप से किस हिस्से में सबसे ज्यादा महसूस हो रही है?", ["सीने में", "पेट में", "सिर में", "पूरे शरीर में"]),
+                    "duration": ("यह समस्या कितने दिनों से बनी हुई है?", ["आज सुबह से", "2-3 दिनों से", "1 हफ्ते से ज्यादा"]),
+                    "character": ("तकलीफ़ का अहसास कैसा है — लगातार भारीपन, तेज चुभन, जलन, या कमजोरी?", ["लगातार भारीपन", "तेज चुभन व दर्द", "जलन और कमजोरी"]),
+                    "radiation": ("क्या यह दर्द शरीर के किसी दूसरे अंग की तरफ भी फैल रहा है?", ["हाँ, दूसरी तरफ फैल रहा है", "नहीं, एक ही जगह पर है"]),
+                    "aggravating": ("क्या किसी खास काम, भोजन, या चलने-फिरने से यह तकलीफ़ बढ़ती है?", ["चलने-फिरने पर बढ़ती है", "खाने के बाद बढ़ती है", "लगातार बनी रहती है"]),
+                    "associated": ("क्या इसके साथ पसीना, सांस फूलना, उल्टी, चक्कर या बुखार जैसा महसूस होता है?", ["पसीना और सांस फूलना", "उल्टी और चक्कर", "कोई अन्य लक्षण नहीं"]),
+                    "history_correlation": ("क्या आपको पहले से बीपी, शुगर, थायराइड, टीबी या दिल की बीमारी है और दवा ले रहे हैं?", ["बीपी और शुगर की दवा चल रही है", "पहले टीबी या दमा था", "पहले से कोई बीमारी नहीं है"]),
+                    "severity": ("1 से 10 के पैमाने पर आप अपनी इस बीमारी को कितना दर्द/गंभीरता स्कोर देंगे?", ["10 में से 8 (तेज दर्द)", "10 में से 5 (मध्यम)", "10 में से 3 (हल्का)"])
+                }
+            q_data = questions.get(target_slot, questions["severity"])
+            spoken, replies = q_data[0], q_data[1]
 
         else:
-            # English
-            if target_slot == "site":
-                spoken = "Where in your body are you experiencing this discomfort or symptom?"
-                replies = ["In my stomach/abdomen", "In my chest", "In my head"]
-            elif target_slot == "duration":
-                spoken = "How long or for how many days have you been experiencing this discomfort?"
-                replies = ["Since today morning", "For the last 2-3 days", "More than 1 week"]
-            elif target_slot == "severity":
-                spoken = "On a scale of 1 to 10, how severe or intense is the discomfort right now?"
-                replies = ["Score 8/10 (Severe)", "Score 5/10 (Moderate)", "Score 3/10 (Mild)"]
-            elif target_slot == "character":
-                if "stomach" in site_val.lower() or "abdomen" in site_val.lower() or "pet" in site_val.lower():
-                    spoken = "Could you describe the sensation — is it burning, cramping, or a constant dull ache?"
-                    replies = ["Burning sensation", "Cramping pain", "Constant dull ache"]
-                elif "chest" in site_val.lower():
-                    spoken = "Does it feel like a heavy crushing pressure, a sharp ache, or burning indigestion?"
-                    replies = ["Heavy constricting pressure", "Sharp stabbing pain", "Burning sensation"]
-                else:
-                    spoken = "How would you describe the feeling — sharp, dull, throbbing, or burning?"
-                    replies = ["Sharp and stabbing", "Dull and continuous", "Throbbing ache"]
-            elif target_slot == "associated":
-                spoken = "Are you having any associated symptoms like fever, nausea, vomiting, or weakness?"
-                replies = ["Nausea and weakness", "Fever and chills", "No other symptoms"]
-            elif target_slot == "history":
-                spoken = "Do you have any existing medical conditions like hypertension, diabetes, or ongoing medications?"
-                replies = ["On hypertension & diabetes medication", "No prior medical conditions", "History of acid reflux"]
+            # English & other languages
+            if domain == "cardio":
+                questions = {
+                    "site": ("Where specifically in your chest is the pain or pressure located — central, left-sided, or higher up?", ["Central retrosternal", "Left-sided chest", "Throat & neck region"]),
+                    "duration": ("When did this chest discomfort begin — today morning suddenly or over the past few days?", ["Sudden onset today", "Past 2-3 days", "Over a week ago"]),
+                    "character": ("How would you describe the sensation — a heavy crushing pressure, burning discomfort, or sharp stabbing pain?", ["Heavy crushing pressure", "Burning sensation", "Sharp stabbing pain"]),
+                    "radiation": ("Does the pain radiate to your left arm, shoulder, jaw, or upper back?", ["Radiating to left arm/shoulder", "Radiating to jaw & back", "Localized without spread"]),
+                    "aggravating": ("Does physical exertion, climbing stairs, or walking aggravate the tightness?", ["Worse on exertion/stairs", "Worse when lying flat", "Constant at rest"]),
+                    "associated": ("Are you experiencing cold sweating, breathlessness, palpitations, or lightheadedness?", ["Sweating & breathlessness", "Palpitations & dizziness", "No other symptoms"]),
+                    "history_correlation": ("Do you have a history of high blood pressure, diabetes, or prior heart conditions, and are you on regular medications?", ["On hypertension & diabetes meds", "Prior cardiac stent / angina", "No prior medical history"]),
+                    "severity": ("On a clinical pain scale from 1 to 10, how severe would you rate this chest discomfort?", ["8 out of 10 (Severe)", "6 out of 10 (Moderate)", "4 out of 10 (Mild)"])
+                }
+            elif domain == "pulmo":
+                questions = {
+                    "site": ("In which part of your chest or throat is the respiratory difficulty or cough most noticeable?", ["Both sides of chest / lungs", "Throat & upper airway", "Back / pleuritic"]),
+                    "duration": ("How many days or weeks have you had this cough or shortness of breath?", ["Last 3-4 days", "Over 2 weeks", "Chronic / over a month"]),
+                    "character": ("Is it a dry persistent cough, or are you bringing up phlegm/sputum? What is the color?", ["Dry hacking cough", "Yellowish / thick sputum", "Blood-streaked sputum"]),
+                    "radiation": ("Do you feel a sharp stitch or pain in your chest wall when taking a deep breath or coughing?", ["Sharp pain on deep inspiration", "Chest soreness after coughing", "No localized pain"]),
+                    "aggravating": ("Do cold air, dust exposure, or lying flat at night worsen your breathing?", ["Worse at night lying down", "Triggered by dust / cold", "Constant throughout the day"]),
+                    "associated": ("Have you noticed evening fevers, night sweats, wheezing sounds, or unexplained weight loss?", ["Evening fever & night sweats", "Wheezing / whistling sounds", "No other systemic symptoms"]),
+                    "history_correlation": ("Do you have any past history of Tuberculosis (TB), Asthma, or inhaler usage?", ["Treated for TB in the past", "Diagnosed with Asthma", "No past respiratory history"]),
+                    "severity": ("On a scale of 1 to 10, how significantly is this breathing difficulty impacting you right now?", ["8 out of 10 (Severe distress)", "5 out of 10 (Moderate)", "3 out of 10 (Mild)"])
+                }
+            elif domain == "gi":
+                questions = {
+                    "site": ("Where in your abdomen is the pain most intense — upper epigastric, right upper quadrant, or lower abdomen?", ["Upper abdomen (Epigastric)", "Right side under ribs", "Lower abdominal region"]),
+                    "duration": ("How long have you had this abdominal pain or indigestion?", ["Past 2-3 days", "Started suddenly today", "Recurrent for weeks"]),
+                    "character": ("What is the nature of the pain — severe burning acid sensation, colicky cramping, or continuous dull ache?", ["Severe burning acidity", "Colicky cramping waves", "Continuous dull ache"]),
+                    "radiation": ("Does the pain radiate through to your back or up into your shoulder blade?", ["Radiating to upper back", "Radiating to shoulder", "Localized in abdomen only"]),
+                    "aggravating": ("Does the pain increase immediately after eating spicy foods, or does it worsen on an empty stomach?", ["Worse after eating meals", "Worse on empty stomach", "Constant regardless of food"]),
+                    "associated": ("Are you experiencing nausea, vomiting, abdominal bloating, loose stools, or dark-colored stools?", ["Nausea and vomiting", "Bloating and acid reflux", "Loose diarrhea stools", "No other symptoms"]),
+                    "history_correlation": ("Do you have any history of peptic ulcers, gallstones, GERD, or frequent painkiller/NSAID use?", ["Prior ulcer / acidity history", "Known gallstone history", "No prior GI problems"]),
+                    "severity": ("On a scale of 1 to 10, how severe is this abdominal discomfort?", ["7 out of 10 (Severe)", "5 out of 10 (Moderate)", "3 out of 10 (Mild)"])
+                }
+            elif domain == "neuro":
+                questions = {
+                    "site": ("Where is your headache localized — one side of the head, behind the eyes/forehead, or generalized all over?", ["One side (Unilateral)", "Forehead and behind eyes", "Generalized all over head"]),
+                    "duration": ("When did this headache begin, and how many hours or days has it lasted?", ["Sudden onset today", "Past 2 days continuously", "Episodic / recurrent"]),
+                    "character": ("How does it feel — a pulsating throbbing ache, or a tight constricting band around the head?", ["Throbbing pulsating ache", "Tight pressure band", "Sharp shooting pain"]),
+                    "radiation": ("Does the pain radiate down your neck or into your shoulder muscles?", ["Radiating to neck & shoulders", "Behind the eyes", "Confined to head only"]),
+                    "aggravating": ("Do bright lights, loud noises, bending forward, or screen time worsen the headache?", ["Worse with light and sound", "Worse on bending forward", "Constant at rest"]),
+                    "associated": ("Are you experiencing nausea, visual aura (flashes/spots), dizziness, or any numbness/weakness?", ["Nausea and sensitivity to light", "Visual aura / blurring", "Dizziness / vertigo", "No other symptoms"]),
+                    "history_correlation": ("Do you have a history of migraine, high blood pressure, sinusitis, or sleep disturbances?", ["Known migraine / high BP", "Chronic sinus issues", "No previous headache history"]),
+                    "severity": ("On a scale of 1 to 10, how intense is this headache?", ["8 out of 10 (Severe)", "5 out of 10 (Moderate)", "3 out of 10 (Mild)"])
+                }
+            elif domain == "ortho":
+                questions = {
+                    "site": ("Which specific joint or body region is affected — knee, lower back, shoulder, or small hand joints?", ["Knee joints", "Lower back / Lumbar", "Shoulder joint", "Multiple joints"]),
+                    "duration": ("How long have you been experiencing this joint stiffness or pain?", ["Past few days acutely", "Several months", "Chronic long-standing issue"]),
+                    "character": ("How would you describe it — morning stiffness that loosens with movement, or sharp grinding pain on weight bearing?", ["Morning stiffness for >30 mins", "Grinding pain on walking", "Constant dull ache"]),
+                    "radiation": ("Does the back or joint pain shoot down your leg, hip, or into your toes?", ["Shooting down leg (Sciatica)", "Radiating into hip", "Confined to the joint"]),
+                    "aggravating": ("Does climbing stairs, bending, sitting cross-legged, or lifting weight make it worse?", ["Worse on stairs & bending", "Worse after prolonged standing", "Constant even at rest"]),
+                    "associated": ("Is there visible swelling, warmth, joint redness, or difficulty bearing weight?", ["Visible joint swelling & warmth", "Difficulty walking / limp", "No swelling"]),
+                    "history_correlation": ("Do you have a history of arthritis, elevated uric acid (gout), osteoporosis, or prior injuries?", ["History of arthritis / uric acid", "Past injury or fracture", "No prior bone/joint issues"]),
+                    "severity": ("On a scale of 1 to 10, how significantly is this pain limiting your daily movement?", ["8 out of 10 (Mobility restricted)", "5 out of 10 (Moderate)", "3 out of 10 (Mild)"])
+                }
+            elif domain == "fever":
+                questions = {
+                    "site": ("Besides fever, where in your body are you experiencing the most discomfort or aches?", ["Generalized body & joint aches", "Throat pain & headache", "Behind the eyes / Retro-orbital"]),
+                    "duration": ("How many days have you had this fever, and is it continuously high or intermittent?", ["Past 2-3 days", "Started today acutely", "High fever for over a week"]),
+                    "character": ("What is the fever pattern — high spikes with chills and shivering, or persistent low-grade warmth?", ["High spikes with severe chills", "Continuous high-grade fever", "Low-grade evening fever"]),
+                    "radiation": ("Are you feeling severe deep bone pain or eye ache when moving your eyes?", ["Severe bone pain & retro-orbital ache", "Severe throat ache", "Generalized fatigue"]),
+                    "aggravating": ("Does the fever rebound immediately as soon as antipyretic medication wears off?", ["Rebounds after medication", "Worse in the evenings", "Constant all day"]),
+                    "associated": ("Have you noticed skin rashes, vomiting, loose stools, or burning during urination?", ["Skin rash & body aches", "Nausea and vomiting", "Burning urination", "No other symptoms"]),
+                    "history_correlation": ("Has anyone in your vicinity recently had Dengue, Malaria, or Viral infections, or have you traveled recently?", ["Recent dengue/malaria in area", "Outside food consumption", "No known exposure"]),
+                    "severity": ("On a scale of 1 to 10, how severe is your weakness and fever discomfort?", ["8 out of 10 (Severe prostration)", "5 out of 10 (Moderate)", "3 out of 10 (Mild)"])
+                }
             else:
-                spoken = "All your clinical details have been recorded and sent to the consulting physician. Please proceed with your OPD token."
-                replies = ["View OPD Token", "Open Doctor Cockpit"]
+                questions = {
+                    "site": ("Where specifically in your body are you experiencing this primary discomfort?", ["Central chest", "Abdomen", "Head & neck", "Joints & limbs"]),
+                    "duration": ("How long has this issue been present — today, past few days, or longer?", ["Started today", "Past 2-3 days", "Over a week"]),
+                    "character": ("How would you describe the feeling — constant pressure, sharp pain, burning, or weakness?", ["Constant pressure", "Sharp stabbing pain", "Burning sensation", "Weakness"]),
+                    "radiation": ("Does this discomfort spread or radiate to any other part of your body?", ["Radiating to another area", "Localized in one area only"]),
+                    "aggravating": ("Does any particular activity, meal, or movement make your symptoms worse?", ["Worse with movement / exertion", "Worse after food", "Constant throughout"]),
+                    "associated": ("Are you experiencing any other symptoms like fever, nausea, sweating, or breathlessness?", ["Sweating & breathlessness", "Nausea & fever", "No other symptoms"]),
+                    "history_correlation": ("Do you have any documented chronic conditions like hypertension, diabetes, or prior hospitalizations?", ["History of hypertension / diabetes", "Past history of TB / asthma", "No chronic conditions"]),
+                    "severity": ("On a scale from 1 to 10, how severe would you rate your overall discomfort right now?", ["8 out of 10 (Severe)", "5 out of 10 (Moderate)", "3 out of 10 (Mild)"])
+                }
+            q_data = questions.get(target_slot, questions["severity"])
+            spoken, replies = q_data[0], q_data[1]
 
         # Deduplicate spoken response against conversation history
         if history:
             prev_assistant = [h["content"] for h in history if h.get("role") == "assistant"]
-            if prev_assistant and prev_assistant[-1] == spoken:
+            if prev_assistant and (prev_assistant[-1] == spoken or any(spoken in p for p in prev_assistant[-2:])):
                 state.is_triage_complete = True
                 if language == "hi":
                     spoken = "आपकी सभी जानकारियाँ नोट कर ली गई हैं और विस्तृत रिपोर्ट डॉक्टर साहब को भेज दी गई है। कृपया ओपीडी टोकन के साथ प्रतीक्षा करें।"

@@ -17,6 +17,7 @@ import {
   Download
 } from "lucide-react";
 import { PatientQueueItem } from "@/lib/store";
+import { getBackendUrl } from "@/lib/config";
 
 interface Doctor30SecondViewProps {
   patient: PatientQueueItem;
@@ -32,6 +33,7 @@ export function Doctor30SecondView({
   const isEmergency = patient.triageLevel === "EMERGENCY";
   const isUrgent = patient.triageLevel === "URGENT";
   const sessionId = patient.id || "session_demo_01";
+  const backendUrl = getBackendUrl();
 
   return (
     <div
@@ -72,7 +74,7 @@ export function Doctor30SecondView({
             Token {patient.token}
           </span>
           <a
-            href={`http://localhost:8000/api/v1/clinical/report/pdf/${sessionId}`}
+            href={`${backendUrl}/api/v1/clinical/report/pdf/${sessionId}`}
             target="_blank"
             rel="noopener noreferrer"
             title="Download PDF Medical Report for Doctor"
@@ -121,17 +123,36 @@ export function Doctor30SecondView({
           </ul>
         </div>
 
-        {/* Col 3: Reconstructed Past Records */}
+        {/* Col 3: Reconstructed Past Records & AI Correlation */}
         <div className="bg-white p-3.5 rounded-xl border border-[#E0D7C9] space-y-1.5">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[#606963] block flex items-center gap-1">
-            <History className="w-3 h-3 text-[#1B4332]" />
-            Surfaced Historical Context
-          </span>
-          <div className="space-y-1 text-xs">
-            <div className="p-1.5 rounded bg-[#FBF9F5] border border-[#E0D7C9]">
-              <span className="font-semibold text-[#1F2421] block">Pulmonary TB (2022)</span>
-              <span className="text-[10px] text-[#606963]">Discharge Summary • DOTS Completed</span>
-            </div>
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#606963] block flex items-center gap-1">
+              <History className="w-3 h-3 text-[#1B4332]" />
+              Historical Context &amp; Correlation
+            </span>
+            {patient.historicalCorrelation?.significance_level && (
+              <span className="text-[9px] font-extrabold px-1.5 py-0.2 bg-[#E8F5EE] text-[#1B4332] rounded uppercase">
+                {patient.historicalCorrelation.significance_level}
+              </span>
+            )}
+          </div>
+          <div className="space-y-1.5 text-xs">
+            {patient.historicalCorrelation?.correlated_past_condition ? (
+              <div className="p-2 rounded-lg bg-[#F0FDF4] border border-[#86EFAC]/60">
+                <span className="font-bold text-[#166534] block flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-[#22C55E]" />
+                  {patient.historicalCorrelation.correlated_past_condition}
+                </span>
+                <span className="text-[10px] text-[#374151] block leading-tight mt-0.5">
+                  {patient.historicalCorrelation.clinical_rationale}
+                </span>
+              </div>
+            ) : (
+              <div className="p-1.5 rounded bg-[#FBF9F5] border border-[#E0D7C9]">
+                <span className="font-semibold text-[#1F2421] block">Pulmonary TB (2022)</span>
+                <span className="text-[10px] text-[#606963]">Discharge Summary • DOTS Completed</span>
+              </div>
+            )}
           </div>
         </div>
 
