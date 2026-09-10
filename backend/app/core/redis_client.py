@@ -36,10 +36,41 @@ class LocalAsyncRedis:
                 self._expiry.pop(key, None)
             return True
 
-    async def delete(self, key: str) -> int:
+    async def delete(self, *keys: str) -> int:
         async with self._lock:
-            self._expiry.pop(key, None)
-            return 1 if self._store.pop(key, None) is not None else 0
+            count = 0
+            for key in keys:
+                self._expiry.pop(key, None)
+                if self._store.pop(key, None) is not None:
+                    count += 1
+            return count
+
+    async def incr(self, key: str) -> int:
+        async with self._lock:
+            val = int(self._store.get(key, 0)) + 1
+            self._store[key] = str(val)
+            return val
+
+    async def decr(self, key: str) -> int:
+        async with self._lock:
+            val = int(self._store.get(key, 0)) - 1
+            self._store[key] = str(val)
+            return val
+
+    async def expire(self, key: str, seconds: int) -> bool:
+        async with self._lock:
+            if key in self._store:
+                self._expiry[key] = time.time() + seconds
+                return True
+            return False
+
+    async def exists(self, key: str) -> int:
+        async with self._lock:
+            if key in self._expiry and time.time() > self._expiry[key]:
+                self._store.pop(key, None)
+                self._expiry.pop(key, None)
+                return 0
+            return 1 if key in self._store else 0
 
     async def close(self):
         pass

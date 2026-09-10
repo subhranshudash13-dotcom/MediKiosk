@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Optional
 from pydantic import AnyHttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -28,6 +28,31 @@ class Settings(BaseSettings):
 
     # Redis Cache & Queues
     REDIS_URL: str = "redis://localhost:6379/0"
+
+    # Patient Authentication & Security
+    JWT_SECRET: str = "medikiosk-patient-auth-jwt-secret-key-change-in-prod-2026"
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_TTL_MINUTES: int = 15
+    REFRESH_TOKEN_TTL_DAYS: int = 14
+    PASSWORD_PEPPER: str = ""
+    
+    # Google Sign-In (OpenID Connect / Google Identity Services)
+    GOOGLE_CLIENT_ID: str = ""
+
+    # Mobile OTP Settings
+    OTP_PROVIDER: str = "mock"  # "mock" | "sms"
+    OTP_HMAC_SECRET: str = "medikiosk-otp-secret-salt-2026"
+    OTP_TTL_SECONDS: int = 300
+    OTP_MAX_ATTEMPTS: int = 5
+
+    # Cookie Security
+    AUTH_COOKIE_NAME: str = "mk_refresh_token"
+    AUTH_COOKIE_SECURE: bool = False  # Set to True in HTTPS production
+    AUTH_COOKIE_SAMESITE: str = "lax"
+    AUTH_COOKIE_DOMAIN: Optional[str] = None
+
+    # PII Protection & Lookups
+    PII_LOOKUP_HMAC_KEY: str = "medikiosk-pii-lookup-hmac-key-2026"
 
     # AI Services (AI4Bharat / Bhashini / IndicConformer)
     BHASHINI_API_KEY: str = ""

@@ -1,4 +1,6 @@
 from fastapi import APIRouter
+from app.api.v1.auth import router as auth_router
+from app.api.v1.abha import router as abha_router
 from app.api.v1.kiosk import router as kiosk_router
 from app.api.v1.clinical import router as clinical_router
 from app.api.v1.documents import router as documents_router
@@ -8,6 +10,8 @@ from app.api.v1.ai import router as ai_router
 
 api_router = APIRouter()
 
+api_router.include_router(auth_router)
+api_router.include_router(abha_router)
 api_router.include_router(kiosk_router)
 api_router.include_router(clinical_router)
 api_router.include_router(documents_router)

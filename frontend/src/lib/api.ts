@@ -1,7 +1,9 @@
 import axios from "axios";
 import { getApiBaseUrl } from "./config";
+import { getAccessToken } from "./auth-api";
 
 export const apiClient = axios.create({
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
@@ -10,6 +12,10 @@ export const apiClient = axios.create({
 apiClient.interceptors.request.use((config) => {
   if (!config.baseURL) {
     config.baseURL = getApiBaseUrl();
+  }
+  const token = getAccessToken();
+  if (token && !config.headers.Authorization) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });

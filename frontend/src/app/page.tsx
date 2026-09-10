@@ -23,7 +23,8 @@ import {
   Check,
   Hospital,
   BrainCircuit,
-  Bot
+  Bot,
+  User
 } from "lucide-react";
 import { HospitalMetricsChart } from "@/components/analytics/HospitalMetricsChart";
 import { ClinicalArchitectureDiagram } from "@/components/illustrations/ClinicalArchitectureDiagram";
@@ -106,6 +107,13 @@ export default function Home() {
               >
                 <Stethoscope className="w-4 h-4 text-[#38BDF8]" />
                 <span>Doctor Workstation</span>
+              </Link>
+              <Link
+                href="/patient"
+                className="px-6 py-3.5 rounded-full bg-white/5 hover:bg-white/15 border border-white/20 text-white font-semibold text-sm flex items-center gap-2 backdrop-blur-md transition-all cursor-pointer"
+              >
+                <User className="w-4 h-4 text-emerald-400" />
+                <span>Patient Portal</span>
               </Link>
             </div>
           </div>

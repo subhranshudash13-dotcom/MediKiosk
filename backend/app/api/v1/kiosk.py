@@ -2,7 +2,7 @@ import uuid
 from typing import Optional, List
 from datetime import datetime, timezone
 from pydantic import BaseModel
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from app.models.kiosk import KioskSession, KioskLanguage, TriageAssessment
 from app.core.database import get_database
 from app.services.clinical.event_logger import event_logger
@@ -38,16 +38,22 @@ class StartSessionRequest(BaseModel):
     abha_id: Optional[str] = None
 
 
+from app.services.auth.dependencies import get_optional_current_user
+from app.models.auth import UserContext
+
+
 @router.post("/session/start", response_model=KioskSession)
 @router.post("/start", response_model=KioskSession)
 async def start_kiosk_session(
     payload: Optional[StartSessionRequest] = None,
     language: str = "hi",
-    mode: str = "allopathy"
+    mode: str = "allopathy",
+    current_user: Optional[UserContext] = Depends(get_optional_current_user),
 ):
     """
     Initiate and immediately persist a new kiosk triage session in MongoDB.
-    Assigns queue token and initializes structured clinical record.
+    Binds authenticated MediKiosk patient profile & verified ABHA link if logged in,
+    or establishes an anonymous emergency/walk-in guest encounter.
     """
     db = get_database()
     session_id = f"SES-{uuid.uuid4().hex[:8]}"
@@ -58,17 +64,65 @@ async def start_kiosk_session(
     token = f"#{token_num}"
     now_iso = datetime.now(timezone.utc).isoformat()
 
-    req_lang = payload.language if (payload and payload.language) else language
-    req_mode = payload.mode if (payload and payload.mode) else mode
-    patient_name = (payload.patient_name if payload and payload.patient_name else None) or f"Patient {token}"
-    patient_age = (payload.age if payload and payload.age is not None else 42)
-    patient_gender = (payload.gender if payload and payload.gender else "Patient")
-    patient_abha = (payload.abha_id if payload and payload.abha_id else "91-XXXX-XXXX-XXXX")
+    user_id = current_user.user_id if current_user else None
+    profile = None
+    abha_link = None
+
+    if user_id:
+        profile = await db["patient_profiles"].find_one({"user_id": user_id})
+        abha_link = await db["abha_links"].find_one({
+            "user_id": user_id,
+            "verification_status": "verified",
+            "unlinked_at": None,
+        })
+
+    # Determine patient demographics: payload overrides > saved profile > defaults
+    req_lang = (
+        (payload.language if payload and payload.language else None)
+        or (profile.get("preferred_language") if profile else None)
+        or language
+    )
+    req_mode = (payload.mode if payload and payload.mode else None) or mode
+    
+    patient_name = (
+        (payload.patient_name if payload and payload.patient_name else None)
+        or (profile.get("full_name") if profile else None)
+        or f"Patient {token}"
+    )
+    
+    patient_age = (
+        (payload.age if payload and payload.age is not None else None)
+        or 42
+    )
+    
+    patient_gender = (
+        (payload.gender if payload and payload.gender else None)
+        or (profile.get("gender") if profile else None)
+        or "Patient"
+    )
+
+    patient_abha = (
+        (payload.abha_id if payload and payload.abha_id else None)
+        or (abha_link.get("abha_number_masked") if abha_link else None)
+        or (abha_link.get("abha_address") if abha_link else None)
+        or "91-XXXX-XXXX-XXXX"
+    )
+
+    auth_context = {
+        "authenticated": bool(current_user),
+        "method": current_user.amr if current_user else ["guest"],
+        "abha_verified_for_session": bool(abha_link),
+        "authenticated_at": now_iso if current_user else None,
+    }
 
     session_doc = {
         "session_id": session_id,
         "token": token,
         "patient_id": f"P-{uuid.uuid4().hex[:6].upper()}",
+        "user_id": user_id,
+        "patient_profile_id": profile.get("_id") if profile else None,
+        "abha_link_id": abha_link.get("_id") if abha_link else None,
+        "authentication_context": auth_context,
         "name": patient_name,
         "patient_name": patient_name,
         "age": patient_age,
@@ -124,7 +178,13 @@ async def start_kiosk_session(
     await event_logger.log_event(
         event_type="SESSION_STARTED",
         session_id=session_id,
-        details={"token": token, "language": req_lang, "mode": req_mode}
+        details={
+            "token": token,
+            "language": req_lang,
+            "mode": req_mode,
+            "authenticated": bool(current_user),
+            "user_id": user_id,
+        }
     )
 
     return KioskSession(

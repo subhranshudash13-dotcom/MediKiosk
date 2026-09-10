@@ -47,6 +47,7 @@ export interface HistoryCoverageMap {
 
 export interface PatientQueueItem {
   id: string;
+  sessionId?: string;
   token: string;
   name: string;
   age: number;

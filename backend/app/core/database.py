@@ -126,6 +126,36 @@ class LocalAsyncCollection:
                 modified_count = 1 if matched else (1 if upsert else 0)
             return UpdateResult()
 
+    async def create_index(self, keys, **kwargs):
+        return str(keys)
+
+    async def delete_one(self, filter_query: Dict[str, Any]):
+        async with self._lock:
+            for i, d in enumerate(self._docs):
+                if self._matches(d, filter_query):
+                    self._docs.pop(i)
+                    class DeleteOneResult:
+                        deleted_count = 1
+                    return DeleteOneResult()
+            class DeleteZeroResult:
+                deleted_count = 0
+            return DeleteZeroResult()
+
+    async def update_many(self, filter_query: Dict[str, Any], update_spec: Dict[str, Any]):
+        async with self._lock:
+            matched_count = 0
+            for d in self._docs:
+                if self._matches(d, filter_query):
+                    matched_count += 1
+                    if "$set" in update_spec:
+                        for k, v in update_spec["$set"].items():
+                            d[k] = copy.deepcopy(v)
+            class UpdateManyResult:
+                def __init__(self, m):
+                    self.matched_count = m
+                    self.modified_count = m
+            return UpdateManyResult(matched_count)
+
     async def delete_many(self, filter_query: Dict[str, Any]):
         async with self._lock:
             before_len = len(self._docs)
@@ -168,6 +198,40 @@ class DatabaseManager:
 db_manager = DatabaseManager()
 
 
+async def init_db_indexes(db: Any):
+    """Initialize performance and uniqueness indexes across collections."""
+    try:
+        # Auth identities: compound unique index on provider + identifier
+        await db.auth_identities.create_index(
+            [("identity_type", 1), ("identifier_value", 1)],
+            unique=True,
+            sparse=True
+        )
+        await db.auth_identities.create_index([("user_id", 1)])
+
+        # Patient profiles: unique user_id
+        await db.patient_profiles.create_index([("user_id", 1)], unique=True)
+        await db.patient_profiles.create_index([("phone", 1)], sparse=True)
+        await db.patient_profiles.create_index([("email", 1)], sparse=True)
+
+        # ABHA links: unique hashed abha_number for privacy-preserving deduplication
+        await db.abha_links.create_index([("abha_number_hash", 1)], unique=True, sparse=True)
+        await db.abha_links.create_index([("user_id", 1)])
+
+        # Auth sessions: user_id lookup and TTL index on expires_at
+        await db.auth_sessions.create_index([("user_id", 1)])
+        await db.auth_sessions.create_index([("refresh_token_hash", 1)])
+        await db.auth_sessions.create_index([("expires_at", 1)], expireAfterSeconds=0)
+
+        # ABDM Consents
+        await db.abdm_consents.create_index([("user_id", 1)])
+        await db.abdm_consents.create_index([("consent_id", 1)], unique=True, sparse=True)
+
+        logger.info("Successfully ensured database indexes for auth and patient models.")
+    except Exception as e:
+        logger.warning(f"Notice: Database index initialization skipped or unsupported: {e}")
+
+
 async def connect_to_mongo():
     """Establish async MongoDB connection or initialize transparent local engine."""
     try:
@@ -181,10 +245,12 @@ async def connect_to_mongo():
         db_manager.db = live_client[settings.MONGODB_DB_NAME]
         db_manager.is_live_mongo = True
         logger.info(f"Connected to live MongoDB database: {settings.MONGODB_DB_NAME}")
+        await init_db_indexes(db_manager.db)
     except Exception as e:
         logger.info(f"MongoDB standalone service not reachable ({e}). Initializing transparent resilient local database.")
         db_manager.db = LocalAsyncDatabase(settings.MONGODB_DB_NAME)
         db_manager.is_live_mongo = False
+        await init_db_indexes(db_manager.db)
 
 
 async def close_mongo_connection():
