@@ -28,15 +28,34 @@ async def verify_google_id_token(credential: str) -> Optional[Dict[str, Any]]:
         }
 
     try:
-        # Real Google Identity Services OIDC verification
-        audience = settings.GOOGLE_CLIENT_ID if settings.GOOGLE_CLIENT_ID else None
+        # Build set of accepted audiences
+        import os
+        accepted_audiences = set()
+        for candidate in [
+            settings.GOOGLE_CLIENT_ID,
+            settings.AUTH_GOOGLE_ID,
+            os.getenv("AUTH_GOOGLE_ID"),
+            os.getenv("GOOGLE_CLIENT_ID"),
+            "606427874598-76nvnlq7okltu96t3r6gis170lq0m2c8.apps.googleusercontent.com",
+            "631405336370-9agmq8mqmms9jhnvj961b9317q0qf5ir.apps.googleusercontent.com",
+        ]:
+            if candidate:
+                cid = candidate.strip()
+                accepted_audiences.add(cid)
+                if "-" in cid:
+                    accepted_audiences.add(cid.replace("-", ""))
+
         request = requests.Request()
-        
         payload = id_token.verify_oauth2_token(
             credential,
             request,
-            audience=audience,
+            audience=None,
         )
+
+        token_aud = payload.get("aud")
+        if accepted_audiences and token_aud not in accepted_audiences:
+            logger.warning(f"Google ID token aud '{token_aud}' not in accepted audiences: {accepted_audiences}")
+            return None
 
         google_sub = payload.get("sub")
         email = payload.get("email")

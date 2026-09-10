@@ -235,19 +235,21 @@ async def init_db_indexes(db: Any):
 async def connect_to_mongo():
     """Establish async MongoDB connection or initialize transparent local engine."""
     try:
+        import certifi
         live_client = AsyncIOMotorClient(
             settings.MONGODB_URI,
-            serverSelectionTimeoutMS=1200,
+            serverSelectionTimeoutMS=5000,
+            tlsCAFile=certifi.where(),
         )
         # Test connection with timeout
-        await asyncio.wait_for(live_client.admin.command('ping'), timeout=1.2)
+        await asyncio.wait_for(live_client.admin.command('ping'), timeout=5.0)
         db_manager.client = live_client
         db_manager.db = live_client[settings.MONGODB_DB_NAME]
         db_manager.is_live_mongo = True
         logger.info(f"Connected to live MongoDB database: {settings.MONGODB_DB_NAME}")
         await init_db_indexes(db_manager.db)
     except Exception as e:
-        logger.info(f"MongoDB standalone service not reachable ({e}). Initializing transparent resilient local database.")
+        logger.warning(f"MongoDB standalone service not reachable ({e}). Initializing transparent resilient local database.")
         db_manager.db = LocalAsyncDatabase(settings.MONGODB_DB_NAME)
         db_manager.is_live_mongo = False
         await init_db_indexes(db_manager.db)

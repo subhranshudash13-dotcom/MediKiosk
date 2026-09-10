@@ -71,13 +71,6 @@ export interface AuthResponse {
   tokens: AuthTokens;
 }
 
-export interface OtpRequestResponse {
-  challenge_id: string;
-  expires_in: number;
-  resend_after: number;
-  demo_otp?: string;
-}
-
 export interface AbhaStatusResponse {
   linked: boolean;
   status: string;
@@ -123,26 +116,7 @@ export const AuthAPI = {
     return res.data;
   },
 
-  // 2. Mobile OTP
-  requestOtp: async (phone: string, purpose: "login" | "signup" | "link" = "login"): Promise<OtpRequestResponse> => {
-    const res = await authApiClient.post("/auth/otp/request", { phone, purpose });
-    return res.data;
-  },
-
-  verifyOtp: async (payload: {
-    challenge_id: string;
-    otp: string;
-    full_name?: string;
-    preferred_language?: string;
-    date_of_birth?: string;
-    gender?: string;
-  }): Promise<AuthResponse> => {
-    const res = await authApiClient.post("/auth/otp/verify", payload);
-    setAccessToken(res.data.tokens.access_token);
-    return res.data;
-  },
-
-  // 3. Google Sign-In
+  // 2. Google Sign-In
   googleAuth: async (credential: string, preferredLanguage: string = "hi"): Promise<AuthResponse> => {
     const res = await authApiClient.post("/auth/google", {
       credential,

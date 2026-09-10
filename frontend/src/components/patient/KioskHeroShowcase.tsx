@@ -2,6 +2,8 @@
 
 import React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/lib/auth-store";
 import { motion } from "framer-motion";
 import {
   Mic,
@@ -20,6 +22,17 @@ import {
 } from "lucide-react";
 
 export function KioskHeroShowcase() {
+  const router = useRouter();
+  const { isAuthenticated } = useAuthStore();
+
+  const handleStartIntake = (e: React.MouseEvent) => {
+    if (!isAuthenticated) {
+      e.preventDefault();
+      router.push("/patient/login?returnUrl=/kiosk/intake");
+    } else {
+      router.push("/kiosk/intake");
+    }
+  };
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-[#003882] via-[#0056B3] to-[#0070EB] text-white py-14 sm:py-20 px-4 sm:px-6 lg:px-8 border-b border-[#0047AB]">
       {/* Subtle Background Glow Circles */}
@@ -49,14 +62,15 @@ export function KioskHeroShowcase() {
 
             {/* Action CTAs */}
             <div className="pt-2 flex flex-wrap items-center gap-3.5">
-              <Link
-                href="/kiosk/intake"
+              <button
+                type="button"
+                onClick={handleStartIntake}
                 className="rounded-full bg-white hover:bg-[#F0F7FF] text-[#0056B3] font-bold text-xs sm:text-sm px-8 py-3.5 shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer"
               >
                 <Mic className="w-4 h-4 text-[#0056B3]" />
                 <span>Start Kiosk Intake</span>
                 <ArrowRight className="w-4 h-4" />
-              </Link>
+              </button>
             </div>
           </div>
 
