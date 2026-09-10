@@ -45,6 +45,7 @@ import { PrescriptionScanner } from "@/components/visualization/PrescriptionScan
 import { ClinicalTriageToken } from "@/components/visualization/ClinicalTriageToken";
 import { AudioConsentModal } from "@/components/clinical/AudioConsentModal";
 import { useKioskStore, PatientQueueItem, EvidenceTimelineItem } from "@/lib/store";
+import { useAuthStore } from "@/lib/auth-store";
 import { cn } from "@/lib/utils";
 import { getBackendUrl } from "@/lib/config";
 import { UniversalAudioRecorder } from "@/lib/audioRecorder";
@@ -88,11 +89,35 @@ export function LivePatientIntakeStation() {
     pushPatientToQueue
   } = useKioskStore();
 
+  const { user, isAuthenticated, initialized, initAuth } = useAuthStore();
+
+  useEffect(() => {
+    initAuth();
+  }, [initAuth]);
+
+  useEffect(() => {
+    if (initialized && !isAuthenticated) {
+      router.replace("/patient/login?returnUrl=/kiosk/intake");
+    }
+  }, [initialized, isAuthenticated, router]);
+
   const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
-  const [patientName, setPatientName] = useState<string>("Ananya Sharma");
+  const [patientName, setPatientName] = useState<string>("Patient");
   const [patientAge, setPatientAge] = useState<number>(28);
   const [patientGender, setPatientGender] = useState<string>("Female");
   const [patientAbha, setPatientAbha] = useState<string>("91-4567-8901-2345");
+
+  // Synchronize authenticated patient details into intake state
+  useEffect(() => {
+    if (user) {
+      if (user.full_name) setPatientName(user.full_name);
+      if (user.gender) setPatientGender(user.gender);
+      if (user.preferred_language) setLanguage(user.preferred_language);
+      if (user.abha_number_masked) setPatientAbha(user.abha_number_masked);
+      else if (user.abha_address) setPatientAbha(user.abha_address);
+    }
+  }, [user, setLanguage]);
+
   const [isConsentModalOpen, setIsConsentModalOpen] = useState(false);
   const [scannedMedications, setScannedMedications] = useState<Array<{ drug: string; dose: string; frequency: string }>>([
     { drug: "Tab Paracetamol", dose: "650 mg", frequency: "1-0-1" },
@@ -594,6 +619,15 @@ export function LivePatientIntakeStation() {
 
     setActiveStepIndex(4);
   };
+
+  if (!initialized || !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FA] flex flex-col items-center justify-center space-y-3">
+        <div className="w-8 h-8 border-2 border-[#0056B3] border-t-transparent rounded-full animate-spin" />
+        <p className="text-xs font-semibold text-[#5A6B7C]">Verifying patient session...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] text-[#1E293B] flex flex-col justify-between selection:bg-[#EBF5FF] selection:text-[#0056B3]">
