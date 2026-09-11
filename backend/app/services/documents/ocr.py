@@ -1,11 +1,18 @@
 import io
 import re
+import os
+import shutil
 import base64
 import json
 import logging
 from datetime import date, datetime, timezone
 from typing import List, Optional, Dict, Any, Tuple
-from PIL import Image
+from PIL import Image, ImageEnhance, ImageFilter, ImageOps
+
+try:
+    import pytesseract
+except ImportError:
+    pytesseract = None
 
 from groq import AsyncGroq
 try:
@@ -89,11 +96,92 @@ Return ONLY raw JSON with no markdown backticks, no markdown code blocks, and no
 
 
 class DocumentOCRService:
-    """Multilingual OCR and medical document intelligence pipeline."""
+    """Multilingual OCR and medical document intelligence pipeline powered by Tesseract & Clinical AI."""
 
     def __init__(self):
         self._openai_client: Optional[AsyncOpenAI] = None
         self._groq_client: Optional[AsyncGroq] = None
+        self._tesseract_available: Optional[bool] = None
+        self._configure_tesseract()
+
+    def _configure_tesseract(self):
+        """Locate Tesseract binary on Windows or Unix system."""
+        if not pytesseract:
+            self._tesseract_available = False
+            return
+
+        # Check standard Windows paths if not on PATH
+        candidate_paths = [
+            os.environ.get("TESSERACT_CMD", ""),
+            r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+            r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+            r"C:\Users\Hp\AppData\Local\Programs\Tesseract-OCR\tesseract.exe",
+            shutil.which("tesseract") or "",
+        ]
+
+        for p in candidate_paths:
+            if p and os.path.exists(p):
+                try:
+                    pytesseract.pytesseract.tesseract_cmd = p
+                    self._tesseract_available = True
+                    logger.info(f"DocumentOCR: Configured open-source Tesseract OCR binary at '{p}'")
+                    return
+                except Exception as e:
+                    logger.warning(f"DocumentOCR: Failed to bind tesseract path '{p}': {e}")
+
+        # If on PATH
+        if shutil.which("tesseract"):
+            self._tesseract_available = True
+            logger.info("DocumentOCR: Tesseract OCR binary detected on system PATH.")
+        else:
+            self._tesseract_available = False
+            logger.info("DocumentOCR: Tesseract binary not detected in default directories. Vision & Heuristic engines active.")
+
+    def preprocess_image_for_ocr(self, pil_image: Image.Image) -> Image.Image:
+        """
+        Enhance scanned prescription / lab image quality for maximum Tesseract OCR legibility.
+        Converts to grayscale, maximizes local contrast, and removes visual noise.
+        """
+        try:
+            # 1. Convert to grayscale
+            gray = pil_image.convert("L")
+
+            # 2. Enhance contrast
+            enhancer = ImageEnhance.Contrast(gray)
+            enhanced = enhancer.enhance(1.8)
+
+            # 3. Sharpen edges
+            sharpened = enhanced.filter(ImageFilter.SHARPEN)
+
+            # 4. Adaptive thresholding for cleaner binarization
+            threshold = 145
+            binarized = sharpened.point(lambda p: 255 if p > threshold else 0)
+            return binarized
+        except Exception as e:
+            logger.warning(f"DocumentOCR: Image preprocessing warning: {e}. Using grayscale.")
+            return pil_image.convert("L")
+
+    def run_tesseract_ocr(self, pil_image: Image.Image) -> str:
+        """Execute Tesseract OCR engine on preprocessed clinical image."""
+        if not pytesseract or not self._tesseract_available:
+            return ""
+
+        try:
+            preprocessed = self.preprocess_image_for_ocr(pil_image)
+            # Try Hindi + English or fallback to English
+            text = ""
+            try:
+                text = pytesseract.image_to_string(preprocessed, lang="eng+hin", config="--oem 3 --psm 6")
+            except Exception:
+                text = pytesseract.image_to_string(preprocessed, lang="eng", config="--oem 3 --psm 6")
+            
+            cleaned = text.strip()
+            if cleaned:
+                logger.info(f"DocumentOCR: Tesseract extracted {len(cleaned)} characters of raw medical text.")
+            return cleaned
+        except Exception as e:
+            logger.warning(f"DocumentOCR: Tesseract extraction encountered note: {e}")
+            return ""
 
     @property
     def openai_client(self) -> Optional[Any]:
@@ -149,12 +237,17 @@ class DocumentOCRService:
             except Exception as e:
                 logger.warning(f"Could not render PDF to image with pypdfium2: {e}")
 
-        # 2. Handle Image Files with PIL
+        # 2. Handle Image Files with PIL & Tesseract OCR
         try:
             image = Image.open(io.BytesIO(file_bytes))
             if image.mode in ("RGBA", "P"):
                 image = image.convert("RGB")
             
+            # Execute Tesseract OCR on image
+            tess_text = self.run_tesseract_ocr(image)
+            if tess_text:
+                extracted_text = (extracted_text + "\n" + tess_text).strip()
+
             max_size = 1600
             if max(image.size) > max_size:
                 image.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
@@ -211,7 +304,7 @@ class DocumentOCRService:
         if not client:
             return None
 
-        for model_candidate in ["llama-3.2-11b-vision-preview", "llama-3.2-90b-vision-preview"]:
+        for model_candidate in ["llama-3.2-11b-vision-instruct", "llama-3.2-90b-vision-instruct", "llama-3.2-11b-vision-preview"]:
             try:
                 logger.info(f"DocumentOCR: Attempting Groq Vision extraction ({model_candidate})")
                 data_url = f"data:{mime_type};base64,{base64_image}"

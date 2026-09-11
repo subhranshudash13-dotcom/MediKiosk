@@ -227,7 +227,23 @@ async def init_db_indexes(db: Any):
         await db.abdm_consents.create_index([("user_id", 1)])
         await db.abdm_consents.create_index([("consent_id", 1)], unique=True, sparse=True)
 
-        logger.info("Successfully ensured database indexes for auth and patient models.")
+        # Encounters (Longitudinal records)
+        await db.encounters.create_index([("encounter_id", 1)], unique=True)
+        await db.encounters.create_index([("patient_id", 1)])
+        await db.encounters.create_index([("encounter_date", -1)])
+        await db.encounters.create_index([("status", 1)])
+
+        # Sessions (Live Kiosk & Doctor Queue)
+        await db.sessions.create_index([("session_id", 1)], unique=True)
+        await db.sessions.create_index([("status", 1)])
+        await db.sessions.create_index([("token", 1)])
+        await db.sessions.create_index([("patient_id", 1)])
+
+        # Medical Documents & OCR
+        await db.documents.create_index([("document_id", 1)], unique=True)
+        await db.documents.create_index([("patient_id", 1)])
+
+        logger.info("Successfully ensured database indexes for auth, patient, encounter, and kiosk models.")
     except Exception as e:
         logger.warning(f"Notice: Database index initialization skipped or unsupported: {e}")
 

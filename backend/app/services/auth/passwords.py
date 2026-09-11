@@ -6,10 +6,10 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Argon2id default recommended parameters
+# Argon2id OWASP-compliant parameters with low-memory overhead
 _hasher = PasswordHasher(
     time_cost=2,
-    memory_cost=65536,  # 64 MB
+    memory_cost=19456,  # 19 MB (OWASP recommended minimum)
     parallelism=1,
     hash_len=32,
     salt_len=16,

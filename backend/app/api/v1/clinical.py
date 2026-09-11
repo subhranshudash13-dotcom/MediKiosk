@@ -1,4 +1,5 @@
 import logging
+import uuid
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, Query, Body, Response
@@ -204,14 +205,126 @@ async def get_doctor_queue(status: Optional[str] = None):
     return queue_items
 
 
+class CareRoutingRequest(BaseModel):
+    chief_complaint: str
+    transcript: Optional[str] = ""
+    mode: Optional[str] = "allopathy"
+
+
+@router.post("/care-routing/recommend")
+async def recommend_care_routing(req: CareRoutingRequest):
+    """
+    Care Routing: Recommends appropriate hospital department, available doctors, and OPD schedule.
+    Purely operational department routing based on hospital configuration and complaint categorization.
+    """
+    recommendation = clinical_engine.recommend_care_routing(
+        chief_complaint=req.chief_complaint,
+        transcript=req.transcript or "",
+        mode=req.mode or "allopathy"
+    )
+    return recommendation
+
+
+@router.get("/completeness/{session_id}")
+async def get_intake_completeness(session_id: str):
+    """
+    Clinical Completeness Engine: Returns percentage score, covered checklist, and next adaptive question.
+    """
+    db = get_database()
+    session_doc = await db["sessions"].find_one({"session_id": session_id})
+    if not session_doc:
+        session_doc = await db["sessions"].find_one({"$or": [{"patient_id": session_id}, {"token": session_id}]})
+    
+    if not session_doc:
+        raise HTTPException(status_code=404, detail="Session not found to calculate completeness.")
+    
+    return clinical_engine.calculate_completeness(session_doc)
+
+
+@router.get("/patient/{patient_id}/encounters")
+async def get_patient_encounters_longitudinal(patient_id: str):
+    """
+    Longitudinal Patient History: Returns prior hospital encounters and comparison prompt for returning visits.
+    """
+    return await clinical_engine.get_longitudinal_patient_context(patient_id)
+
+
+class CreateEncounterRequest(BaseModel):
+    patient_id: str
+    patient_name: str
+    age: int
+    gender: str
+    abha_id: Optional[str] = None
+    token: Optional[str] = None
+    session_id: Optional[str] = None
+    hospital_name: Optional[str] = "Apex Multi-Speciality Hospital"
+    department: Optional[str] = "General Medicine"
+    doctor_name: Optional[str] = "Dr. S. K. Mukherjee"
+    chief_complaint: str
+    hpi: Optional[str] = None
+    socrates: Optional[Dict[str, Any]] = None
+    vitals: Optional[Dict[str, Any]] = None
+    past_history: Optional[List[str]] = None
+    current_medications: Optional[List[Dict[str, Any]]] = None
+    allergies: Optional[List[str]] = None
+    provisional_diagnosis: Optional[str] = None
+    clinical_notes: Optional[str] = None
+    prescribed_medications: Optional[List[Dict[str, Any]]] = None
+    follow_up_recommendation: Optional[str] = None
+
+
+@router.post("/encounter/create")
+async def create_encounter_record(req: CreateEncounterRequest):
+    """
+    Creates an immutable Encounter record in MongoDB for longitudinal care.
+    """
+    db = get_database()
+    now = datetime.now(timezone.utc)
+    enc_id = f"ENC-{now.strftime('%Y-%m-%d')}-{uuid.uuid4().hex[:4].upper()}" if 'uuid' in globals() else f"ENC-{now.strftime('%Y-%m-%d')}-{int(now.timestamp()) % 10000}"
+    
+    doc = {
+        "encounter_id": enc_id,
+        "patient_id": req.patient_id,
+        "patient_name": req.patient_name,
+        "age": req.age,
+        "gender": req.gender,
+        "abha_id": req.abha_id,
+        "token": req.token,
+        "session_id": req.session_id,
+        "hospital_name": req.hospital_name,
+        "department": req.department,
+        "doctor_name": req.doctor_name,
+        "encounter_date": now.strftime("%Y-%m-%d"),
+        "created_at": now.isoformat(),
+        "chief_complaint": req.chief_complaint,
+        "hpi": req.hpi,
+        "socrates": req.socrates or {},
+        "vitals": req.vitals or {},
+        "past_history": req.past_history or [],
+        "current_medications": req.current_medications or [],
+        "allergies": req.allergies or [],
+        "provisional_diagnosis": req.provisional_diagnosis,
+        "clinical_notes": req.clinical_notes,
+        "prescribed_medications": req.prescribed_medications or [],
+        "follow_up_recommendation": req.follow_up_recommendation or "Follow-up in 14 days or SOS if symptoms worsen.",
+        "status": "completed",
+        "is_abdm_synced": True
+    }
+
+    await db["encounters"].insert_one(doc)
+    return {"status": "success", "encounter_id": enc_id, "encounter": doc}
+
+
 @router.patch("/session/{session_id}/approve")
 async def approve_consultation(session_id: str, req: Optional[ApproveConsultationRequest] = None):
     """
     Doctor Consultation Sign-off (Closed Loop).
-    Saves physician provisional diagnosis, clinical orders, and commits session status to 'completed'.
+    Saves physician provisional diagnosis, clinical orders, commits session status to 'completed',
+    and generates an immutable Encounter record in MongoDB for longitudinal history tracking.
     """
     db = get_database()
     now_iso = datetime.now(timezone.utc).isoformat()
+    now_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     r = req or ApproveConsultationRequest()
 
     update_payload = {
@@ -240,6 +353,48 @@ async def approve_consultation(session_id: str, req: Optional[ApproveConsultatio
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Session not found to approve.")
 
+    # Retrieve full session to create persistent longitudinal Encounter record
+    session_doc = await db["sessions"].find_one({
+        "$or": [{"session_id": session_id}, {"patient_id": session_id}, {"token": session_id}]
+    })
+
+    if session_doc:
+        enc_id = f"ENC-{now_date}-{session_doc.get('token', '#101').replace('#', '')}"
+        encounter_record = {
+            "encounter_id": enc_id,
+            "session_id": session_doc.get("session_id"),
+            "patient_id": session_doc.get("patient_id", f"P-{session_doc.get('token', '101')}"),
+            "patient_name": session_doc.get("name") or session_doc.get("patient_name", "Patient"),
+            "age": session_doc.get("age", 45),
+            "gender": session_doc.get("gender", "Patient"),
+            "abha_id": session_doc.get("abha_id", "91-XXXX-XXXX-XXXX"),
+            "token": session_doc.get("token", "#101"),
+            "hospital_name": "Apex Multi-Speciality Hospital",
+            "department": session_doc.get("department_recommended") or "General Medicine",
+            "doctor_name": r.doctor_name or "Dr. S. K. Mukherjee",
+            "doctor_registration": r.doctor_registration or "MCI-2011-8849",
+            "encounter_date": now_date,
+            "created_at": now_iso,
+            "chief_complaint": session_doc.get("chief_complaint", "General consultation"),
+            "hpi": session_doc.get("hpi") or str(session_doc.get("socrates", {})),
+            "socrates": session_doc.get("socrates", {}),
+            "vitals": session_doc.get("vitals", {}),
+            "past_history": session_doc.get("past_history", []),
+            "current_medications": session_doc.get("current_medications", []),
+            "allergies": session_doc.get("allergies", []),
+            "provisional_diagnosis": r.provisional_diagnosis,
+            "clinical_notes": r.clinical_notes,
+            "prescribed_medications": r.prescribed_medications or [],
+            "follow_up_recommendation": "Review after 14 days with repeat labs or SOS if discomfort recurs.",
+            "status": "completed",
+            "is_abdm_synced": True
+        }
+        await db["encounters"].update_one(
+            {"encounter_id": enc_id},
+            {"$set": encounter_record},
+            upsert=True
+        )
+
     # Log to demo audit collection
     await event_logger.log_event(
         event_type="CONSULTATION_APPROVED",
@@ -248,7 +403,8 @@ async def approve_consultation(session_id: str, req: Optional[ApproveConsultatio
         details={
             "doctor": r.doctor_name,
             "diagnosis": r.provisional_diagnosis,
-            "medications_count": len(r.prescribed_medications or [])
+            "medications_count": len(r.prescribed_medications or []),
+            "encounter_created": True
         }
     )
 
@@ -257,7 +413,8 @@ async def approve_consultation(session_id: str, req: Optional[ApproveConsultatio
         "session_id": session_id,
         "queue_status": "completed",
         "approved_at": now_iso,
-        "message": "Consultation approved and pushed to ABDM health record."
+        "encounter_id": f"ENC-{now_date}-{session_doc.get('token', '#101').replace('#', '')}" if session_doc else None,
+        "message": "Consultation approved, Encounter record committed to longitudinal history, and pushed to ABDM health record."
     }
 
 

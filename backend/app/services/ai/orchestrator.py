@@ -49,19 +49,9 @@ class AIOrchestratorService:
         if not session_id or session_id not in self.sessions:
             new_id = session_id or str(uuid.uuid4())
             
-            # Default longitudinal history context if initializing a fresh intake
-            default_history = past_history or [
-                "Essential Hypertension (Diagnosed 2024)",
-                "Pulmonary Tuberculosis (DOTS Completed 2022)"
-            ]
-            default_meds = current_medications or [
-                "Tab Amlodipine 5mg OD",
-                "Tab Paracetamol 650mg SOS"
-            ]
-            default_allergies = allergies or [
-                "Penicillin (Severe urticarial rash)",
-                "No known food allergies"
-            ]
+            default_history = past_history if past_history is not None else []
+            default_meds = current_medications if current_medications is not None else []
+            default_allergies = allergies if allergies is not None else []
             default_clues = historical_clues or [
                 {
                     "condition": "Pulmonary TB (Completed DOTS Regimen)",

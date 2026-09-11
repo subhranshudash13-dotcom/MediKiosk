@@ -2,6 +2,7 @@ import asyncio
 import os
 import sys
 import json
+import pytest
 from dotenv import load_dotenv
 
 if hasattr(sys.stdout, 'reconfigure'):
@@ -11,6 +12,7 @@ load_dotenv()
 
 from groq import AsyncGroq
 
+@pytest.mark.asyncio
 async def test_prompts():
     client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"), max_retries=0)
     models = ["groq/compound-mini", "qwen/qwen3.6-27b", "openai/gpt-oss-20b"]
