@@ -45,7 +45,26 @@ class Settings(BaseSettings):
     PASSWORD_PEPPER: str = ""
     
     # Google Sign-In (OpenID Connect / Google Identity Services)
+    AUTH_GOOGLE_ID: Optional[str] = None
+    AUTH_GOOGLE_SECRET: Optional[str] = None
     GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+
+    @field_validator("GOOGLE_CLIENT_ID", mode="before")
+    @classmethod
+    def set_google_client_id(cls, v: str, info) -> str:
+        if v:
+            return v
+        data = info.data if hasattr(info, "data") else {}
+        return data.get("AUTH_GOOGLE_ID") or ""
+
+    @field_validator("GOOGLE_CLIENT_SECRET", mode="before")
+    @classmethod
+    def set_google_client_secret(cls, v: str, info) -> str:
+        if v:
+            return v
+        data = info.data if hasattr(info, "data") else {}
+        return data.get("AUTH_GOOGLE_SECRET") or ""
 
     # Mobile OTP Settings
     OTP_PROVIDER: str = "mock"  # "mock" | "sms"

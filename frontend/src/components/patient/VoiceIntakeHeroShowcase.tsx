@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Mic, Send, Radio } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/lib/auth-store";
 
 const AudioWaveform = () => {
   const bars = [
@@ -47,6 +48,7 @@ const AudioWaveform = () => {
 
 export function VoiceIntakeHeroShowcase() {
   const router = useRouter();
+  const { isAuthenticated } = useAuthStore();
   const [activeLang, setActiveLang] = useState("English");
   const [inputValue, setInputValue] = useState("");
 
@@ -54,8 +56,19 @@ export function VoiceIntakeHeroShowcase() {
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputValue.trim()) {
+    if (!isAuthenticated) {
+      router.push("/patient/login?returnUrl=/kiosk/intake");
+    } else if (inputValue.trim()) {
       router.push(`/kiosk/intake?input=${encodeURIComponent(inputValue.trim())}`);
+    } else {
+      router.push("/kiosk/intake");
+    }
+  };
+
+  const handleTapToSpeak = (e: React.MouseEvent) => {
+    if (!isAuthenticated) {
+      e.preventDefault();
+      router.push("/patient/login?returnUrl=/kiosk/intake");
     } else {
       router.push("/kiosk/intake");
     }
@@ -103,13 +116,14 @@ export function VoiceIntakeHeroShowcase() {
 
       {/* Center Action: Big Prominent Tap to Speak Button Redirecting to /kiosk */}
       <div className="flex flex-col items-center justify-center space-y-3 pt-2">
-        <Link
-          href="/kiosk/intake"
+        <button
+          type="button"
+          onClick={handleTapToSpeak}
           className="px-8 py-4 rounded-full bg-[#1B4332] hover:bg-[#143225] text-white font-bold text-sm sm:text-base flex items-center gap-3 transition-all shadow-md hover:shadow-lg hover:scale-[1.03] cursor-pointer"
         >
           <Mic className="w-5 h-5 text-[#D8F3DC]" />
           <span>Tap to Speak in {activeLang}</span>
-        </Link>
+        </button>
 
         <p className="text-xs text-[#6C7A89] text-center font-normal">
           Speak naturally in Hindi, Telugu, Tamil, Bengali, Hinglish, or English.

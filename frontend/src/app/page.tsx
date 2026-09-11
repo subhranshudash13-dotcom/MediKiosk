@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Mic,
   Stethoscope,
@@ -24,9 +27,10 @@ import {
   Hospital,
   BrainCircuit,
   Bot,
-  User
+  User,
+  UserPlus,
 } from "lucide-react";
-import { HeroMedicalRecordDropzone } from "@/components/documents/HeroMedicalRecordDropzone";
+import { useAuthStore } from "@/lib/auth-store";
 import { ClinicalMultimodalVenn } from "@/components/illustrations/ClinicalMultimodalVenn";
 import { SocratesFrameworkExplorer } from "@/components/illustrations/SocratesFrameworkExplorer";
 import { HospitalVisualGallery } from "@/components/illustrations/HospitalVisualGallery";
@@ -40,6 +44,18 @@ import { PrescriptionOCRImageShowcase } from "@/components/documents/Prescriptio
 import { OpdIntakeRoadmap } from "@/components/clinical/OpdIntakeRoadmap";
 
 export default function Home() {
+  const router = useRouter();
+  const { isAuthenticated, user } = useAuthStore();
+
+  const handleStartIntake = (e: React.MouseEvent) => {
+    if (!isAuthenticated) {
+      e.preventDefault();
+      router.push("/patient/login?returnUrl=/kiosk/intake");
+    } else {
+      router.push("/kiosk/intake");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#F8F9FA] text-[#2C3E50] flex flex-col justify-between selection:bg-[#CCE5FF] selection:text-[#0056B3]">
       {/* Top Navigation Bar */}
@@ -90,27 +106,39 @@ export default function Home() {
 
             {/* Center Action Buttons */}
             <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
-              <Link
-                href="/kiosk"
+              <button
+                type="button"
+                onClick={handleStartIntake}
                 className="px-8 py-3.5 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-sm flex items-center gap-2 transition-all shadow-lg hover:shadow-blue-500/30 hover:scale-[1.02] cursor-pointer"
               >
+                <Mic className="w-4 h-4" />
                 <span>Start Patient Intake</span>
                 <ArrowRight className="w-4 h-4" />
-              </Link>
+              </button>
               <Link
                 href="/doctor"
-                className="px-8 py-3.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/25 text-white font-bold text-sm flex items-center gap-2 backdrop-blur-md transition-all cursor-pointer"
+                className="px-8 py-3.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/25 text-white font-bold text-sm flex items-center gap-2 backdrop-blur-md transition-all cursor-pointer hover:scale-[1.02]"
               >
                 <Stethoscope className="w-4 h-4 text-[#38BDF8]" />
                 <span>Doctor Workstation</span>
               </Link>
-              <Link
-                href="/patient"
-                className="px-6 py-3.5 rounded-full bg-white/5 hover:bg-white/15 border border-white/20 text-white font-semibold text-sm flex items-center gap-2 backdrop-blur-md transition-all cursor-pointer"
-              >
-                <User className="w-4 h-4 text-emerald-400" />
-                <span>Patient Portal</span>
-              </Link>
+              {isAuthenticated ? (
+                <Link
+                  href="/patient/dashboard"
+                  className="px-6 py-3.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-emerald-300 font-semibold text-sm flex items-center gap-2 backdrop-blur-md transition-all cursor-pointer"
+                >
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>{user?.full_name ? `Welcome, ${user.full_name}` : "My Records"}</span>
+                </Link>
+              ) : (
+                <Link
+                  href="/patient/signup"
+                  className="px-7 py-3.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/25 text-white font-semibold text-sm flex items-center gap-2 backdrop-blur-md transition-all cursor-pointer hover:scale-[1.02]"
+                >
+                  <UserPlus className="w-4 h-4 text-emerald-400" />
+                  <span>Sign Up</span>
+                </Link>
+              )}
             </div>
           </div>
 

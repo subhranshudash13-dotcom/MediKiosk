@@ -362,16 +362,12 @@ async def test_kiosk_encounter_binding_authenticated_vs_guest():
     """
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        # 1. Guest session (no auth header)
+        # 1. Unauthenticated / Guest session is rejected with 401
         guest_res = await ac.post("/api/v1/kiosk/session/start", json={"language": "hi"})
-        assert guest_res.status_code == 200
-        guest_sess_id = guest_res.json()["session_id"]
+        assert guest_res.status_code == 401
+        assert "Authentication required" in guest_res.text
 
         db = get_database()
-        guest_doc = await db["sessions"].find_one({"session_id": guest_sess_id})
-        assert guest_doc["user_id"] is None
-        assert guest_doc["authentication_context"]["authenticated"] is False
-        assert guest_doc["authentication_context"]["method"] == ["guest"]
 
         # 2. Authenticated patient session
         p = await ac.post("/api/v1/auth/signup", json={
