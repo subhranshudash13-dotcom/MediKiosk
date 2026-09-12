@@ -27,6 +27,7 @@ import {
 import { MedicalDocument, ExtractedMedication, ExtractedLabResult } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { getBackendUrl } from "@/lib/config";
+import { getAccessToken } from "@/lib/auth-api";
 
 interface PrescriptionScannerProps {
   patientId?: string;
@@ -131,8 +132,15 @@ export function PrescriptionScanner({
 
       setScanStage("Multilingual OCR & Entity Recognition...");
       const backendUrl = getBackendUrl();
+      const token = getAccessToken();
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const res = await fetch(`${backendUrl}/api/v1/documents/upload`, {
         method: "POST",
+        headers,
         body: formData,
       });
 
@@ -160,9 +168,18 @@ export function PrescriptionScanner({
 
     try {
       const backendUrl = getBackendUrl();
+      const token = getAccessToken();
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const res = await fetch(
         `${backendUrl}/api/v1/documents/process-sample?sample_type=${sampleType}&patient_id=${patientId}`,
-        { method: "POST" }
+        {
+          method: "POST",
+          headers,
+        }
       );
 
       if (!res.ok) {
@@ -508,11 +525,19 @@ export function PrescriptionScanner({
                     </h4>
                   </div>
 
-                  {extractedDoc.is_abdm_linked && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#0056B3] bg-white px-2.5 py-1 rounded-full border border-[#0056B3]/20 shadow-2xs">
-                      <ShieldCheck className="h-3 w-3" /> ABDM Linked
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {extractedDoc.is_abdm_linked && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#0056B3] bg-white px-2.5 py-1 rounded-full border border-[#0056B3]/20 shadow-2xs">
+                        <ShieldCheck className="h-3 w-3" /> ABDM Linked
+                      </span>
+                    )}
+                    <a
+                      href="/patient/history"
+                      className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-full border border-emerald-300 transition-colors shadow-2xs"
+                    >
+                      <CheckCircle2 className="h-3 w-3 text-emerald-600" /> Stored in History &rarr;
+                    </a>
+                  </div>
                 </div>
 
                 {/* What This Document Is Exactly For Section */}

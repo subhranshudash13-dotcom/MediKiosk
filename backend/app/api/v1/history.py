@@ -133,39 +133,62 @@ class PatientHistoryResponse(BaseModel):
 
 # ─── Internal Aggregation Logic ──────────────────────────────────────
 
-async def _build_patient_history(patient_id: str) -> PatientHistoryResponse:
+async def _build_patient_history(
+    patient_id: str,
+    user_id: Optional[str] = None,
+    all_ids: Optional[List[str]] = None
+) -> PatientHistoryResponse:
     """
     Aggregates encounters, documents, timeline_events, and sessions
-    from MongoDB into a single unified chronological history response.
+    directly from MongoDB into a single unified chronological history response.
+    Queries both patient_id and user_id to ensure every uploaded record is captured.
     """
     db = get_database()
 
+    target_ids = set()
+    if patient_id:
+        target_ids.add(patient_id)
+    if user_id:
+        target_ids.add(user_id)
+    if all_ids:
+        target_ids.update(all_ids)
+    target_list = list(target_ids)
+
+    query_filter = {
+        "$or": [
+            {"patient_id": {"$in": target_list}},
+            {"user_id": {"$in": target_list}}
+        ]
+    }
+
     # 1. Fetch encounters from db["encounters"]
-    enc_cursor = db["encounters"].find({"patient_id": patient_id}).sort("encounter_date", -1)
-    raw_encounters = await enc_cursor.to_list(length=50)
+    enc_cursor = db["encounters"].find(query_filter).sort("encounter_date", -1)
+    raw_encounters = await enc_cursor.to_list(length=100)
 
     # 2. Fetch OCR documents from db["documents"]
-    doc_cursor = db["documents"].find({"patient_id": patient_id}).sort("created_at", -1)
-    raw_documents = await doc_cursor.to_list(length=50)
+    doc_cursor = db["documents"].find(query_filter).sort("created_at", -1)
+    raw_documents = await doc_cursor.to_list(length=100)
 
     # 3. Fetch stored timeline events from db["timeline_events"]
-    te_cursor = db["timeline_events"].find({"patient_id": patient_id}).sort("date", -1)
+    te_cursor = db["timeline_events"].find(query_filter).sort("date", -1)
     raw_timeline_events = await te_cursor.to_list(length=100)
 
-    # 4. Also check completed sessions as fallback data source
-    sess_cursor = db["sessions"].find({
-        "patient_id": patient_id,
-        "status": {"$in": ["completed", "ready_for_doctor"]}
-    }).sort("created_at", -1)
-    raw_sessions = await sess_cursor.to_list(length=20)
+    # 4. Also check completed sessions
+    sess_query = {
+        "$and": [
+            query_filter,
+            {"status": {"$in": ["completed", "ready_for_doctor"]}}
+        ]
+    }
+    raw_sessions = await db["sessions"].find(sess_query).sort("created_at", -1).to_list(length=50)
 
-    # 5. For demo patient P-DEMO-001, seed records if DB is fresh
-    if patient_id == "P-DEMO-001" and not raw_encounters and not raw_timeline_events:
+    # 5. For demo patient P-DEMO-001 ONLY, seed records if DB is completely fresh
+    if "P-DEMO-001" in target_ids and not raw_encounters and not raw_timeline_events and not raw_documents:
         from app.services.documents.timeline_service import timeline_service
         await timeline_service.ensure_demo_records_seeded()
-        raw_encounters = await db["encounters"].find({"patient_id": patient_id}).sort("encounter_date", -1).to_list(length=50)
-        raw_documents = await db["documents"].find({"patient_id": patient_id}).sort("created_at", -1).to_list(length=50)
-        raw_timeline_events = await db["timeline_events"].find({"patient_id": patient_id}).sort("date", -1).to_list(length=100)
+        raw_encounters = await db["encounters"].find(query_filter).sort("encounter_date", -1).to_list(length=100)
+        raw_documents = await db["documents"].find(query_filter).sort("created_at", -1).to_list(length=100)
+        raw_timeline_events = await db["timeline_events"].find(query_filter).sort("date", -1).to_list(length=100)
 
     # ── Build encounter records ──
     encounters: List[HistoryEncounterRecord] = []
@@ -358,6 +381,32 @@ async def _build_patient_history(patient_id: str) -> PatientHistoryResponse:
             is_abdm_verified=False,
         ))
 
+    # Ensure all OCR documents are represented in the timeline
+    existing_doc_events = {t.event_id for t in timeline}
+    for doc in documents:
+        doc_id = doc.document_id
+        evt_id = f"EVT-{doc_id}"
+        if doc_id in existing_doc_events or evt_id in existing_doc_events:
+            continue
+        doc_date = doc.document_date or (doc.created_at[:10] if doc.created_at else "")
+        timeline.append(HistoryTimelineEvent(
+            event_id=evt_id,
+            patient_id=doc.patient_id,
+            date=doc_date,
+            record_type="document",
+            title=f"{doc.document_purpose or 'Clinical Document'} ({doc.document_type.upper()})",
+            summary=doc.clinical_intent or (doc.raw_ocr_text[:120] if doc.raw_ocr_text else "Digitized clinical record"),
+            provider_name=doc.doctor_name,
+            facility_name=doc.facility_name,
+            category=doc.document_type,
+            medications=doc.extracted_medications,
+            abnormal_labs=[lab for lab in doc.extracted_labs if lab.is_abnormal],
+            diagnoses=[d.condition for d in doc.extracted_diagnoses if d.condition],
+            is_abdm_verified=doc.is_abdm_linked,
+        ))
+        existing_doc_events.add(evt_id)
+        existing_doc_events.add(doc_id)
+
     # Sort timeline by date descending
     timeline.sort(key=lambda t: t.date or "", reverse=True)
 
@@ -449,7 +498,13 @@ async def get_patient_documents(patient_id: str):
     Retrieve all OCR-processed medical documents for a patient from MongoDB.
     """
     db = get_database()
-    cursor = db["documents"].find({"patient_id": patient_id}).sort("created_at", -1)
+    query_filter = {
+        "$or": [
+            {"patient_id": patient_id},
+            {"user_id": patient_id}
+        ]
+    }
+    cursor = db["documents"].find(query_filter).sort("created_at", -1)
     docs = await cursor.to_list(length=100)
     # Sanitize _id for JSON serialization
     for d in docs:
@@ -465,15 +520,14 @@ async def get_patient_documents(patient_id: str):
 @router.get("/me", response_model=PatientHistoryResponse)
 async def get_my_history(current_user: UserContext = Depends(get_current_user)):
     """
-    Retrieve the authenticated user's own health history.
-    Resolves user_id → patient_id(s) from sessions and encounters,
-    then aggregates all records.
+    Retrieve the authenticated user's own health history directly from MongoDB.
+    Resolves user_id -> patient_id(s) and aggregates all real records from the database.
     """
     db = get_database()
     user_id = current_user.user_id
 
-    # Find all patient_ids linked to this user
-    patient_ids = set()
+    # Always include the user's primary user_id
+    patient_ids = {user_id}
 
     # Check sessions for user_id binding
     sess_cursor = db["sessions"].find({"user_id": user_id})
@@ -485,47 +539,19 @@ async def get_my_history(current_user: UserContext = Depends(get_current_user)):
 
     # Check patient_profiles for user_id
     profile = await db["patient_profiles"].find_one({"user_id": user_id})
-    if profile:
-        # Use profile _id as a potential patient_id lookup key
-        profile_id = profile.get("_id")
-        if profile_id:
-            patient_ids.add(str(profile_id))
+    if profile and profile.get("_id"):
+        patient_ids.add(str(profile["_id"]))
 
-    if not patient_ids:
-        # Return empty history for new users who haven't done intake yet
-        return PatientHistoryResponse(
-            patient_id=user_id,
-            patient_name=profile.get("full_name") if profile else None,
-        )
+    history = await _build_patient_history(
+        patient_id=user_id,
+        user_id=user_id,
+        all_ids=list(patient_ids)
+    )
 
-    # Build history from the first (primary) patient_id
-    # In multi-identity scenarios, we merge across all patient_ids
-    primary_pid = list(patient_ids)[0]
-    history = await _build_patient_history(primary_pid)
-
-    # If multiple patient_ids, merge additional records
-    if len(patient_ids) > 1:
-        for extra_pid in list(patient_ids)[1:]:
-            extra_history = await _build_patient_history(extra_pid)
-            history.timeline.extend(extra_history.timeline)
-            history.encounters.extend(extra_history.encounters)
-            history.documents.extend(extra_history.documents)
-            for med in extra_history.active_medications:
-                base = med.name.split()[0].lower()
-                existing_bases = {m.name.split()[0].lower() for m in history.active_medications}
-                if base not in existing_bases:
-                    history.active_medications.append(med)
-            for alert in extra_history.critical_lab_alerts:
-                if alert not in history.critical_lab_alerts:
-                    history.critical_lab_alerts.append(alert)
-        # Re-sort merged timeline
-        history.timeline.sort(key=lambda t: t.date or "", reverse=True)
-        history.total_records = len(history.timeline)
-        history.total_encounters = len(history.encounters)
-        history.total_documents = len(history.documents)
-
-    # Override patient_name from profile if available
+    # Override patient_name from profile or context if available
     if profile and profile.get("full_name"):
         history.patient_name = profile["full_name"]
+    elif current_user.full_name:
+        history.patient_name = current_user.full_name
 
     return history

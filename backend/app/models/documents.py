@@ -61,6 +61,7 @@ class ExtractedVital(BaseModel):
 class MedicalDocument(BaseModel):
     document_id: str
     patient_id: str = "P-DEMO-001"
+    user_id: Optional[str] = None
     patient_name: Optional[str] = None
     document_type: DocumentType = DocumentType.PRESCRIPTION
     document_date: Optional[date] = None
@@ -83,6 +84,7 @@ class MedicalDocument(BaseModel):
 class TimelineEvent(BaseModel):
     event_id: str
     patient_id: str
+    user_id: Optional[str] = None
     date: date
     document_type: DocumentType
     title: str

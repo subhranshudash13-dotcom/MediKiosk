@@ -1,6 +1,6 @@
 import logging
 from typing import Optional, Dict, Any, List
-from fastapi import APIRouter, UploadFile, File, Form, Query, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, Query, HTTPException, Depends
 
 from app.models.documents import (
     MedicalDocument,
@@ -10,6 +10,8 @@ from app.models.documents import (
 from app.services.documents.ocr import ocr_service
 from app.services.documents.timeline_service import timeline_service
 from app.services.documents.clinical_reference_ranges import REFERENCE_RANGES_DB
+from app.services.auth.dependencies import get_optional_current_user
+from app.models.auth import UserContext
 
 logger = logging.getLogger(__name__)
 
@@ -30,12 +32,13 @@ MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024  # 15 MB
 async def upload_medical_document(
     file: UploadFile = File(...),
     patient_id: str = Form(default="P-DEMO-001"),
-    auto_sync_timeline: bool = Form(default=True)
+    auto_sync_timeline: bool = Form(default=True),
+    current_user: Optional[UserContext] = Depends(get_optional_current_user),
 ):
     """
     Upload a medical prescription, lab report, or discharge summary for OCR + NER extraction.
     Enforces strict 15MB size limit and allowed MIME types (JPEG, PNG, WEBP, PDF).
-    Automatically evaluates lab values against clinical reference ranges and syncs to patient timeline.
+    Automatically evaluates lab values against clinical reference ranges and syncs to patient timeline in MongoDB.
     """
     # 1. Validate content type
     content_type = (file.content_type or "").lower()
@@ -66,8 +69,19 @@ async def upload_medical_document(
             detail=f"Document exceeds maximum permitted size of 15MB (file size: {len(content) / (1024*1024):.2f}MB)."
         )
 
+    # 3. Determine target patient_id and user_id
+    effective_patient_id = patient_id
+    effective_user_id = None
+    if current_user:
+        effective_user_id = current_user.user_id
+        if patient_id in ("P-DEMO-001", "", None):
+            effective_patient_id = current_user.user_id
+
     try:
-        doc = await ocr_service.process_document(content, filename=filename, patient_id=patient_id)
+        doc = await ocr_service.process_document(content, filename=filename, patient_id=effective_patient_id)
+        if effective_user_id:
+            doc.user_id = effective_user_id
+            doc.patient_id = effective_patient_id
         
         if auto_sync_timeline:
             await timeline_service.sync_document_to_timeline_async(doc)
@@ -88,7 +102,8 @@ async def process_sample_document(
         default="prescription",
         description="Sample type: 'prescription', 'diabetic_lab_report', 'renal_panel'"
     ),
-    patient_id: str = Query(default="P-DEMO-001")
+    patient_id: str = Query(default="P-DEMO-001"),
+    current_user: Optional[UserContext] = Depends(get_optional_current_user),
 ):
     """
     Demo/evaluation endpoint: Process realistic Indian OPD documents without uploading an image.
@@ -102,7 +117,17 @@ async def process_sample_document(
     sample_filename = filename_map.get(sample_type, "prescription_amlodipine.jpg")
     dummy_bytes = b"SAMPLE_CLINICAL_DOCUMENT_BYTES"
     
-    doc = await ocr_service.process_document(dummy_bytes, filename=sample_filename, patient_id=patient_id)
+    effective_patient_id = patient_id
+    effective_user_id = None
+    if current_user:
+        effective_user_id = current_user.user_id
+        if patient_id in ("P-DEMO-001", "", None):
+            effective_patient_id = current_user.user_id
+
+    doc = await ocr_service.process_document(dummy_bytes, filename=sample_filename, patient_id=effective_patient_id)
+    if effective_user_id:
+        doc.user_id = effective_user_id
+        doc.patient_id = effective_patient_id
     await timeline_service.sync_document_to_timeline_async(doc)
     return doc
 
