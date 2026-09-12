@@ -13,58 +13,23 @@ export function Logo({
   const isLight = variant === "light";
 
   const content = (
-    <div className={cn("inline-flex items-center gap-3 select-none group", className)}>
-      {/* MediKiosk Cross & Wave Emblem */}
-      <div className="relative flex h-8 w-8 items-center justify-center transition-transform group-hover:scale-105">
-        <svg
-          viewBox="0 0 100 100"
-          className="h-full w-full"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          {/* Medical Cross in Clinical Blue */}
-          <path
-            d="M 37 18 A 8 8 0 0 1 45 10 L 55 10 A 8 8 0 0 1 63 18 L 63 37 L 82 37 A 8 8 0 0 1 90 45 L 90 55 A 8 8 0 0 1 82 63 L 63 63 L 63 82 A 8 8 0 0 1 55 90 L 45 90 A 8 8 0 0 1 37 82 L 37 63 L 18 63 A 8 8 0 0 1 10 55 L 10 45 A 8 8 0 0 1 18 37 L 37 37 Z"
-            fill={isLight ? "#ffffff" : "#0056B3"}
-          />
-          {/* Spoken Voice Pulse Waveform in Calming Teal */}
-          <path
-            d="M 14 50 L 35 50 L 40 45 L 46 24 L 54 76 L 60 38 L 65 50 L 86 50"
-            stroke={isLight ? "#D1ECF1" : "#17A2B8"}
-            strokeWidth="7"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </div>
-
-      <div className="flex flex-col text-left">
-        <div className="flex items-center gap-1.5">
-          <span
-            className={cn(
-              "font-heading text-lg font-bold tracking-tight leading-none",
-              isLight ? "text-white" : "text-[#0056B3]"
-            )}
-          >
-            Medi<span className={isLight ? "text-[#D1ECF1]" : "text-[#17A2B8]"}>Kiosk</span>
-          </span>
-          <span className="h-2 w-2 rounded-full bg-[#28A745] animate-pulse" />
-        </div>
-        <span
-          className={cn(
-            "text-[10px] font-semibold tracking-wider uppercase mt-0.5 leading-none",
-            isLight ? "text-white/80" : "text-[#6C7A89]"
-          )}
-        >
-          Clinical Voice &amp; OCR Platform
-        </span>
-      </div>
+    <div className={cn("flex items-center select-none group shrink-0", className)}>
+      <img
+        src={isLight ? "/medikiosk-logo-light.svg" : "/medikiosk-logo.svg"}
+        alt="MediKiosk"
+        width={170}
+        height={40}
+        className="h-9 sm:h-10 w-auto max-h-10 object-contain transition-transform duration-150 group-hover:scale-105"
+      />
     </div>
   );
 
   if (href) {
     return (
-      <Link href={href} className="focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0056B3] rounded-[6px]">
+      <Link
+        href={href}
+        className="focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-md inline-flex items-center shrink-0"
+      >
         {content}
       </Link>
     );
@@ -72,4 +37,3 @@ export function Logo({
 
   return content;
 }
-

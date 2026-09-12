@@ -68,49 +68,52 @@ export default function Home() {
         {/* ========================================================================= */}
         {/* FULL-BLEED DARK HOSPITAL HERO BANNER */}
         {/* ========================================================================= */}
-        <section className="relative w-full min-h-[85vh] flex flex-col justify-between items-center text-center px-4 sm:px-8 py-16 sm:py-24 overflow-hidden bg-slate-950 text-white">
+        {/* HERO SECTION: AMBIENT HOSPITAL LOUNGE + ROTATING VALUE PROPOSITION       */}
+        {/* ========================================================================= */}
+        <section className="relative w-full min-h-[70vh] flex flex-col justify-between items-center text-center px-4 sm:px-6 py-10 sm:py-14 overflow-hidden bg-slate-950 text-white">
           
           {/* Moving Blurred Hospital Lounge Background */}
           <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden select-none z-0">
             <img
               src="/images/eka_hospital_hero.jpg"
               alt="Hospital OPD Lounge Ambient"
-              className="absolute inset-0 w-full h-full object-cover object-center opacity-40 filter blur-[4px] scale-110 animate-hero-drift"
+              className="absolute inset-0 w-full h-full object-cover object-center opacity-35 filter blur-[3px] scale-105 animate-hero-drift"
             />
             {/* Cinematic Gradient Vignette Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-slate-950/95" />
-            <div className="absolute -top-32 -left-32 w-[34rem] h-[34rem] bg-[#0056B3]/25 rounded-full blur-3xl animate-float-orb-1" />
-            <div className="absolute -bottom-32 -right-32 w-[34rem] h-[34rem] bg-[#17A2B8]/20 rounded-full blur-3xl animate-float-orb-2" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/40 to-slate-950/95" />
+            <div className="absolute -top-32 -left-32 w-[28rem] h-[28rem] bg-[#0056B3]/20 rounded-full blur-3xl animate-float-orb-1" />
+            <div className="absolute -bottom-32 -right-32 w-[28rem] h-[28rem] bg-[#17A2B8]/15 rounded-full blur-3xl animate-float-orb-2" />
           </div>
 
           {/* Centered Hero Heading & Action */}
-          <div className="relative z-10 max-w-5xl mx-auto my-auto space-y-8 pt-8 sm:pt-12">
-            {/* Trust Pill */}
+          <div className="relative z-10 max-w-4xl mx-auto my-auto space-y-5 pt-4 sm:pt-6">
+
+            {/* Top Pill Badge matching template */}
             <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-white text-xs font-semibold backdrop-blur-md shadow-xs">
               <span>Smart Hospital Point-of-Entry &bull; ABDM Certified Platform</span>
             </div>
 
-            {/* Giant Centered Headline with Dynamic Rotating Keyword */}
-            <h1 className="font-heading font-extrabold text-3xl sm:text-5xl md:text-6xl lg:text-7xl text-white tracking-tight leading-[1.12] drop-shadow-md max-w-5xl mx-auto">
+            {/* Headline with Dynamic Rotating Keyword */}
+            <h1 className="font-heading font-extrabold text-2xl sm:text-4xl md:text-5xl text-white tracking-tight leading-tight drop-shadow-sm max-w-3xl mx-auto">
               <span>The AI-Native Ambient</span>
               <br />
-              <span className="inline-flex items-center justify-center flex-wrap gap-x-2.5">
+              <span className="inline-flex items-center justify-center flex-wrap gap-x-2">
                 <span>Healthcare Platform for</span>
                 <RotatingHeroText />
               </span>
             </h1>
 
             {/* Subtitle */}
-            <p className="text-base sm:text-lg md:text-xl text-white/80 max-w-2xl mx-auto font-normal leading-relaxed">
+            <p className="text-xs sm:text-sm md:text-base text-white/80 max-w-xl mx-auto font-normal leading-relaxed">
               MediKiosk captures vernacular spoken complaints, scans physical paper prescriptions via vision OCR, and synthesizes structured clinical history before the doctor consultation.
             </p>
 
             {/* Center Action Buttons */}
-            <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
               <button
                 type="button"
                 onClick={handleStartIntake}
-                className="px-8 py-3.5 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-sm flex items-center gap-2 transition-all shadow-lg hover:shadow-blue-500/30 hover:scale-[1.02] cursor-pointer"
+                className="px-6 py-2.5 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-xs sm:text-sm flex items-center gap-2 transition-all shadow-md hover:shadow-blue-500/25 hover:scale-[1.02] cursor-pointer"
               >
                 <Mic className="w-4 h-4" />
                 <span>Start Patient Intake</span>
@@ -118,7 +121,7 @@ export default function Home() {
               </button>
               <Link
                 href="/doctor"
-                className="px-8 py-3.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/25 text-white font-bold text-sm flex items-center gap-2 backdrop-blur-md transition-all cursor-pointer hover:scale-[1.02]"
+                className="px-6 py-2.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/25 text-white font-semibold text-xs sm:text-sm flex items-center gap-2 backdrop-blur-md transition-all cursor-pointer hover:scale-[1.02]"
               >
                 <Stethoscope className="w-4 h-4 text-[#38BDF8]" />
                 <span>Doctor Workstation</span>
@@ -126,7 +129,7 @@ export default function Home() {
               {isAuthenticated ? (
                 <Link
                   href="/patient/dashboard"
-                  className="px-6 py-3.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-emerald-300 font-semibold text-sm flex items-center gap-2 backdrop-blur-md transition-all cursor-pointer"
+                  className="px-5 py-2.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-emerald-300 font-semibold text-xs sm:text-sm flex items-center gap-2 backdrop-blur-md transition-all cursor-pointer"
                 >
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                   <span>{user?.full_name ? `Welcome, ${user.full_name}` : "My Records"}</span>
@@ -134,7 +137,7 @@ export default function Home() {
               ) : (
                 <Link
                   href="/patient/signup"
-                  className="px-7 py-3.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/25 text-white font-semibold text-sm flex items-center gap-2 backdrop-blur-md transition-all cursor-pointer hover:scale-[1.02]"
+                  className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/25 text-white font-semibold text-xs sm:text-sm flex items-center gap-2 backdrop-blur-md transition-all cursor-pointer hover:scale-[1.02]"
                 >
                   <UserPlus className="w-4 h-4 text-emerald-400" />
                   <span>Sign Up</span>
@@ -144,13 +147,14 @@ export default function Home() {
           </div>
 
           {/* Bottom Specifications Capsule Bar */}
-          <div className="relative z-10 w-full max-w-6xl mx-auto mt-12">
+          <div className="relative z-10 w-full max-w-4xl mx-auto mt-6">
             <TrustPartnerRibbon />
           </div>
         </section>
 
         {/* CONTAINER 1: PATIENT VOICE INTAKE, PRESCRIPTION OCR, HOSPITAL DEPLOYMENT */}
-        <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 space-y-24 sm:space-y-28">
+        <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 space-y-16 sm:space-y-20">
+
           
           {/* ========================================================================= */}
           {/* SECTION 1: DEDICATED PATIENT VOICE INTAKE STATION */}
@@ -167,14 +171,6 @@ export default function Home() {
               {/* Left Column: Comprehensive Explanation of Voice Intake Station */}
               <div className="lg:col-span-6 flex flex-col justify-between text-left space-y-6">
                 <div className="space-y-3">
-                  <div>
-                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EBF3FC] border border-[#CCE5FF] text-[#0056B3] text-xs font-semibold">
-                      <Mic className="w-3.5 h-3.5 text-[#0056B3]" />
-                      <span className="font-bold">Point-of-Entry Voice Kiosk</span>
-                      <span className="text-[#A0AEC0]">&bull;</span>
-                      <span className="text-[#4A5568]">Bhashini AI Engine</span>
-                    </div>
-                  </div>
                   <h2 className="font-heading font-extrabold text-2xl sm:text-3xl lg:text-4xl text-[#2C3E50] tracking-tight leading-tight">
                     Patient Voice Intake Station
                   </h2>

@@ -5,6 +5,7 @@ import shutil
 import base64
 import json
 import logging
+import asyncio
 from datetime import date, datetime, timezone
 from typing import List, Optional, Dict, Any, Tuple
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
@@ -178,9 +179,105 @@ PHARMACOPEIA_DATABASE = [
         "default_duration": "30 Days",
         "therapeutic_class": "Angiotensin II Receptor Blocker (ARB)",
         "indication": "Essential Hypertension & Diabetic Nephropathy",
-        "clinical_purpose": "Blocks AT1 receptors to promote vasodilation and confer renal and cardiovascular protection.",
+        "clinical_purpose": "Selective AT1 receptor blocker preventing vasoconstriction and aldosterone-secreting effects of angiotensin II.",
         "route": "oral",
-        "instructions": "Morning post-breakfast"
+        "instructions": "Morning with water"
+    },
+    {
+        "canonical": "Azithromycin",
+        "keywords": ["azithromycin", "azithral", "azee", "zithromax", "azith", "azi 500", "azithral 500"],
+        "default_dose": "500 mg",
+        "default_freq": "1-0-0 (OD)",
+        "default_duration": "3 to 5 Days",
+        "therapeutic_class": "Macrolide Antibiotic",
+        "indication": "Respiratory Tract Infections, Bronchitis & Pharyngitis",
+        "clinical_purpose": "Binds to 50S ribosomal subunit to inhibit bacterial protein synthesis.",
+        "route": "oral",
+        "instructions": "1 hour before meals or 2 hours after meals"
+    },
+    {
+        "canonical": "Amoxicillin + Potassium Clavulanate (Augmentin / Clavam)",
+        "keywords": ["amoxicillin", "clavulanate", "augmentin", "clavam", "moxikind-cv", "amoxyclav", "moxclav"],
+        "default_dose": "625 mg",
+        "default_freq": "1-0-1 (BD)",
+        "default_duration": "5 to 7 Days",
+        "therapeutic_class": "Penicillin Class Antibiotic + Beta-Lactamase Inhibitor",
+        "indication": "Bacterial Sinusitis, Otitis Media, Lower Respiratory & Skin Infections",
+        "clinical_purpose": "Broad-spectrum bactericidal activity overcoming beta-lactamase resistance.",
+        "route": "oral",
+        "instructions": "At the start of a meal to reduce gastrointestinal discomfort"
+    },
+    {
+        "canonical": "Cefixime (Zifi / Taxim-O)",
+        "keywords": ["cefixime", "zifi", "taxim-o", "mahacef", "cefix", "zifi 200", "taxim o"],
+        "default_dose": "200 mg",
+        "default_freq": "1-0-1 (BD)",
+        "default_duration": "5 Days",
+        "therapeutic_class": "Third-Generation Oral Cephalosporin",
+        "indication": "Typhoid Fever, UTI & Respiratory Infections",
+        "clinical_purpose": "Inhibits bacterial cell wall synthesis with broad gram-negative coverage.",
+        "route": "oral",
+        "instructions": "Post-meals with water"
+    },
+    {
+        "canonical": "Multi-Action Cold Formulation (Cheston Cold / Solvin Cold / Sinarest)",
+        "keywords": ["cheston cold", "solvin cold", "sinarest", "wikoryl", "coldarin", "clo cold", "c-cold", "sinarest cold"],
+        "default_dose": "1 Tablet",
+        "default_freq": "1-0-1 (BD)",
+        "default_duration": "3 to 5 Days",
+        "therapeutic_class": "Antipyretic, Decongestant & Antihistaminic Combination",
+        "indication": "Acute Coryza, Sneezing, Nasal Congestion & Headache",
+        "clinical_purpose": "Relieves nasal mucosal edema (Phenylephrine), blocks histamine (CPM), and treats fever/headache (Paracetamol).",
+        "route": "oral",
+        "instructions": "Post-meals; may cause mild drowsiness"
+    },
+    {
+        "canonical": "Aceclofenac + Paracetamol (Zerodol-P / Hifenac-P)",
+        "keywords": ["zerodol-p", "zerodol p", "hifenac-p", "aceclo-p", "aceclofenac paracetamol"],
+        "default_dose": "100 mg / 325 mg",
+        "default_freq": "1-0-1 (BD)",
+        "default_duration": "3 to 5 Days",
+        "therapeutic_class": "NSAID Analgesic & Antipyretic",
+        "indication": "Musculoskeletal Pain, Arthritis, Post-Traumatic Swelling & Fever",
+        "clinical_purpose": "Dual COX inhibition providing rapid somatic pain relief and fever reduction.",
+        "route": "oral",
+        "instructions": "Strictly post-meals with water"
+    },
+    {
+        "canonical": "Ibuprofen + Paracetamol (Combiflam / Flexon)",
+        "keywords": ["combiflam", "flexon", "ibuprofen", "ibugesic-plus"],
+        "default_dose": "400 mg / 325 mg",
+        "default_freq": "SOS / 1-0-1",
+        "default_duration": "3 Days",
+        "therapeutic_class": "NSAID Analgesic & Antipyretic",
+        "indication": "Acute Body Pain, Dental Pain & Pyrexia",
+        "clinical_purpose": "Reduces prostaglandin synthesis for rapid analgesic action.",
+        "route": "oral",
+        "instructions": "Take strictly after food"
+    },
+    {
+        "canonical": "Glimepiride",
+        "keywords": ["glimepiride", "amaryl", "glimestar", "glimy", "zoryl"],
+        "default_dose": "1 mg",
+        "default_freq": "1-0-0 (OD)",
+        "default_duration": "30 Days",
+        "therapeutic_class": "Second-Generation Sulfonylurea",
+        "indication": "Type 2 Diabetes Mellitus",
+        "clinical_purpose": "Stimulates pancreatic beta-cell insulin secretion to lower postprandial and fasting glucose.",
+        "route": "oral",
+        "instructions": "Take immediately before or during breakfast"
+    },
+    {
+        "canonical": "Rabeprazole + Domperidone (Razo-D / Happi-D)",
+        "keywords": ["razo-d", "razo d", "happi-d", "rablet-d", "rabicip-d", "rabeprazole"],
+        "default_dose": "20 mg / 30 mg",
+        "default_freq": "1-0-0 (OD)",
+        "default_duration": "14 Days",
+        "therapeutic_class": "Proton Pump Inhibitor + Prokinetic",
+        "indication": "Gastroesophageal Reflux Disease (GERD) & Dyspepsia",
+        "clinical_purpose": "Rapidly suppresses gastric acid and promotes upper GI motility.",
+        "route": "oral",
+        "instructions": "Take in the morning 30 minutes before food"
     },
     {
         "canonical": "Azithromycin",
@@ -355,79 +452,154 @@ class DocumentOCRService:
         """Retrieve active Groq API Key from config or environment."""
         return settings.GROQ_API_KEY or os.getenv("GROQ_API_KEY", "")
 
+    def _prepare_image_for_vision(self, file_bytes: bytes) -> str:
+        """
+        Enhances scanned prescription image clarity and legibility for Qwen Vision:
+        - Scales to high resolution (max dimension 1600px) so fine handwriting pen strokes remain clear.
+        - Enhances contrast and sharpens edges to separate ink from background paper.
+        - Encodes as high-quality JPEG (quality=92) to prevent compression artifacts.
+        """
+        try:
+            pil_img = Image.open(io.BytesIO(file_bytes)).convert("RGB")
+            w, h = pil_img.size
+            max_dim = 1600
+            scale = min(max_dim / max(w, h), 1.0)
+            if scale < 1.0:
+                pil_img = pil_img.resize((int(w * scale), int(h * scale)), Image.Resampling.LANCZOS)
+
+            # Adaptive contrast and sharpness optimization for handwritten prescription legibility
+            enhancer = ImageEnhance.Contrast(pil_img)
+            pil_img = enhancer.enhance(1.25)
+            sharpener = ImageEnhance.Sharpness(pil_img)
+            pil_img = sharpener.enhance(1.3)
+
+            buf = io.BytesIO()
+            pil_img.save(buf, format="JPEG", quality=92, optimize=True)
+            return base64.b64encode(buf.getvalue()).decode("utf-8")
+        except Exception as e:
+            logger.warning(f"DocumentOCR: Vision image optimization fallback: {e}")
+            return base64.b64encode(file_bytes).decode("utf-8")
+
+    def _parse_and_repair_json(self, raw_text: str) -> Optional[Dict[str, Any]]:
+        """
+        Cleans thinking tags (<think>...</think>), extracts JSON block,
+        and repairs any truncated trailing brackets or quotes.
+        """
+        if not raw_text:
+            return None
+        # Remove any <think>...</think> blocks from Qwen 3.6
+        cleaned = re.sub(r"<think>.*?</think>", "", raw_text, flags=re.DOTALL).strip()
+
+        # Match complete JSON block
+        match = re.search(r"\{.*\}", cleaned, re.DOTALL)
+        if match:
+            candidate = match.group(0)
+            try:
+                return json.loads(candidate)
+            except Exception:
+                pass
+
+        # If incomplete or truncated, attempt bracket closure
+        first_brace = cleaned.find("{")
+        if first_brace != -1:
+            candidate = cleaned[first_brace:]
+            # Strip trailing incomplete characters/commas
+            repaired = candidate.rstrip(", \t\n")
+            if repaired.endswith('"') and repaired.count('"') % 2 != 0:
+                repaired = repaired[:-1]
+            open_cur = repaired.count("{") - repaired.count("}")
+            open_sq = repaired.count("[") - repaired.count("]")
+            repaired += "]" * max(0, open_sq)
+            repaired += "}" * max(0, open_cur)
+            try:
+                return json.loads(repaired)
+            except Exception:
+                pass
+        return None
+
     async def _transcribe_with_vision(self, file_bytes: bytes) -> Optional[Dict[str, Any]]:
         """
-        Transcribes handwritten doctor prescriptions with multimodal visual intelligence.
-        Optimizes image resolution and JPEG compression to stay strictly within token limits,
-        and includes automatic backoff retry for resilient execution.
+        Transcribes doctor prescriptions with multimodal visual intelligence using Qwen Vision.
+        Employs enhanced image rendering, comprehensive clinical instruction tuning,
+        dynamic token management, and dual-model failover (Qwen 3.8 -> Qwen 3.6).
         """
         groq_key = self._get_groq_key()
         if not groq_key:
             return None
 
-        # 1. Compress image to high-efficiency JPEG (max dimension 1024px) to minimize vision tokens
-        b64_data = ""
-        try:
-            pil_img = Image.open(io.BytesIO(file_bytes)).convert("RGB")
-            w, h = pil_img.size
-            scale = min(850 / max(w, h), 1.0)
-            if scale < 1.0:
-                pil_img = pil_img.resize((int(w * scale), int(h * scale)), Image.Resampling.LANCZOS)
-            buf = io.BytesIO()
-            pil_img.save(buf, format="JPEG", quality=80)
-            b64_data = base64.b64encode(buf.getvalue()).decode("utf-8")
-        except Exception as e:
-            logger.warning(f"DocumentOCR: Image optimization fallback: {e}")
-            b64_data = base64.b64encode(file_bytes).decode("utf-8")
+        b64_data = self._prepare_image_for_vision(file_bytes)
 
         prompt = (
-            "Extract all details from this doctor prescription image. "
-            "Return valid JSON with keys: "
-            "facility_name, doctor_name, date, patient_name, age, sex, uhid, "
-            "complaints (list of strings), "
-            "vitals (object with bp, hr, spo2, temp, dehydration, rbs), "
-            "medications (list of objects with name, dosage, frequency, quantity, instructions), "
-            "diagnoses (list of strings)."
+            "You are an expert clinical pharmacologist and prescription transcription specialist. "
+            "Analyze this doctor's prescription image in thorough detail, deciphering cursive/messy doctor handwriting with clinical precision.\n\n"
+            "CLINICAL GUIDELINES:\n"
+            "- Clinical abbreviations: OD (once daily), BD/BID (twice daily), TDS/TID (thrice daily), QID (4 times daily), SOS (as needed), HS (at bedtime), AC (before food), PC (after food), Stat (immediately).\n"
+            "- Dosage forms: Tab (Tablet), Cap (Capsule), Syr (Syrup), Inj (Injection), Oint (Ointment), Susp (Suspension), Drops.\n"
+            "- Contextual drug deciphering: Match scribbled brand names and generics based on disease context (e.g., fever/cold -> Paracetamol/Dolo, Azithromycin, Cheston Cold, Montair-LC; hypertension -> Telmisartan, Amlodipine; diabetes -> Metformin/Glycomet; acid peptic -> Pantoprazole/Pan-D, Rabeprazole).\n"
+            "- Extract all vitals: BP, HR/Pulse, SpO2, Temp, RBS/sugar.\n"
+            "- Extract facility name, doctor name with degrees, patient name, age, sex, date, complaints, diagnoses, and follow-up advice.\n\n"
+            "OUTPUT INSTRUCTIONS:\n"
+            "Return ONLY a strictly valid minified JSON object with no markdown formatting, no commentary, and no <think> tags.\n"
+            "JSON structure:\n"
+            "{\n"
+            '  "facility_name": "string",\n'
+            '  "doctor_name": "string",\n'
+            '  "date": "string",\n'
+            '  "patient_name": "string",\n'
+            '  "age": "string",\n'
+            '  "sex": "string",\n'
+            '  "uhid": "string",\n'
+            '  "complaints": ["string"],\n'
+            '  "vitals": {"bp": "string", "hr": "string", "spo2": "string", "temp": "string", "dehydration": "string", "rbs": "string"},\n'
+            '  "medications": [{"name": "string", "dosage": "string", "frequency": "string", "quantity": "string", "instructions": "string"}],\n'
+            '  "diagnoses": ["string"],\n'
+            '  "advice": ["string"]\n'
+            "}"
         )
 
-        for attempt in range(2):
-            try:
-                async with httpx.AsyncClient(timeout=35.0) as client:
-                    resp = await client.post(
-                        "https://api.groq.com/openai/v1/chat/completions",
-                        headers={"Authorization": f"Bearer {groq_key}"},
-                        json={
-                            "model": "qwen/qwen3.8-27b",
-                            "messages": [
-                                {
-                                    "role": "user",
-                                    "content": [
-                                        {"type": "text", "text": prompt},
-                                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64_data}"}}
-                                    ]
-                                }
-                            ],
-                            "max_tokens": 550,
-                            "temperature": 0.1
-                        }
-                    )
+        models_to_try = ["qwen/qwen3.8-27b", "qwen/qwen3.6-27b"]
 
-                    if resp.status_code == 200:
-                        raw_content = resp.json()["choices"][0]["message"]["content"]
-                        match = re.search(r"\{.*\}", raw_content, re.DOTALL)
-                        if match:
-                            parsed = json.loads(match.group(0))
-                            logger.info(f"DocumentOCR: Multimodal vision successfully parsed '{parsed.get('facility_name')}'")
-                            return parsed
-                    elif resp.status_code == 429 and attempt == 0:
-                        logger.info("DocumentOCR: Vision rate limit encountered. Waiting 4.0s for retry...")
-                        import asyncio
-                        await asyncio.sleep(4.0)
-                        continue
-                    else:
-                        logger.warning(f"DocumentOCR: Vision API returned HTTP {resp.status_code}: {resp.text[:150]}")
-            except Exception as e:
-                logger.warning(f"DocumentOCR: Vision attempt {attempt+1} note: {e}")
+        for model_name in models_to_try:
+            for attempt in range(2):
+                try:
+                    async with httpx.AsyncClient(timeout=40.0) as client:
+                        resp = await client.post(
+                            "https://api.groq.com/openai/v1/chat/completions",
+                            headers={"Authorization": f"Bearer {groq_key}"},
+                            json={
+                                "model": model_name,
+                                "messages": [
+                                    {
+                                        "role": "user",
+                                        "content": [
+                                            {"type": "text", "text": prompt},
+                                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64_data}"}}
+                                        ]
+                                    }
+                                ],
+                                "max_tokens": 850,
+                                "temperature": 0.1
+                            }
+                        )
+
+                        if resp.status_code == 200:
+                            raw_content = resp.json()["choices"][0]["message"]["content"]
+                            parsed = self._parse_and_repair_json(raw_content)
+                            if parsed:
+                                logger.info(f"DocumentOCR: Qwen Vision ({model_name}) successfully parsed '{parsed.get('facility_name', 'Prescription')}' with {len(parsed.get('medications', []))} meds")
+                                return parsed
+                        elif resp.status_code == 429:
+                            if attempt == 0:
+                                logger.info(f"DocumentOCR: Qwen Vision ({model_name}) hit rate limit (HTTP 429). Waiting 3.0s before retry...")
+                                await asyncio.sleep(3.0)
+                                continue
+                            else:
+                                logger.info(f"DocumentOCR: Qwen Vision ({model_name}) still rate limited. Failing over...")
+                                break  # Try next model
+                        else:
+                            logger.warning(f"DocumentOCR: Vision API ({model_name}) returned HTTP {resp.status_code}: {resp.text[:150]}")
+                except Exception as e:
+                    logger.warning(f"DocumentOCR: Vision attempt note for {model_name}: {e}")
 
         return None
 
@@ -585,11 +757,16 @@ class DocumentOCRService:
             if not name_raw:
                 continue
 
-            # Filter out complaints misidentified as drug entries
-            nm_low = name_raw.lower()
-            if (nm_low.startswith("c/o") or nm_low.startswith("clo") or "cold" in nm_low or 
-                "irritat" in nm_low or "uocol" in nm_low or "throat" in nm_low or 
-                nm_low in ("bao", "b.a", "ba", "bodyache", "fever")):
+            # Filter out pure complaints/symptoms misidentified as drug entries
+            nm_low = name_raw.lower().strip()
+            is_pure_complaint = (
+                nm_low in ("cold", "common cold", "cough & cold", "cough and cold", "bao", "b.a", "ba", "bodyache", "fever", "throat pain", "throat irritation", "pain")
+                or nm_low.startswith("c/o ")
+                or nm_low.startswith("clo ")
+                or "irritat" in nm_low
+                or "uocol" in nm_low
+            )
+            if is_pure_complaint:
                 continue
 
             matched_canonical = None

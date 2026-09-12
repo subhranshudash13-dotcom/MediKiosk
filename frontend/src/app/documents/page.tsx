@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import { PrescriptionScanner } from "@/components/visualization/PrescriptionScanner";
 import { MedicalDocument } from "@/lib/types";
+import { Nav } from "@/components/brand/Nav";
+import { Footer } from "@/components/brand/Footer";
 
 interface ExtractedDrug {
   drug: string;
@@ -184,46 +186,39 @@ export default function DocumentIntelligencePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] text-[#374151] flex flex-col justify-between selection:bg-[#FDEBD0] selection:text-[#1D2A8F]">
-      {/* Top Header */}
-      <header className="bg-white border-b border-[#FDEBD0] px-4 sm:px-6 py-3.5 sticky top-0 z-30 shadow-xs">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/"
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#FDEBD0] bg-[#FDFBF7] hover:bg-white text-[#374151]/80 hover:text-[#1D2A8F] text-xs font-semibold transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Home</span>
-            </Link>
-            <div className="h-5 w-[1px] bg-[#FDEBD0] hidden sm:block" />
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-[8px] bg-[#1D2A8F] text-white flex items-center justify-center font-bold shadow-xs">
-                <FileScan className="w-4 h-4 text-[#FB923C]" />
-              </div>
-              <div className="text-left">
-                <h1 className="font-heading font-bold text-sm text-[#374151] leading-tight">
-                  Document Intelligence &amp; Medical Timeline
-                </h1>
-                <p className="text-[11px] text-[#374151]/70 flex items-center gap-1.5">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Multilingual Prescription OCR &amp; Provenance Tracking
-                </p>
-              </div>
+    <div className="min-h-screen bg-[#F8F9FA] text-[#2C3E50] flex flex-col justify-between selection:bg-[#CCE5FF] selection:text-[#0056B3]">
+      {/* 1. Global Modern SaaS Navbar */}
+      <Nav />
+
+      {/* 2. Unified Document Intelligence Subheader */}
+      <div className="bg-white border-b border-neutral-200/80 px-4 sm:px-6 lg:px-8 py-3.5">
+        <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-[#0056B3] text-white flex items-center justify-center font-bold shadow-xs">
+              <FileScan className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h1 className="font-heading font-bold text-sm sm:text-base text-neutral-900 leading-tight">
+                Document Intelligence &amp; Medical Timeline
+              </h1>
+              <p className="text-[11px] text-neutral-500 hidden sm:flex items-center gap-1.5">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Multilingual Prescription OCR &amp; Provenance Tracking
+              </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <Link
               href="/doctor"
-              className="px-4 py-1.5 rounded-full bg-[#1D2A8F] hover:bg-[#15206B] text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs"
+              className="px-4 py-1.5 rounded-full bg-black hover:bg-neutral-800 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs"
             >
-              <Stethoscope className="w-3.5 h-3.5 text-[#FB923C]" />
-              <span>View in Doctor Cockpit</span>
+              <Stethoscope className="w-3.5 h-3.5 text-neutral-400" />
+              <span>Doctor Workstation</span>
             </Link>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Main Container */}
       <main className="max-w-6xl mx-auto w-full px-4 sm:px-6 py-8 flex-1 space-y-8 text-left">
@@ -448,13 +443,8 @@ export default function DocumentIntelligencePage() {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-[#FDEBD0] py-4 px-6 mt-12 text-center text-xs text-[#374151]/70">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>MediKiosk Document Intelligence Engine • FHIR DocumentReference Linked</span>
-          <span className="text-[#374151]/50">Compliant with DPDP Act 2023 &amp; ABDM M2/M3 Standards</span>
-        </div>
-      </footer>
+      {/* 3. Global Footer */}
+      <Footer />
     </div>
   );
 }

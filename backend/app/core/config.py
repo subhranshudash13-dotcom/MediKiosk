@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     ]
 
     # MongoDB Atlas / Local MongoDB
-    MONGODB_URI: str = "mongodb+srv://Shalabh1234:Shalabh@cluster1.agij8pk.mongodb.net/?appName=Cluster1"
+    MONGODB_URI: str = "mongodb://localhost:27017"
     MONGODB_DB_NAME: str = "medikiosk"
 
     # Redis Cache & Queues

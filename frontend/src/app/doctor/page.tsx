@@ -33,10 +33,12 @@ import {
   Info
 } from "lucide-react";
 import { useKioskStore, PatientQueueItem } from "@/lib/store";
-import { KioskAPI } from "@/lib/api";
 import { Doctor30SecondView } from "@/components/doctor/Doctor30SecondView";
 import { ClinicalStoryboard } from "@/components/clinical/ClinicalStoryboard";
 import { HistoryCompletenessEngine } from "@/components/clinical/HistoryCompletenessEngine";
+import { Nav } from "@/components/brand/Nav";
+import { Footer } from "@/components/brand/Footer";
+import { KioskAPI } from "@/lib/api";
 
 export default function DoctorDashboard() {
   const doctorQueue = useKioskStore((state) => state.doctorQueue);
@@ -163,51 +165,42 @@ export default function DoctorDashboard() {
   const currentPatient = selectedPatient || doctorQueue[0];
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] text-[#374151] flex flex-col justify-between selection:bg-[#FDEBD0] selection:text-[#1D2A8F]">
-      {/* Top Navigation Bar */}
-      <header className="bg-white border-b border-[#FDEBD0] px-4 sm:px-6 py-3.5 sticky top-0 z-30 shadow-xs">
-        <div className="max-w-[1600px] mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/"
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#FDEBD0] bg-[#FDFBF7] hover:bg-white text-[#374151]/80 hover:text-[#1D2A8F] text-xs font-semibold transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Exit to Home</span>
-            </Link>
-            <div className="h-5 w-[1px] bg-[#FDEBD0] hidden sm:block" />
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-[8px] bg-[#1D2A8F] text-white flex items-center justify-center font-bold shadow-xs">
-                <Stethoscope className="w-4 h-4 text-[#FB923C]" />
-              </div>
-              <div className="text-left">
-                <h1 className="font-heading font-bold text-sm text-[#374151] leading-tight">
-                  MediKiosk • The Clinical Story Layer &amp; Physician Cockpit
-                </h1>
-                <p className="text-[11px] text-[#374151]/70">
-                  Pre-Consultation Verified Storyboard • Evidence Provenance • FHIR R4 Bundle
-                </p>
-              </div>
+    <div className="min-h-screen bg-[#F8F9FA] text-[#2C3E50] flex flex-col justify-between selection:bg-[#CCE5FF] selection:text-[#0056B3]">
+      {/* 1. Global Modern SaaS Navbar */}
+      <Nav />
+
+      {/* 2. Unified Doctor Cockpit Subheader */}
+      <div className="bg-white border-b border-neutral-200/80 px-4 sm:px-6 lg:px-8 py-3.5">
+        <div className="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-[#0056B3] text-white flex items-center justify-center font-bold shadow-xs">
+              <Stethoscope className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h1 className="font-heading font-bold text-sm sm:text-base text-neutral-900 leading-tight">
+                Doctor Workstation • Pre-Consultation Clinical Storyboard
+              </h1>
+              <p className="text-[11px] text-neutral-500 hidden sm:block">
+                Pre-Consultation Verified Dossier • SOCRATES Probing • Multilingual Prescription OCR
+              </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center gap-2 text-xs">
-              <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                OPD Active (Room 12)
-              </span>
-              <span className="text-[#374151] font-bold">Dr. S. K. Mukherjee, MD</span>
-            </div>
+            <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              OPD Active (Room 12)
+            </span>
+            <span className="text-xs text-neutral-800 font-bold hidden md:inline">Dr. S. K. Mukherjee, MD</span>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Main Workstation Layout: Left Queue & Right Dossier */}
-      <main className="max-w-[1600px] mx-auto w-full px-4 sm:px-6 py-6 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <main className="max-w-[1600px] mx-auto w-full px-3 sm:px-5 py-4 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         {/* LEFT COLUMN: Triage Patient Queue (4 Cols) */}
-        <div className="lg:col-span-4 space-y-4">
-          <div className="bg-white border border-[#FDEBD0] rounded-[16px] p-5 shadow-sm">
+        <div className="lg:col-span-4 space-y-3 sticky top-18">
+          <div className="bg-white border border-neutral-200 rounded-2xl p-4 shadow-xs">
             {/* Header & Filter */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -758,6 +751,9 @@ export default function DoctorDashboard() {
           </div>
         )}
       </main>
+
+      {/* 3. Global Footer */}
+      <Footer />
     </div>
   );
 }
