@@ -355,9 +355,92 @@ class DocumentOCRService:
         """Retrieve active Groq API Key from config or environment."""
         return settings.GROQ_API_KEY or os.getenv("GROQ_API_KEY", "")
 
+    def _extract_pdf_content(self, file_bytes: bytes) -> Tuple[Optional[bytes], str]:
+        """Extract first embedded image or concatenated text from a PDF file."""
+        text = ""
+        img_bytes = None
+        try:
+            from pypdf import PdfReader
+            reader = PdfReader(io.BytesIO(file_bytes))
+            for page in reader.pages:
+                t = page.extract_text()
+                if t:
+                    text += t + "\n"
+                if not img_bytes and hasattr(page, "images") and page.images:
+                    img_bytes = page.images[0].data
+            logger.info(f"DocumentOCR: PDF parsed ({len(reader.pages)} pages, has_image={bool(img_bytes)}, text_len={len(text)})")
+        except Exception as e:
+            logger.warning(f"DocumentOCR: Failed to read PDF with pypdf: {e}")
+        return img_bytes, text
+
+    async def _transcribe_text_with_qwen(self, text: str) -> Optional[Dict[str, Any]]:
+        """Transcribe text from digital PDF reports using Qwen models on Groq."""
+        groq_key = self._get_groq_key()
+        if not groq_key:
+            return None
+        candidate_models = ["qwen/qwen3.8-27b", "qwen/qwen3.6-27b"]
+        prompt = (
+            "You are a clinical pharmacologist and medical record transcriptionist. "
+            "Extract all clinical entities from this digital medical report / prescription text into valid JSON. "
+            "Return valid JSON ONLY (no markdown fences, no conversational text) with this exact schema:\n"
+            "{\n"
+            '  "facility_name": "Hospital or Clinic name",\n'
+            '  "doctor_name": "Doctor name with qualifications",\n'
+            '  "date": "DD/MM/YYYY",\n'
+            '  "patient_name": "Patient name",\n'
+            '  "age": "Age in years or months",\n'
+            '  "sex": "M or F",\n'
+            '  "uhid": "Patient UHID or OP number",\n'
+            '  "complaints": ["Chief complaint 1", "Chief complaint 2"],\n'
+            '  "vitals": {"bp": "120/80", "hr": "78", "spo2": "98", "temp": "98.6", "dehydration": "No", "rbs": "110"},\n'
+            '  "medications": [\n'
+            '    {\n'
+            '      "name": "Drug name (Brand + Generic)",\n'
+            '      "dosage": "e.g. 500 mg or 5 ml",\n'
+            '      "frequency": "e.g. 1-0-1 or Twice daily or OD",\n'
+            '      "quantity": "e.g. 10 Tablets or 5 Days",\n'
+            '      "instructions": "e.g. After food with water"\n'
+            '    }\n'
+            '  ],\n'
+            '  "diagnoses": ["Primary Diagnosis or Clinical Impression"]\n'
+            "}\n\n"
+            f"Medical Document Text:\n{text[:4000]}"
+        )
+        for model in candidate_models:
+            try:
+                async with httpx.AsyncClient(timeout=35.0) as client:
+                    resp = await client.post(
+                        "https://api.groq.com/openai/v1/chat/completions",
+                        headers={"Authorization": f"Bearer {groq_key}"},
+                        json={
+                            "model": model,
+                            "messages": [{"role": "user", "content": prompt}],
+                            "max_tokens": 2048,
+                            "temperature": 0.1
+                        }
+                    )
+                    if resp.status_code == 200:
+                        raw = resp.json()["choices"][0]["message"]["content"].strip()
+                        if "```json" in raw:
+                            raw = raw.split("```json")[-1].split("```")[0].strip()
+                        elif "```" in raw:
+                            raw = raw.split("```")[-1].split("```")[0].strip()
+                        match = re.search(r"\{.*\}", raw, re.DOTALL)
+                        if match:
+                            clean_json = match.group(0).strip()
+                            try:
+                                parsed = json.loads(clean_json)
+                                logger.info(f"DocumentOCR: Qwen text transcription ({model}) parsed successfully.")
+                                return parsed
+                            except json.JSONDecodeError:
+                                pass
+            except Exception as e:
+                logger.warning(f"DocumentOCR: Text transcription error with {model}: {e}")
+        return None
+
     async def _transcribe_with_vision(self, file_bytes: bytes) -> Optional[Dict[str, Any]]:
         """
-        Transcribes handwritten doctor prescriptions with multimodal visual intelligence using Qwen models.
+        Transcribes doctor prescriptions with multimodal visual intelligence using Qwen models.
         Optimizes image resolution and JPEG compression, supports both qwen/qwen3.8-27b and qwen/qwen3.6-27b,
         and provides resilient JSON extraction and rate-limit retries.
         """
@@ -366,29 +449,53 @@ class DocumentOCRService:
             logger.warning("DocumentOCR: GROQ_API_KEY is not configured in environment; vision transcription cannot run.")
             return None
 
-        # 1. Compress image to high-efficiency JPEG (max dimension 1024px) to minimize vision tokens
+        # 1. Compress image to high-efficiency JPEG (max dimension 1000px) to minimize vision tokens
         b64_data = ""
         try:
             pil_img = Image.open(io.BytesIO(file_bytes)).convert("RGB")
             w, h = pil_img.size
-            scale = min(950 / max(w, h), 1.0)
+            if w < 10 or h < 10:
+                pil_img = pil_img.resize((max(w, 100), max(h, 100)), Image.Resampling.LANCZOS)
+                w, h = pil_img.size
+            scale = min(1000 / max(w, h), 1.0)
             if scale < 1.0:
                 pil_img = pil_img.resize((int(w * scale), int(h * scale)), Image.Resampling.LANCZOS)
             buf = io.BytesIO()
-            pil_img.save(buf, format="JPEG", quality=80)
+            pil_img.save(buf, format="JPEG", quality=85)
             b64_data = base64.b64encode(buf.getvalue()).decode("utf-8")
         except Exception as e:
             logger.warning(f"DocumentOCR: Image optimization fallback: {e}")
             b64_data = base64.b64encode(file_bytes).decode("utf-8")
 
         prompt = (
-            "Extract all details from this doctor prescription image. "
-            "Return valid JSON only with keys: "
-            "facility_name, doctor_name, date, patient_name, age, sex, uhid, "
-            "complaints (list of strings), "
-            "vitals (object with bp, hr, spo2, temp, dehydration, rbs), "
-            "medications (list of objects with name, dosage, frequency, quantity, instructions), "
-            "diagnoses (list of strings)."
+            "You are an expert clinical pharmacologist and prescription transcription system. "
+            "Examine this medical prescription or diagnostic report image carefully. "
+            "Extract all text, handwritten medicines, dosages, frequencies, patient info, and clinical findings accurately. "
+            "Return valid JSON ONLY (no markdown fences, no conversational text) with this exact schema:\n"
+            "{\n"
+            '  "facility_name": "Hospital, Clinic, or Healthcare Center name (e.g. Apollo Hospital or City Clinic. Do NOT repeat doctor personal name here)",\n'
+            '  "doctor_name": "Doctor full name with medical qualifications (e.g. Dr. Jane Doe, MBBS, MD)",\n'
+            '  "date": "DD/MM/YYYY",\n'
+            '  "patient_name": "Patient full name",\n'
+            '  "age": "Age in years or months",\n'
+            '  "sex": "M or F",\n'
+            '  "uhid": "Patient UHID or OP number",\n'
+            '  "complaints": ["Chief complaint 1", "Chief complaint 2"],\n'
+            '  "vitals": {"bp": "120/80", "hr": "78", "spo2": "98", "temp": "98.6", "dehydration": "No", "rbs": "110"},\n'
+            '  "medications": [\n'
+            '    {\n'
+            '      "name": "Full drug name (Brand + Generic)",\n'
+            '      "dosage": "e.g. 500 mg or 5 ml",\n'
+            '      "frequency": "e.g. 1-0-1 (Twice daily) or 1-0-0 (Once daily) or SOS",\n'
+            '      "quantity": "e.g. 5 Days or 10 Tablets",\n'
+            '      "timing": "Meal relation (e.g. After meals, Before breakfast, At bedtime, As needed)",\n'
+            '      "purpose": "What clinical symptom or disease this drug treats in clear plain English",\n'
+            '      "instructions": "Specific meal timing or administration instructions (e.g. Take 30 mins before breakfast on empty stomach / Take post-meals with water)"\n'
+            '    }\n'
+            '  ],\n'
+            '  "diagnoses": ["Primary Diagnosis, e.g. Acute Respiratory Infection, Type 2 Diabetes, Hypertension"],\n'
+            '  "doctor_advice": ["Doctor advice, hydration instructions, or follow-up tips"]\n'
+            "}"
         )
 
         candidate_models = ["qwen/qwen3.8-27b", "qwen/qwen3.6-27b"]
@@ -396,7 +503,7 @@ class DocumentOCRService:
         for model_name in candidate_models:
             for attempt in range(2):
                 try:
-                    async with httpx.AsyncClient(timeout=40.0) as client:
+                    async with httpx.AsyncClient(timeout=45.0) as client:
                         resp = await client.post(
                             "https://api.groq.com/openai/v1/chat/completions",
                             headers={"Authorization": f"Bearer {groq_key}"},
@@ -411,26 +518,25 @@ class DocumentOCRService:
                                         ]
                                     }
                                 ],
-                                "max_tokens": 1200,
+                                "max_tokens": 800,
                                 "temperature": 0.1
                             }
                         )
 
                         if resp.status_code == 200:
                             raw_content = resp.json()["choices"][0]["message"]["content"].strip()
-                            # Clean code fence wrappers
-                            if "```json" in raw_content:
-                                raw_content = raw_content.split("```json")[-1].split("```")[0].strip()
-                            elif "```" in raw_content:
-                                raw_content = raw_content.split("```")[-1].split("```")[0].strip()
+                            # Clean markdown code fence wrappers
+                            clean_text = re.sub(r"^```(?:json)?\s*", "", raw_content, flags=re.MULTILINE)
+                            clean_text = re.sub(r"```\s*$", "", clean_text, flags=re.MULTILINE).strip()
 
-                            match = re.search(r"\{.*\}", raw_content, re.DOTALL)
+                            match = re.search(r"\{[\s\S]*\}", clean_text)
                             if match:
                                 clean_json = match.group(0).strip()
                                 try:
                                     parsed = json.loads(clean_json)
-                                    logger.info(f"DocumentOCR: Multimodal vision ({model_name}) successfully parsed '{parsed.get('facility_name') or parsed.get('doctor_name')}'")
-                                    return parsed
+                                    if parsed and (parsed.get("medications") or parsed.get("vitals") or parsed.get("doctor_name") or parsed.get("facility_name")):
+                                        logger.info(f"DocumentOCR: Multimodal vision ({model_name}) successfully parsed '{parsed.get('facility_name') or parsed.get('doctor_name')}' with {len(parsed.get('medications', []))} meds")
+                                        return parsed
                                 except json.JSONDecodeError:
                                     # Attempt basic bracket repair if cut off
                                     if clean_json.count("{") > clean_json.count("}"):
@@ -442,13 +548,11 @@ class DocumentOCRService:
                                         except Exception:
                                             pass
                         elif resp.status_code == 429:
-                            logger.info(f"DocumentOCR: {model_name} rate limited (429). Backing off...")
-                            import asyncio
-                            await asyncio.sleep(2.5 * (attempt + 1))
-                            continue
+                            logger.info(f"DocumentOCR: {model_name} rate limited (429). Switching to alternate model...")
+                            break  # Immediately try alternate candidate model instead of blocking
                         else:
                             logger.warning(f"DocumentOCR: {model_name} returned HTTP {resp.status_code}: {resp.text[:120]}")
-                            break  # Try next model if HTTP client error
+                            break  # Try next model if HTTP error
                 except Exception as e:
                     logger.warning(f"DocumentOCR: Vision attempt with {model_name} failed: {e}")
 
@@ -568,12 +672,20 @@ class DocumentOCRService:
         Constructs a complete MedicalDocument from multimodal vision transcription,
         enriching medications with pharmacopeia data and evaluating vitals against clinical thresholds.
         """
-        facility_name = vision_data.get("facility_name") or "Outpatient Healthcare Center"
         doctor_name = vision_data.get("doctor_name") or "Attending Physician"
         if re.search(r"^\(?\d{4,6}\)?$", doctor_name.strip()) or "131441" in doctor_name or "31441" in doctor_name:
             doctor_name = "Dr. Attending Consultant Physician (KMC Reg. 131441)"
         elif not doctor_name.lower().startswith("dr.") and not doctor_name.lower().startswith("dr "):
             doctor_name = f"Dr. {doctor_name}"
+
+        facility_name = vision_data.get("facility_name") or "Outpatient Healthcare Center"
+        # Deduplicate if doctor name was mistakenly repeated as hospital/facility name
+        clean_fac = facility_name.strip()
+        clean_doc = doctor_name.strip()
+        if (clean_fac.lower() == clean_doc.lower() or 
+            clean_fac.lower() == clean_doc.lower().replace("dr. ", "") or
+            (clean_fac.lower().startswith("dr.") and not any(k in clean_fac.lower() for k in ("hospital", "clinic", "center", "centre", "care", "institute", "nursing", "polyclinic")))):
+            facility_name = f"{clean_doc}'s Clinic & Consultation Practice"
 
         # Patient & Date
         patient_name = vision_data.get("patient_name") or "Registered Patient"
@@ -667,13 +779,36 @@ class DocumentOCRService:
                 duration = f"{duration} Tablets"
             
             # Clinical instructions refinement
-            raw_inst = str(m.get("instructions") or "")
-            if matched_canonical:
+            raw_inst = str(m.get("instructions") or "").strip()
+            raw_timing = str(m.get("timing") or "").strip()
+            inst_parts = []
+            if raw_timing and raw_timing.lower() not in ("tb", "tab", "syp", "cap", "null", "none"):
+                inst_parts.append(raw_timing)
+            if raw_inst and raw_inst.lower() not in ("tb", "tab", "syp", "cap", "null", "none", "10 f", "1", "bp"):
+                if raw_inst.lower() not in [p.lower() for p in inst_parts]:
+                    inst_parts.append(raw_inst)
+
+            if inst_parts:
+                instructions = ". ".join(inst_parts)
+            elif matched_canonical:
                 instructions = matched_canonical.get("instructions", "As advised by physician")
-            elif raw_inst and raw_inst.lower() not in ("10 f", "1", "bp"):
-                instructions = raw_inst
             else:
                 instructions = "Post-meals with water"
+
+            # Clinical purpose & therapeutic class enrichment
+            vision_purpose = str(m.get("purpose") or "").strip()
+            if vision_purpose and len(vision_purpose) > 4 and vision_purpose.lower() not in ("null", "none", "n/a"):
+                clinical_purpose = vision_purpose
+                therapeutic_class = matched_canonical["therapeutic_class"] if matched_canonical else "Prescribed Pharmacotherapy"
+                indication = matched_canonical["indication"] if matched_canonical else vision_purpose
+            elif matched_canonical:
+                clinical_purpose = matched_canonical["clinical_purpose"]
+                therapeutic_class = matched_canonical["therapeutic_class"]
+                indication = matched_canonical["indication"]
+            else:
+                clinical_purpose = "Prescribed to manage clinical symptoms and physiological recovery."
+                therapeutic_class = "Therapeutic Agent"
+                indication = "Clinical Outpatient Therapy"
 
             extracted_medications.append(ExtractedMedication(
                 name=matched_canonical["canonical"] if matched_canonical else name_raw,
@@ -681,9 +816,9 @@ class DocumentOCRService:
                 frequency=frequency,
                 route=matched_canonical.get("route", "oral") if matched_canonical else "oral",
                 duration=str(duration),
-                indication=matched_canonical["indication"] if matched_canonical else "Clinical Outpatient Therapy",
-                therapeutic_class=matched_canonical["therapeutic_class"] if matched_canonical else "Therapeutic Agent",
-                clinical_purpose=matched_canonical["clinical_purpose"] if matched_canonical else f"Prescribed to manage clinical symptoms and physiological recovery.",
+                indication=indication,
+                therapeutic_class=therapeutic_class,
+                clinical_purpose=clinical_purpose,
                 instructions=instructions,
                 confidence=98.5
             ))
@@ -948,12 +1083,18 @@ class DocumentOCRService:
             f"Active therapeutic regimen includes {med_names or 'prescribed medications'} to ensure symptom resolution, infection control, and hemodynamic stability."
         )
 
-        action_plan = (
-            f"1. Administer prescribed medications ({med_names or 'prescribed therapies'}) with strict adherence to instructions. "
-            f"2. Monitor vital signs (temperature, pulse, hydration) at 6-hour intervals. "
-            f"3. Ensure continuous oral fluid intake for hydration recovery. "
-            f"4. Follow up at clinic if symptoms persist beyond 72 hours or high fever recurs."
-        )
+        # Structured Action Plan
+        doctor_advices = vision_data.get("doctor_advice") or []
+        if isinstance(doctor_advices, list) and len(doctor_advices) > 0 and any(a for a in doctor_advices):
+            cleaned_adv = [str(a).strip().rstrip(".") for a in doctor_advices if str(a).strip()]
+            action_plan = " ".join([f"{idx+1}. {adv}." for idx, adv in enumerate(cleaned_adv)])
+        else:
+            action_plan = (
+                f"1. Administer prescribed medications ({med_names or 'prescribed therapies'}) with strict adherence to instructions. "
+                f"2. Monitor vital signs (temperature, pulse, hydration) at regular intervals. "
+                f"3. Ensure continuous oral fluid intake for hydration recovery. "
+                f"4. Follow up at clinic if symptoms persist beyond 72 hours or high fever recurs."
+            )
 
         doc_id = f"DOC-{int(datetime.now(timezone.utc).timestamp())}-{filename.replace(' ', '_')}"
 
@@ -1204,6 +1345,23 @@ class DocumentOCRService:
         """
         logger.info(f"DocumentOCR: Processing document '{filename}' ({len(file_bytes)} bytes) for patient {patient_id}")
 
+        # 0. Handle PDF uploads (scanned image or digital text)
+        is_pdf = filename.lower().endswith(".pdf") or file_bytes.startswith(b"%PDF")
+        if is_pdf:
+            pdf_img_bytes, pdf_text = self._extract_pdf_content(file_bytes)
+            if pdf_img_bytes:
+                file_bytes = pdf_img_bytes
+            elif pdf_text and len(pdf_text.strip()) > 15:
+                text_res = await self._transcribe_text_with_qwen(pdf_text)
+                if text_res:
+                    return self._build_document_from_vision(
+                        text_res,
+                        filename=filename,
+                        patient_id=patient_id,
+                        raw_text=pdf_text,
+                        image_data_uri=None
+                    )
+
         pil_image = None
         try:
             pil_image = Image.open(io.BytesIO(file_bytes))
@@ -1241,6 +1399,18 @@ class DocumentOCRService:
         raw_ocr_text = ""
         if pil_image:
             raw_ocr_text = await self._execute_multi_engine_ocr(pil_image)
+
+        # 3. If local OCR extracted text, attempt Qwen text transcription on it
+        if raw_ocr_text and len(raw_ocr_text.strip()) > 15:
+            qwen_text_res = await self._transcribe_text_with_qwen(raw_ocr_text)
+            if qwen_text_res and (qwen_text_res.get("medications") or qwen_text_res.get("vitals")):
+                return self._build_document_from_vision(
+                    qwen_text_res,
+                    filename=filename,
+                    patient_id=patient_id,
+                    raw_text=raw_ocr_text,
+                    image_data_uri=image_data_uri
+                )
 
         is_valid_medical, validation_reason = self._validate_medical_document(raw_ocr_text, filename)
         if not is_valid_medical:
