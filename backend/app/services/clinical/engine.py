@@ -422,6 +422,18 @@ class ClinicalEngineService:
             # Care routing
             routing = self.recommend_care_routing(chief, mode=session_doc.get("mode", "allopathy"))
 
+            # Format string lists cleanly
+            raw_meds = session_doc.get("current_medications") or session_doc.get("medications_current") or session_doc.get("medications") or []
+            formatted_meds = []
+            for m in raw_meds:
+                if isinstance(m, str):
+                    formatted_meds.append(m)
+                elif isinstance(m, dict):
+                    drug_name = m.get("drug") or m.get("name") or "Medication"
+                    dosage = m.get("dose") or m.get("dosage") or ""
+                    freq = m.get("frequency") or ""
+                    formatted_meds.append(f"{drug_name} {dosage} {freq}".strip())
+
             return ClinicalSummary(
                 patient_id=session_doc.get("patient_id", f"P-{session_id[:6]}"),
                 encounter_id=session_id,
@@ -429,11 +441,11 @@ class ClinicalEngineService:
                 hpi=hpi_text,
                 socrates=socrates_obj,
                 ayush=ayush_obj,
-                past_medical_history=session_doc.get("past_history", []),
-                medications_current=session_doc.get("current_medications", []),
-                allergies=session_doc.get("allergies", []),
-                family_history=session_doc.get("family_history", []),
-                personal_history=session_doc.get("personal_history", []),
+                past_medical_history=[str(p) for p in session_doc.get("past_history", [])],
+                medications_current=formatted_meds,
+                allergies=[str(a) for a in session_doc.get("allergies", [])],
+                family_history=[str(f) for f in session_doc.get("family_history", [])],
+                personal_history=[str(p) for p in session_doc.get("personal_history", [])],
                 review_of_systems=session_doc.get("review_of_systems", {}),
                 red_flags=red_flag_strings,
                 abnormal_lab_alerts=session_doc.get("abnormal_lab_alerts", []),

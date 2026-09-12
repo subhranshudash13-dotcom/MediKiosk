@@ -20,6 +20,7 @@ import {
   Calendar,
   Building2,
   UserCheck,
+  User,
   Info,
   ChevronRight,
 } from "lucide-react";
@@ -540,6 +541,12 @@ export function PrescriptionScanner({
 
                 {/* Metadata Row */}
                 <div className="mt-3 flex flex-wrap items-center gap-4 text-[11px] text-[#64748B]">
+                  {extractedDoc.patient_name && (
+                    <span className="flex items-center gap-1 font-semibold text-[#1E293B]">
+                      <User className="h-3 w-3 text-[#0056B3]" />
+                      Patient: {extractedDoc.patient_name}
+                    </span>
+                  )}
                   {extractedDoc.doctor_name && (
                     <span className="flex items-center gap-1 font-medium">
                       <UserCheck className="h-3 w-3 text-[#0056B3]" />

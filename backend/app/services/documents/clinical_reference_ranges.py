@@ -35,6 +35,17 @@ REFERENCE_RANGES_DB: Dict[str, Dict[str, Any]] = {
         "range_display": "< 140 mg/dL",
         "aliases": ["ppbs", "post prandial blood sugar", "postprandial glucose", "pp glucose", "2hr post glucose"]
     },
+    "random_blood_glucose": {
+        "canonical_name": "Random Blood Sugar (RBS)",
+        "unit": "mg/dL",
+        "normal_low": 70.0,
+        "normal_high": 140.0,
+        "borderline_high": 199.0,
+        "critical_high": 300.0,
+        "critical_low": 60.0,
+        "range_display": "70 - 140 mg/dL",
+        "aliases": ["rbs", "random blood sugar", "random glucose", "blood sugar random", "cbg"]
+    },
     "serum_creatinine": {
         "canonical_name": "Serum Creatinine",
         "unit": "mg/dL",

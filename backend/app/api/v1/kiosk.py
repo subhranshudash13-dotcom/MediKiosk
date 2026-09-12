@@ -38,7 +38,7 @@ class StartSessionRequest(BaseModel):
     abha_id: Optional[str] = None
 
 
-from app.services.auth.dependencies import get_current_user
+from app.services.auth.dependencies import get_optional_current_user
 from app.models.auth import UserContext
 
 
@@ -48,7 +48,7 @@ async def start_kiosk_session(
     payload: Optional[StartSessionRequest] = None,
     language: str = "hi",
     mode: str = "allopathy",
-    current_user: UserContext = Depends(get_current_user),
+    current_user: Optional[UserContext] = Depends(get_optional_current_user),
 ):
     """
     Initiate and immediately persist a new kiosk triage session in MongoDB.
@@ -108,8 +108,8 @@ async def start_kiosk_session(
     )
 
     auth_context = {
-        "authenticated": True,
-        "method": current_user.amr,
+        "authenticated": bool(current_user),
+        "method": current_user.amr if current_user else ["kiosk_walk_in"],
         "abha_verified_for_session": bool(abha_link),
         "authenticated_at": now_iso,
     }

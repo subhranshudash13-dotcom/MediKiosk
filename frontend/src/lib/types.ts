@@ -97,6 +97,7 @@ export interface ExtractedVital {
 export interface MedicalDocument {
   document_id: string;
   patient_id: string;
+  patient_name?: string;
   document_type: "prescription" | "lab_report" | "discharge_summary" | "imaging" | "other" | string;
   document_date?: string;
   raw_ocr_text?: string;

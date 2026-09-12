@@ -61,6 +61,7 @@ class ExtractedVital(BaseModel):
 class MedicalDocument(BaseModel):
     document_id: str
     patient_id: str = "P-DEMO-001"
+    patient_name: Optional[str] = None
     document_type: DocumentType = DocumentType.PRESCRIPTION
     document_date: Optional[date] = None
     raw_ocr_text: Optional[str] = None
