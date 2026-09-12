@@ -42,6 +42,7 @@ import { Footer } from "@/components/brand/Footer";
 import { VoiceIntakeHeroShowcase } from "@/components/patient/VoiceIntakeHeroShowcase";
 import { PrescriptionOCRImageShowcase } from "@/components/documents/PrescriptionOCRImageShowcase";
 import { OpdIntakeRoadmap } from "@/components/clinical/OpdIntakeRoadmap";
+import { AbdmDashboardShowcase } from "@/components/analytics/AbdmDashboardShowcase";
 
 export default function Home() {
   const router = useRouter();
@@ -381,6 +382,13 @@ export default function Home() {
             </div>
 
             <OpdIntakeRoadmap />
+          </section>
+
+          {/* ========================================================================= */}
+          {/* SECTION 6: AYUSHMAN BHARAT DIGITAL MISSION (ABDM) LIVE TELEMETRY */}
+          {/* ========================================================================= */}
+          <section id="abdm-insights" className="space-y-6 pt-4">
+            <AbdmDashboardShowcase />
           </section>
         </div>
       </main>
