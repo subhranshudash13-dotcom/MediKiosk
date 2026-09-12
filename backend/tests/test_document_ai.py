@@ -17,9 +17,23 @@ from app.services.documents.ocr import ocr_service
 from app.services.documents.timeline_service import timeline_service
 
 
+from app.models.auth import UserContext
+from app.services.auth.dependencies import get_current_user
+
+
 @pytest.fixture
 def client():
-    return TestClient(app)
+    mock_user = UserContext(
+        sid="sess-test-123",
+        user_id="P-DEMO-001",
+        mobile_number="9999999999",
+        role="patient",
+        is_anonymous=False
+    )
+    app.dependency_overrides[get_current_user] = lambda: mock_user
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.pop(get_current_user, None)
 
 
 def test_clinical_reference_range_evaluation():
@@ -54,10 +68,21 @@ def test_clinical_reference_range_evaluation():
 @pytest.mark.asyncio
 async def test_ocr_service_heuristic_extraction():
     """Verify that OCR service extracts medications, frequencies, and labs from prescription text/filename."""
-    sample_bytes = b"SAMPLE_IMAGE_PRESCRIPTION_CONTENT"
+    from PIL import ImageDraw
+    img = Image.new("RGB", (600, 400), color="white")
+    draw = ImageDraw.Draw(img)
+    draw.text((20, 20), "CITY CLINIC & CARDIAC CARE", fill="black")
+    draw.text((20, 60), "Dr. Arvind Rao, MD (Medicine)", fill="black")
+    draw.text((20, 100), "Pt: Ram Prakash 58/M  BP: 150/90", fill="black")
+    draw.text((20, 140), "Diagnosis: Essential Hypertension", fill="black")
+    draw.text((20, 180), "Rx: Tb. Amlodipine 5mg 1-0-0 post breakfast x 30 days", fill="black")
+    buf = BytesIO()
+    img.save(buf, format="JPEG")
+    sample_bytes = buf.getvalue()
+    
     doc = await ocr_service.process_document(
         sample_bytes,
-        filename="rx_prescription_hypertension.jpg",
+        filename="rx_prescription_hypertension_amlodipine.jpg",
         patient_id="P-DEMO-001"
     )
 

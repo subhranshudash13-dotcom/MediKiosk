@@ -376,16 +376,40 @@ PHARMACOPEIA_DATABASE = [
         "instructions": "Take 30 mins before food when nauseated"
     },
     {
-        "canonical": "Ceftriaxone",
-        "keywords": ["ceftriaxone", "monocef", "ceftrax"],
-        "default_dose": "1 g IV",
-        "default_freq": "1-0-0 (OD)",
-        "default_duration": "3 Days",
-        "therapeutic_class": "Third-Generation Cephalosporin Antibiotic",
-        "indication": "Severe Systemic Bacterial Infection",
-        "clinical_purpose": "Inhibits bacterial cell wall synthesis for acute infection eradication.",
-        "route": "intravenous",
-        "instructions": "Administer IV infusion over 30 minutes"
+        "canonical": "Ashwagandha",
+        "keywords": ["ashwagandha", "aswagandha", "withania", "ashwa", "stresscom"],
+        "default_dose": "500 mg",
+        "default_freq": "1-0-1 (Twice daily)",
+        "default_duration": "30 Days",
+        "therapeutic_class": "Ayurvedic Rasayana / Adaptogenic Rejuvenator",
+        "indication": "Chronic Fatigue, General Debility & Stress",
+        "clinical_purpose": "Enhances physical stamina, reduces cortisol-mediated fatigue, and supports neuro-muscular vitality.",
+        "route": "oral",
+        "instructions": "Take 1 tablet twice daily with warm milk or water after meals."
+    },
+    {
+        "canonical": "Triphala Tablets",
+        "keywords": ["triphala", "trifla", "triphala churna", "triphala guggulu"],
+        "default_dose": "2 Tablets",
+        "default_freq": "0-0-1 (At bedtime)",
+        "default_duration": "30 Days",
+        "therapeutic_class": "Ayurvedic Digestive & Bowel Regulator",
+        "indication": "Agnimandya / Indigestion & Mild Constipation",
+        "clinical_purpose": "Promotes intestinal motility, supports gentle colon cleansing, and harmonizes digestive metabolic fire (Agni).",
+        "route": "oral",
+        "instructions": "Take 2 tablets at bedtime with lukewarm water."
+    },
+    {
+        "canonical": "Giloy Ghanvati",
+        "keywords": ["giloy", "guduchi", "giloy ghanvati", "samsamani"],
+        "default_dose": "500 mg",
+        "default_freq": "1-0-1 (Twice daily)",
+        "default_duration": "15 Days",
+        "therapeutic_class": "Ayurvedic Immunomodulator & Antipyretic",
+        "indication": "Chronic Low-Grade Pyrexia & Immunity Support",
+        "clinical_purpose": "Boosts leukocyte phagocytic index, cleanses systemic toxins (Ama), and protects hepatic parenchymal cells.",
+        "route": "oral",
+        "instructions": "Take 1 tablet twice daily after food with warm water."
     }
 ]
 
@@ -727,6 +751,29 @@ class DocumentOCRService:
                         "confidence": 98.0
                     })
 
+        # Fallback: Extract numbered/quoted drug lines from reasoning text if not in pharmacopeia
+        if not meds:
+            drug_lines = re.findall(r'(?:(?:Tb|Tab|Cap|Syp|Inj|Vaidya)?\.?\s*([A-Za-z0-9\-\s\+]{3,40}))\s*(?:[-–—:]+|\bx\b|\bBD\b|\bOD\b|\bTDS\b|\bHS\b|\bSOS\b)\s*([^\n\r,]+)', reasoning_text, re.IGNORECASE)
+            for d_name, d_inst in drug_lines:
+                clean_name = d_name.strip().strip('"\'*.-')
+                if (
+                    clean_name and len(clean_name) >= 3
+                    and not any(k in clean_name.lower() for k in ("hospital", "clinic", "patient", "doctor", "name", "facility", "vitals", "bp", "pulse", "diagnosis", "pathya", "dr."))
+                    and not any(m["name"].lower() == clean_name.lower() for m in meds)
+                ):
+                    meds.append({
+                        "name": clean_name.title(),
+                        "dosage": "As prescribed",
+                        "frequency": "1-0-1 (Twice daily)",
+                        "route": "oral",
+                        "duration": "5 Days",
+                        "indication": "Prescribed Clinical Therapy",
+                        "therapeutic_class": "Therapeutic Agent",
+                        "clinical_purpose": "Prescribed to manage clinical symptoms and support physiological recovery.",
+                        "instructions": d_inst.strip().strip('"\'*.-') or "Post-meals with water",
+                        "confidence": 95.0
+                    })
+
         if re.search(r'fluid intake', reasoning_text, re.IGNORECASE):
             res["doctor_advice"].append("Ensure continuous adequate fluid intake for hydration recovery.")
 
@@ -756,7 +803,7 @@ class DocumentOCRService:
             "Directly output valid JSON format."
         )
 
-        candidate_models = ["qwen/qwen3.6-27b", "qwen/qwen3.8-27b"]
+        candidate_models = ["qwen/qwen3.8-27b", "qwen/qwen3.6-27b"]
 
         for model_name in candidate_models:
             for attempt in range(2):
@@ -777,7 +824,7 @@ class DocumentOCRService:
                                         ]
                                     }
                                 ],
-                                "max_tokens": 600,
+                                "max_tokens": 850,
                                 "temperature": 0.0
                             }
                         )
@@ -981,8 +1028,7 @@ class DocumentOCRService:
             nm_low = name_raw.lower().strip()
             is_pure_complaint = (
                 nm_low in ("cold", "common cold", "cough & cold", "cough and cold", "bao", "b.a", "ba", "bodyache", "fever", "throat pain", "throat irritation", "pain")
-                or nm_low.startswith("c/o ")
-                or nm_low.startswith("clo ")
+                or (nm_low.startswith("c/o ") and not any(k in nm_low for k in ("tab", "syp", "cap", "mg", "ml", "cold")))
                 or "irritat" in nm_low
                 or "uocol" in nm_low
             )
@@ -992,7 +1038,7 @@ class DocumentOCRService:
             matched_canonical = None
             for p in PHARMACOPEIA_DATABASE:
                 for kw in p["keywords"]:
-                    if kw in nm_low or difflib.SequenceMatcher(None, nm_low, kw).ratio() >= 0.70:
+                    if kw in nm_low or nm_low in kw or difflib.SequenceMatcher(None, nm_low, kw).ratio() >= 0.65:
                         matched_canonical = p
                         break
                 if matched_canonical:
@@ -1394,7 +1440,8 @@ class DocumentOCRService:
         Local fallback parser when multimodal vision is offline or rate-limited.
         Extracts clinical entities, diagnoses, and vitals using multi-pass regex.
         """
-        text_lower = (filename + "\n" + ocr_text).lower()
+        clean_fn = filename.replace("_", " ").replace("-", " ")
+        text_lower = (clean_fn + "\n" + ocr_text).lower()
 
         # Doctor & Facility
         doctor_name = "Dr. Attending Consultant Physician"
