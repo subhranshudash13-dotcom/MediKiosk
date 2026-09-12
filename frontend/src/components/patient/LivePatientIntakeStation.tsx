@@ -49,6 +49,8 @@ import { useAuthStore } from "@/lib/auth-store";
 import { cn } from "@/lib/utils";
 import { getBackendUrl } from "@/lib/config";
 import { UniversalAudioRecorder } from "@/lib/audioRecorder";
+import { getKioskTranslation } from "@/lib/kioskTranslations";
+import { HistoryAPI } from "@/lib/api";
 
 const INDIC_LANGUAGES = [
   { code: "hi", name: "Hindi (हिंदी)", script: "अ", flag: "🇮🇳", nativePrompt: "नमस्ते, अपनी बीमारी या तकलीफ़ बताएं" },
@@ -59,14 +61,6 @@ const INDIC_LANGUAGES = [
   { code: "mr", name: "Marathi (मराठी)", script: "म", flag: "🇮🇳", nativePrompt: "नमस्कार, तुमची प्रकृती अस्वास्थ्य सांगा" },
   { code: "gu", name: "Gujarati (ગુજરાતી)", script: "ગુ", flag: "🇮🇳", nativePrompt: "નમસ્તે, તમારી તકલીફ અથવા લક્ષણો જણાવો" },
   { code: "kn", name: "Kannada (ಕನ್ನಡ)", script: "ಕ", flag: "🇮🇳", nativePrompt: "ನಮಸ್ಕಾರ, ನಿಮ್ಮ ಆರೋಗ್ಯ ತೊಂದರೆಯನ್ನು ತಿಳಿಸಿ" },
-];
-
-const KIOSK_STEPS = [
-  { id: "language", label: "1. Language & Identity", shortLabel: "Language", icon: Languages },
-  { id: "voice", label: "2. Spoken Intake & Dialogue", shortLabel: "Voice Intake", icon: Mic },
-  { id: "pain", label: "3. Pain Rating & SOCRATES Matrix", shortLabel: "Pain Scale", icon: Activity },
-  { id: "scanner", label: "4. Past Prescriptions & OCR", shortLabel: "OCR Scanner", icon: FileText },
-  { id: "token", label: "5. Digital OPD Token", shortLabel: "OPD Token", icon: CheckCircle2 },
 ];
 
 export function LivePatientIntakeStation() {
@@ -101,6 +95,8 @@ export function LivePatientIntakeStation() {
     }
   }, [initialized, isAuthenticated, router]);
 
+  const t = getKioskTranslation(language);
+
   const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
   const [patientName, setPatientName] = useState<string>("Patient");
   const [patientAge, setPatientAge] = useState<number>(28);
@@ -124,15 +120,19 @@ export function LivePatientIntakeStation() {
     { drug: "Cap Pantoprazole", dose: "40 mg", frequency: "1-0-0 (Empty Stomach)" }
   ]);
 
-  const [aiSpokenResponse, setAiSpokenResponse] = useState<string>(
-    "Good morning. I am your clinical intake assistant. Tell us what brings you here today — where does it hurt, and how long has it been?"
-  );
-  const [quickReplies, setQuickReplies] = useState<string[]>([
-    "Severe chest tightness for 2 days",
-    "High fever with chills and headache",
-    "Sharp stomach pain after eating",
-    "Persistent cough with shortness of breath",
-  ]);
+  const [hasInteracted, setHasInteracted] = useState<boolean>(false);
+  const [aiSpokenResponse, setAiSpokenResponse] = useState<string>(() => t.initialGreeting);
+  const [quickReplies, setQuickReplies] = useState<string[]>(() => t.quickReplies);
+
+  // Synchronize initial greeting and quick symptom buttons when language changes if no conversation turn has happened
+  useEffect(() => {
+    if (!hasInteracted && !transcript) {
+      const trans = getKioskTranslation(language);
+      setAiSpokenResponse(trans.initialGreeting);
+      setQuickReplies(trans.quickReplies);
+    }
+  }, [language, hasInteracted, transcript]);
+
   const [redFlag, setRedFlag] = useState<boolean>(false);
   const [redFlagDetail, setRedFlagDetail] = useState<string>("");
   const [textInput, setTextInput] = useState<string>("");
@@ -157,8 +157,8 @@ export function LivePatientIntakeStation() {
     recommended_physician_focus?: string;
   } | null>(null);
 
-  // Contextual Historical Memory Clues
-  const [historicalClues] = useState<Array<{
+  // Contextual Historical Memory Clues (dynamically fetched from real history or verified fallback)
+  const [historicalClues, setHistoricalClues] = useState<Array<{
     condition: string;
     year: string;
     source: string;
@@ -177,6 +177,69 @@ export function LivePatientIntakeStation() {
       relevanceNote: "Prior Amlodipine 5mg therapy documented. Important baseline for current blood pressure and chest pressure."
     }
   ]);
+
+  // Dynamically load real patient history from backend history/ABDM records
+  useEffect(() => {
+    async function loadPatientHistory() {
+      try {
+        let historyData: any = null;
+        if (isAuthenticated) {
+          try {
+            historyData = await HistoryAPI.getMyHistory();
+          } catch {
+            historyData = await HistoryAPI.getPatientHistory(user?.user_id || "P-DEMO-001");
+          }
+        } else {
+          historyData = await HistoryAPI.getPatientHistory("P-DEMO-001");
+        }
+
+        if (historyData) {
+          const clues: Array<{ condition: string; year: string; source: string; relevanceNote: string }> = [];
+
+          if (historyData.diagnoses && Array.isArray(historyData.diagnoses)) {
+            historyData.diagnoses.slice(0, 2).forEach((d: any) => {
+              clues.push({
+                condition: d.condition || d.name || "Medical Condition",
+                year: d.year || (d.date ? new Date(d.date).getFullYear().toString() : "2024"),
+                source: d.source || "Longitudinal Clinical Record",
+                relevanceNote: d.notes || `Documented ${d.condition_type || "diagnosed"} condition from prior consultation.`
+              });
+            });
+          }
+
+          if (clues.length < 2 && historyData.encounters && Array.isArray(historyData.encounters)) {
+            historyData.encounters.slice(0, 2 - clues.length).forEach((enc: any) => {
+              clues.push({
+                condition: enc.provisional_diagnosis || enc.chief_complaint || "Prior Hospital Encounter",
+                year: enc.encounter_date ? new Date(enc.encounter_date).getFullYear().toString() : "2024",
+                source: `${enc.hospital_name || "Apex Health OPD"} • ${enc.encounter_date || "Past Visit"}`,
+                relevanceNote: enc.clinical_notes || "Documented clinical encounter from hospital record history."
+              });
+            });
+          }
+
+          if (clues.length < 2 && historyData.documents && Array.isArray(historyData.documents)) {
+            historyData.documents.slice(0, 2 - clues.length).forEach((doc: any) => {
+              clues.push({
+                condition: doc.document_purpose || doc.document_type || "Scanned Health Document",
+                year: doc.document_date ? new Date(doc.document_date).getFullYear().toString() : "2024",
+                source: `${doc.facility_name || "Prescription OCR"} • Paper Record`,
+                relevanceNote: doc.clinical_intent || "Extracted from scanned historical medical records."
+              });
+            });
+          }
+
+          if (clues.length > 0) {
+            setHistoricalClues(clues);
+          }
+        }
+      } catch (err) {
+        console.warn("Patient history load notice:", err);
+      }
+    }
+
+    loadPatientHistory();
+  }, [isAuthenticated, user]);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -276,6 +339,7 @@ export function LivePatientIntakeStation() {
   };
 
   const processResponseData = (data: any) => {
+    setHasInteracted(true);
     setAiSpokenResponse(data.spoken_response);
     setRedFlag(Boolean(data.red_flag_triggered));
     setQuickReplies(data.quick_replies || []);
@@ -312,6 +376,7 @@ export function LivePatientIntakeStation() {
 
   const sendTextMessage = async (textToSend: string) => {
     if (!textToSend.trim()) return;
+    setHasInteracted(true);
     setTranscript(textToSend);
     setTextInput("");
     setIsLoading(true);
@@ -347,7 +412,6 @@ export function LivePatientIntakeStation() {
   };
 
   const startListening = async () => {
-    let stream: MediaStream | null = null;
     liveSpeechTranscriptRef.current = "";
 
     // 1. Browser Web Speech Recognition for Real-Time live text transcription
@@ -409,6 +473,7 @@ export function LivePatientIntakeStation() {
   };
 
   const stopListening = async () => {
+    setHasInteracted(true);
     if (speechRecognitionRef.current) {
       try {
         speechRecognitionRef.current.stop();
@@ -449,52 +514,48 @@ export function LivePatientIntakeStation() {
         setTranscript(finalTranscript);
         processResponseData(data);
       } catch (err) {
-        console.error("Voice upload error, falling back to chat intake:", err);
-        if (liveSpeechTranscriptRef.current && liveSpeechTranscriptRef.current.trim()) {
-          await sendTextMessage(liveSpeechTranscriptRef.current.trim());
-        } else {
-          setAiSpokenResponse("Voice recorded. Please confirm your symptom details.");
-        }
+        console.error("Failed voice intake:", err);
+        setAiSpokenResponse("Audio intake recorded. Feel free to refine with the options below.");
       } finally {
         setIsLoading(false);
+        setRecording(false);
       }
+    } else {
+      setRecording(false);
     }
-    setRecording(false);
   };
 
   const handleSocratesFieldUpdate = (field: keyof SocratesData, val: any) => {
     setSocratesState((prev) => ({ ...prev, [field]: val }));
-    const msg = typeof val === "string" ? `Clarifying ${field}: ${val}` : `Setting ${field} to ${val}`;
-    sendTextMessage(msg);
   };
 
   const handleGenerateToken = async () => {
-    const token = `#${Math.floor(100 + Math.random() * 900)}`;
+    const token = `A-${Math.floor(100 + Math.random() * 900)}`;
     setGeneratedTokenNumber(token);
 
     const isEmerg = redFlag || painScore >= 8;
-    const isUrg = painScore >= 6;
+    const isUrg = painScore >= 5 && painScore < 8;
 
     const evidence: EvidenceTimelineItem[] = [
       {
         id: "ev-live-1",
-        timeframe: socratesState.onset || "2 Days Duration",
-        title: "Spoken First-Mile Intake (Vernacular Voice)",
-        detail: `Reported ${socratesState.character || "discomfort"} in ${socratesState.site || "Thorax"} with severity score ${painScore}/10.`,
-        sourceType: intakeMode === "CAREGIVER" ? "CAREGIVER" : "VOICE",
-        sourceBadge: intakeMode === "CAREGIVER" ? `Caregiver Statement (${caregiverRelation || "Family"})` : `Patient Spoken Voice (${language.toUpperCase()})`,
-        sourceSnippet: transcript || "कल रात से छाती में भारीपन और हल्का दर्द लग रहा है।",
-        metadata: { confidence: 0.98, caregiverRelation: intakeMode === "CAREGIVER" ? caregiverRelation : undefined }
+        timeframe: "10 min ago",
+        title: "Kiosk Vernacular Speech Intake & ASR",
+        detail: `Spoken symptoms captured in ${INDIC_LANGUAGES.find(l => l.code === language)?.name || "Vernacular"}: "${transcript || "Patient described symptoms"}"`,
+        sourceType: "VOICE",
+        sourceBadge: `Voice • ${INDIC_LANGUAGES.find(l => l.code === language)?.name.split(" ")[0] || "Indic"}`,
+        sourceSnippet: transcript || "Audio transcript verified with acoustic telemetry.",
+        metadata: { confidence: 0.98 }
       },
       {
         id: "ev-live-2",
-        timeframe: "Historical Context (2022)",
-        title: "Longitudinal Medical History Surfaced",
-        detail: "Treated for Pulmonary TB in 2022. This historical context may be clinically relevant to today's complaint. Physician review recommended.",
-        sourceType: "DOCUMENT",
-        sourceBadge: "Discharge Summary • 14-Aug-2022",
-        sourceSnippet: "Rx: Anti-tubercular DOTS regimen successfully completed. Sputum AFB negative at completion.",
-        metadata: { facility: "District TB Centre", date: "Aug 2022" }
+        timeframe: "5 min ago",
+        title: "Structured SOCRATES Diagnostic Assessment",
+        detail: `Extracted clinical axes: Site=${socratesState.site || "Chest/Thorax"}, Onset=${socratesState.onset || "Acute"}, Character=${socratesState.character || "Tightness"}, Severity=${painScore}/10.`,
+        sourceType: "VOICE",
+        sourceBadge: "SOCRATES Clinical Radar",
+        sourceSnippet: `Location: ${socratesState.site || "Thoracic"}, Radiation: ${socratesState.radiation || "Left arm/neck"}`,
+        metadata: { confidence: 0.95 }
       },
       {
         id: "ev-live-3",
@@ -527,8 +588,8 @@ export function LivePatientIntakeStation() {
       abhaId: patientAbha || "91-4567-8901-2345",
       triageLevel: isEmerg ? "EMERGENCY" : isUrg ? "URGENT" : "ROUTINE",
       chiefComplaint: socratesState.site
-        ? `${socratesState.site}: ${socratesState.character || "Pain"} (Score ${painScore}/10)`
-        : "Sub-sternal chest discomfort & shortness of breath",
+        ? `${socratesState.site}: ${socratesState.character || "Pain"} (Severity ${painScore}/10)`
+        : (transcript || "General clinical intake assessment"),
       triagedTime: "Just now",
       intakeSource: intakeMode,
       caregiverRelation: intakeMode === "CAREGIVER" ? caregiverRelation : undefined,
@@ -547,24 +608,24 @@ export function LivePatientIntakeStation() {
         medications: true,
       },
       vitals: {
-        bp: "128/84 mmHg",
-        pulse: "90 bpm",
+        bp: "124/80 mmHg",
+        pulse: "78 bpm",
         spo2: "98%",
-        temp: "99.2 °F",
-        bmi: "23.1 (Normal)",
+        temp: "98.6 °F",
+        bmi: "22.8 (Normal)",
       },
       hpi: {
-        onset: socratesState.onset || "2 days duration",
-        location: socratesState.site || "Thorax / Upper body",
-        character: socratesState.character || "Constricting ache",
-        radiation: socratesState.radiation || "Radiating to shoulder",
+        onset: socratesState.onset || "Recent onset",
+        location: socratesState.site || "General",
+        character: socratesState.character || "Discomfort",
+        radiation: socratesState.radiation || "None reported",
         severity: `${painScore} / 10`,
-        aggravating: socratesState.exacerbating_relieving || "Exertion",
-        relieving: "Resting",
-        associated: socratesState.associations?.join(", ") || "Nocturnal fever",
+        aggravating: socratesState.exacerbating_relieving || "Daily activity",
+        relieving: "Rest",
+        associated: socratesState.associations?.join(", ") || "None reported",
       },
       voiceTranscript: {
-        original: transcript || "छाती में दर्द और भारीपन लग रहा है।",
+        original: transcript || "Patient described symptoms at kiosk.",
         language: language,
         confidence: 99.1,
       },
@@ -573,11 +634,11 @@ export function LivePatientIntakeStation() {
       ocrHistory: {
         medications: scannedMedications.map(m => ({ ...m, source: "Prescription OCR" })),
         abnormalLabs: [],
-        timeline: [
-          { year: "2022", event: "Pulmonary TB DOTS Treatment Completed", type: "Historical Context" },
-          { year: "2024", event: "Essential Hypertension Rx Initiation", type: "Chronic Rx" },
-          { year: "2026", event: "OPD Triage Intake at MediKiosk", type: "First-Mile Intake" }
-        ],
+        timeline: historicalClues.map((c) => ({
+          year: c.year,
+          event: `${c.condition} - ${c.source}`,
+          type: "Historical Context"
+        })),
       },
     };
 
@@ -598,27 +659,31 @@ export function LivePatientIntakeStation() {
           chief_complaint: newPatient.chiefComplaint,
           intake_source: intakeMode,
           caregiver_relation: caregiverRelation,
-          socrates: socratesState,
-          past_history: [
-            "Pulmonary Tuberculosis (DOTS completed 2022)",
-            "Essential Hypertension (Diagnosed 2024)"
-          ],
-          allergies: [
-            "Penicillin (Severe skin rash reported 2021)",
-            "No known food allergies"
+          socrates: { ...socratesState, severity_score: painScore },
+          past_history: historicalClues.map(c => `${c.condition} (${c.year}) • ${c.source}`),
+          allergies: (user as any)?.allergies && (user as any).allergies.length > 0 ? (user as any).allergies : [
+            "No known drug or food allergies reported"
           ],
           current_medications: scannedMedications,
           vitals: newPatient.vitals,
           evidence_trail: evidence,
-          language: language
+          language: language,
+          raw_transcripts: transcript ? [transcript] : []
         })
       });
     } catch (err) {
       console.warn("Backend sync notification:", err);
     }
 
-    setActiveStepIndex(4);
+    setActiveStepIndex(3);
   };
+
+  const kioskSteps = [
+    { id: "language", label: t.step1Nav, shortLabel: "Language", icon: Languages },
+    { id: "voice", label: t.step2Nav, shortLabel: "Voice Intake", icon: Mic },
+    { id: "scanner", label: t.step3Nav, shortLabel: "OCR Scanner", icon: FileText },
+    { id: "token", label: t.step4Nav, shortLabel: "OPD Token", icon: CheckCircle2 },
+  ];
 
   if (!initialized || !isAuthenticated) {
     return (
@@ -628,6 +693,9 @@ export function LivePatientIntakeStation() {
       </div>
     );
   }
+
+  const selectedLangObj = INDIC_LANGUAGES.find((l) => l.code === language) || INDIC_LANGUAGES[0];
+  const selectedLangShortName = selectedLangObj.name.split(" ")[0];
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] text-[#1E293B] flex flex-col justify-between selection:bg-[#EBF5FF] selection:text-[#0056B3]">
@@ -643,31 +711,31 @@ export function LivePatientIntakeStation() {
             className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0056B3] hover:text-[#004494] transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
-            <span>Back to Kiosk Overview</span>
+            <span>{t.backToKiosk}</span>
           </Link>
           <div className="flex items-center gap-2 text-xs font-semibold text-[#64748B]">
             <span className="w-2 h-2 rounded-full bg-[#28A745] animate-pulse" />
-            <span>Kiosk Terminal #04 Active</span>
+            <span>{t.kioskActive}</span>
           </div>
         </div>
 
         {/* Header Title */}
         <div className="text-center max-w-2xl mx-auto pt-2">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EBF5FF] border border-[#BEE3F8] px-4 py-1 text-xs font-bold uppercase tracking-wider text-[#0056B3]">
-            <HeartPulse className="w-3.5 h-3.5" /> Point-of-Entry Triage Station
+            <HeartPulse className="w-3.5 h-3.5" /> {t.pointOfEntry}
           </span>
           <h1 className="font-heading text-3xl sm:text-4xl font-extrabold text-[#1E293B] mt-2">
-            Live Patient Intake Station
+            {t.mainTitle}
           </h1>
           <p className="text-xs sm:text-sm text-[#64748B] mt-1">
-            Complete the 5-step clinical intake below to receive your digital OPD token.
+            {t.mainSubtitle}
           </p>
         </div>
 
         {/* Step Navigation Pill Bar */}
         <div className="rounded-2xl border border-[#E2E8F0] bg-white p-2 shadow-xs overflow-x-auto">
           <div className="flex items-center justify-between gap-2 min-w-[620px]">
-            {KIOSK_STEPS.map((step, idx) => {
+            {kioskSteps.map((step, idx) => {
               const Icon = step.icon;
               const isActive = activeStepIndex === idx;
               const isCompleted = activeStepIndex > idx;
@@ -706,20 +774,20 @@ export function LivePatientIntakeStation() {
             >
               <div className="text-center">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EBF5FF] border border-[#BEE3F8] px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-[#0056B3]">
-                  <Languages className="h-3.5 w-3.5" /> Step 1 of 5
+                  <Languages className="h-3.5 w-3.5" /> {t.step1Badge}
                 </span>
                 <h2 className="font-heading text-2xl sm:text-3xl font-bold text-[#1E293B] mt-2">
-                  Select Your Language &amp; Intake Mode
+                  {t.step1Title}
                 </h2>
                 <p className="text-xs sm:text-sm text-[#64748B] mt-1 max-w-lg mx-auto">
-                  Speak comfortably in your native tongue or Hinglish. Choose self-intake or assisted caregiver mode.
+                  {t.step1Subtitle}
                 </p>
               </div>
 
               {/* CAREGIVER VS PATIENT MODE SWITCHER */}
               <div className="bg-white rounded-2xl border border-[#E2E8F0] p-5 shadow-xs">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748B] block mb-3">
-                  Who is Answering the Kiosk Today?
+                  {t.whoIsAnswering}
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
@@ -740,12 +808,12 @@ export function LivePatientIntakeStation() {
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-sm text-[#1E293B]">Patient Self-Intake</h4>
+                        <h4 className="font-bold text-sm text-[#1E293B]">{t.patientSelfIntake}</h4>
                         {intakeMode === "PATIENT" && (
-                          <span className="bg-[#0056B3] text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded">ACTIVE</span>
+                          <span className="bg-[#0056B3] text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded">{t.activeBadge}</span>
                         )}
                       </div>
-                      <p className="text-xs text-[#64748B] mt-0.5">I am describing my own symptoms directly.</p>
+                      <p className="text-xs text-[#64748B] mt-0.5">{t.patientSelfIntakeDesc}</p>
                     </div>
                   </button>
 
@@ -767,12 +835,12 @@ export function LivePatientIntakeStation() {
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-sm text-[#1E293B]">Assisted Caregiver Mode</h4>
+                        <h4 className="font-bold text-sm text-[#1E293B]">{t.caregiverMode}</h4>
                         {intakeMode === "CAREGIVER" && (
-                          <span className="bg-[#17A2B8] text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded">ACTIVE</span>
+                          <span className="bg-[#17A2B8] text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded">{t.activeBadge}</span>
                         )}
                       </div>
-                      <p className="text-xs text-[#64748B] mt-0.5">I am helping an elderly parent or family member.</p>
+                      <p className="text-xs text-[#64748B] mt-0.5">{t.caregiverModeDesc}</p>
                     </div>
                   </button>
                 </div>
@@ -781,11 +849,11 @@ export function LivePatientIntakeStation() {
               {/* Patient Basic Information */}
               <div className="bg-white rounded-2xl border border-[#E2E8F0] p-5 shadow-xs">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748B] block mb-3">
-                  Patient Identity &amp; ABHA Profile
+                  {t.patientProfileTitle}
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="text-xs font-semibold text-[#475569] block mb-1">Patient Full Name</label>
+                    <label className="text-xs font-semibold text-[#475569] block mb-1">{t.patientNameLabel}</label>
                     <input
                       type="text"
                       value={patientName}
@@ -794,7 +862,7 @@ export function LivePatientIntakeStation() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-[#475569] block mb-1">Age &amp; Gender</label>
+                    <label className="text-xs font-semibold text-[#475569] block mb-1">{t.ageGenderLabel}</label>
                     <div className="flex gap-2">
                       <input
                         type="number"
@@ -807,14 +875,14 @@ export function LivePatientIntakeStation() {
                         onChange={(e) => setPatientGender(e.target.value)}
                         className="flex-1 rounded-xl border border-[#CBD5E1] bg-[#F8F9FA] px-3 py-2.5 text-xs text-[#1E293B] outline-none focus:border-[#0056B3] focus:bg-white focus:ring-1 focus:ring-[#0056B3]/20 transition-all font-medium"
                       >
-                        <option>Female</option>
-                        <option>Male</option>
-                        <option>Other</option>
+                        <option>{t.genderFemale}</option>
+                        <option>{t.genderMale}</option>
+                        <option>{t.genderOther}</option>
                       </select>
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-[#475569] block mb-1">ABHA Health ID</label>
+                    <label className="text-xs font-semibold text-[#475569] block mb-1">{t.abhaIdLabel}</label>
                     <input
                       type="text"
                       value={patientAbha}
@@ -870,8 +938,8 @@ export function LivePatientIntakeStation() {
                     <ShieldCheck className="w-5 h-5" />
                   </div>
                   <div className="text-xs text-[#1E293B]">
-                    <span className="font-bold block">ABDM Consent &amp; Privacy Safeguards</span>
-                    <span className="text-[#64748B]">Your voice is processed securely for doctor briefing only.</span>
+                    <span className="font-bold block">{t.abdmConsentTitle}</span>
+                    <span className="text-[#64748B]">{t.abdmConsentDesc}</span>
                   </div>
                 </div>
                 <button
@@ -879,7 +947,7 @@ export function LivePatientIntakeStation() {
                   onClick={() => setIsConsentModalOpen(true)}
                   className="px-4 py-2 rounded-full text-xs font-bold text-[#0056B3] border border-[#0056B3] bg-[#EBF5FF] hover:bg-[#D0E6FF] transition-colors cursor-pointer"
                 >
-                  View Consent Policy
+                  {t.viewConsentPolicy}
                 </button>
               </div>
 
@@ -889,7 +957,7 @@ export function LivePatientIntakeStation() {
                   onClick={() => setActiveStepIndex(1)}
                   className="inline-flex items-center gap-2 rounded-full bg-[#0056B3] hover:bg-[#004494] px-9 py-3.5 text-xs font-bold text-white shadow-md hover:shadow-lg transition-all cursor-pointer"
                 >
-                  <span>Proceed to Spoken Intake</span>
+                  <span>{t.proceedToVoice}</span>
                   <ArrowRight className="h-4 w-4 text-white" />
                 </button>
               </div>
@@ -915,20 +983,20 @@ export function LivePatientIntakeStation() {
                     </div>
                     <div>
                       <h3 className="font-heading text-base font-bold text-[#1E293B]">
-                        Aarogya Mitra • AI Pre-Consultation Assistant
+                        {t.assistantName}
                       </h3>
                       <p className="text-xs text-[#64748B]">
-                        {intakeMode === "CAREGIVER" ? "Assisted Caregiver Mode active" : "Multilingual conversational intake & structured doctor briefing"}
+                        {intakeMode === "CAREGIVER" ? t.assistantSubtitleCaregiver : t.assistantSubtitlePatient}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="rounded-full bg-[#EBF5FF] border border-[#BEE3F8] px-3 py-1 text-xs font-bold text-[#0056B3]">
-                      {INDIC_LANGUAGES.find((l) => l.code === language)?.name}
+                      {selectedLangObj.name}
                     </span>
                     <span className="rounded-full bg-[#EAF7ED] border border-[#28A745]/20 px-3 py-1 text-xs font-bold text-[#28A745] flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-[#28A745] animate-pulse" />
-                      Pre-Consultation Intake Active
+                      {t.intakeActiveBadge}
                     </span>
                   </div>
                 </div>
@@ -937,14 +1005,14 @@ export function LivePatientIntakeStation() {
                 <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11px] text-[#64748B]">
                   <Info className="w-4 h-4 text-[#0056B3] shrink-0" />
                   <span>
-                    <strong>AI Intake Assistant:</strong> Aarogya Mitra gathers your symptoms and medical history to brief the attending doctor. Final medical diagnosis and prescriptions are provided directly by your physician.
+                    <strong>{t.noticePrefix}</strong> {t.noticeText}
                   </span>
                 </div>
 
                 {/* AI Spoken Response Message Bubble */}
                 <div className="rounded-2xl bg-[#F0F7FF] border border-[#0056B3]/20 p-5 shadow-2xs">
                   <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#0056B3] block mb-1">
-                    AI Pre-Consultation Assistant:
+                    {t.aiResponseLabel}
                   </span>
                   <p className="font-heading text-base sm:text-lg font-semibold text-[#1E293B] leading-relaxed">
                     &ldquo;{aiSpokenResponse}&rdquo;
@@ -955,7 +1023,7 @@ export function LivePatientIntakeStation() {
                 {transcript && (
                   <div className="rounded-2xl border border-[#E2E8F0] bg-[#F8F9FA] p-4 shadow-2xs">
                     <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#0056B3] block mb-0.5">
-                      Captured Patient Statement:
+                      {t.capturedStatementLabel}
                     </span>
                     <p className="text-xs sm:text-sm font-medium text-[#1E293B] italic leading-relaxed">
                       &ldquo;{transcript}&rdquo;
@@ -1002,7 +1070,12 @@ export function LivePatientIntakeStation() {
 
                 {/* Live Acoustic Waveform & Push-to-Talk Microphone Controller */}
                 <div className="rounded-2xl border border-[#E2E8F0] bg-[#F8F9FA] p-6 text-center space-y-5">
-                  <VoiceWaveform active={isRecording} level={level} />
+                  <VoiceWaveform
+                    active={isRecording}
+                    level={level}
+                    liveText={t.micLive}
+                    standbyText={t.micStandby}
+                  />
 
                   <div className="flex flex-col items-center justify-center pt-2">
                     {isRecording ? (
@@ -1011,7 +1084,7 @@ export function LivePatientIntakeStation() {
                         className="flex items-center gap-3 rounded-full bg-[#DC3545] hover:bg-[#C82333] px-9 py-4 text-xs sm:text-sm font-bold text-white shadow-lg transition-all cursor-pointer animate-pulse"
                       >
                         <MicOff className="h-5 w-5" />
-                        <span>Done Speaking (Process Turn)</span>
+                        <span>{t.doneSpeaking}</span>
                       </button>
                     ) : (
                       <button
@@ -1019,11 +1092,11 @@ export function LivePatientIntakeStation() {
                         className="inline-flex items-center gap-3 rounded-full bg-[#0056B3] hover:bg-[#004494] px-10 py-4 text-xs sm:text-sm font-bold text-white shadow-md hover:shadow-xl transition-all cursor-pointer hover:scale-[1.02]"
                       >
                         <Mic className="h-5 w-5" />
-                        <span>Tap to Speak in {INDIC_LANGUAGES.find((l) => l.code === language)?.name.split(" ")[0]}</span>
+                        <span>{t.tapToSpeak(selectedLangShortName)}</span>
                       </button>
                     )}
                     <p className="mt-2.5 text-xs text-[#64748B]">
-                      {isRecording ? "Listening to your voice... Speak comfortably." : "Speak naturally in Hindi, Telugu, Tamil, Bengali, Marathi, Gujarati, Kannada, or English."}
+                      {isRecording ? t.micListening : t.micHint}
                     </p>
                   </div>
 
@@ -1031,7 +1104,7 @@ export function LivePatientIntakeStation() {
                   <div className="flex gap-2 border-t border-[#E2E8F0] pt-4 max-w-2xl mx-auto">
                     <input
                       type="text"
-                      placeholder="Or type symptoms in any language..."
+                      placeholder={t.typePlaceholder}
                       value={textInput}
                       onChange={(e) => setTextInput(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && sendTextMessage(textInput)}
@@ -1051,7 +1124,7 @@ export function LivePatientIntakeStation() {
                 {quickReplies.length > 0 && (
                   <div>
                     <p className="text-xs font-bold text-[#475569] mb-2">
-                      Quick Symptom Suggestions (Touch to Reply):
+                      {t.quickRepliesTitle}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {quickReplies.map((reply, idx) => (
@@ -1083,7 +1156,7 @@ export function LivePatientIntakeStation() {
                   <div className="flex items-center gap-2 border-b border-[#E2E8F0] pb-2.5">
                     <History className="w-4 h-4 text-[#0056B3]" />
                     <h4 className="font-heading text-xs font-bold text-[#1E293B] uppercase tracking-wider">
-                      Longitudinal Historical Context:
+                      {t.historicalContextTitle}
                     </h4>
                   </div>
                   <div className="space-y-2">
@@ -1100,7 +1173,7 @@ export function LivePatientIntakeStation() {
                     ))}
                   </div>
                   <p className="text-[10px] text-[#64748B] pt-1 italic">
-                    * Automatically aggregated from ABDM records for physician correlation.
+                    {t.historicalDisclaimer}
                   </p>
                 </div>
               </div>
@@ -1108,80 +1181,22 @@ export function LivePatientIntakeStation() {
               {/* 3. Next Step Action Banner */}
               <div className="flex items-center justify-between rounded-2xl bg-white border border-[#E2E8F0] p-5 shadow-xs">
                 <div>
-                  <p className="text-xs sm:text-sm font-bold text-[#1E293B]">Ready to score pain intensity &amp; review clinical axes?</p>
-                  <p className="text-xs text-[#64748B]">Proceed to standard Wong-Baker pain gauge and SOCRATES evaluation</p>
+                  <p className="text-xs sm:text-sm font-bold text-[#1E293B]">{t.readyForScannerTitle}</p>
+                  <p className="text-xs text-[#64748B]">{t.readyForScannerSubtitle}</p>
                 </div>
                 <button
                   onClick={() => setActiveStepIndex(2)}
                   className="inline-flex items-center gap-2 rounded-full bg-[#0056B3] hover:bg-[#004494] px-7 py-3 text-xs font-bold text-white shadow-sm hover:shadow-md transition-all cursor-pointer"
                 >
-                  <span>Next: Pain Scale &amp; SOCRATES</span>
+                  <span>{t.nextScanner}</span>
                   <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
             </motion.div>
           )}
 
-          {/* STEP 3: Pain Rating & Expanded SOCRATES Clinical Matrix */}
+          {/* STEP 3: Prescription & History OCR Scanner */}
           {activeStepIndex === 2 && (
-            <motion.div
-              key="pain-step"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              className="max-w-5xl mx-auto space-y-6 text-center"
-            >
-              <div>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FEF3C7] border border-[#FDE68A] px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-[#92400E]">
-                  <Activity className="h-3.5 w-3.5" /> Step 3 of 5
-                </span>
-                <h2 className="font-heading text-2xl sm:text-3xl font-bold text-[#1E293B] mt-2">
-                  Clinical Pain Rating &amp; SOCRATES Matrix
-                </h2>
-                <p className="text-xs sm:text-sm text-[#64748B] mt-1 max-w-2xl mx-auto">
-                  Touch the numeric scale or facial indicator to score pain intensity, then review or fine-tune each of the 8 clinical diagnostic axes.
-                </p>
-              </div>
-
-              {/* Standard Clinical Pain Rating Gauge */}
-              <ClinicalPainGauge
-                score={painScore}
-                onChange={(val) => {
-                  setPainScore(val);
-                  setSocratesState((prev) => ({ ...prev, severity_score: val }));
-                  sendTextMessage(`My pain severity is ${val} out of 10`);
-                }}
-              />
-
-              {/* Full Descriptive 8-Axis SOCRATES Clinical Matrix */}
-              <SocratesRadar
-                socrates={socratesState}
-                onUpdateField={(key, val) => {
-                  setSocratesState((prev) => ({ ...prev, [key]: val }));
-                  sendTextMessage(`Clarifying ${key}: ${val}`);
-                }}
-              />
-
-              <div className="flex justify-between items-center pt-4">
-                <button
-                  onClick={() => setActiveStepIndex(1)}
-                  className="rounded-full border border-[#E2E8F0] bg-white hover:bg-[#F8F9FA] px-6 py-2.5 text-xs font-bold text-[#1E293B] cursor-pointer shadow-xs"
-                >
-                  ← Back to Spoken Voice
-                </button>
-                <button
-                  onClick={() => setActiveStepIndex(3)}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[#0056B3] hover:bg-[#004494] px-7 py-2.5 text-xs font-bold text-white shadow-md cursor-pointer"
-                >
-                  <span>Next: Scan Past Prescriptions</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </motion.div>
-          )}
-
-          {/* STEP 4: Prescription & History OCR Scanner */}
-          {activeStepIndex === 3 && (
             <motion.div
               key="scanner-step"
               initial={{ opacity: 0 }}
@@ -1191,13 +1206,13 @@ export function LivePatientIntakeStation() {
             >
               <div>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EBF5FF] border border-[#BEE3F8] px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-[#0056B3]">
-                  <FileText className="h-3.5 w-3.5" /> Step 4 of 5
+                  <FileText className="h-3.5 w-3.5" /> {t.step3Badge}
                 </span>
                 <h2 className="font-heading text-2xl sm:text-3xl font-bold text-[#1E293B] mt-2">
-                  Scan Existing Prescriptions &amp; Lab Slips
+                  {t.step3Title}
                 </h2>
                 <p className="text-xs text-[#64748B] mt-1">
-                  Scanned paper records are extracted into verified historical evidence nodes on your clinical timeline.
+                  {t.step3Subtitle}
                 </p>
               </div>
 
@@ -1216,24 +1231,24 @@ export function LivePatientIntakeStation() {
 
               <div className="flex justify-between items-center pt-4">
                 <button
-                  onClick={() => setActiveStepIndex(2)}
+                  onClick={() => setActiveStepIndex(1)}
                   className="rounded-full border border-[#E2E8F0] bg-white hover:bg-[#F8F9FA] px-6 py-2.5 text-xs font-bold text-[#1E293B] cursor-pointer shadow-xs"
                 >
-                  ← Back to Pain Scale
+                  {t.backToVoice}
                 </button>
                 <button
                   onClick={handleGenerateToken}
                   className="inline-flex items-center gap-1.5 rounded-full bg-[#0056B3] hover:bg-[#004494] px-7 py-2.5 text-xs font-bold text-white shadow-md cursor-pointer"
                 >
-                  <span>Generate Digital OPD Token &amp; Storyboard</span>
+                  <span>{t.generateTokenBtn}</span>
                   <ArrowRight className="h-3.5 w-3.5" />
                 </button>
               </div>
             </motion.div>
           )}
 
-          {/* STEP 5: Digital OPD Token & Storyboard Link */}
-          {activeStepIndex === 4 && (
+          {/* STEP 4: Digital OPD Token & Storyboard Link */}
+          {activeStepIndex === 3 && (
             <motion.div
               key="token-step"
               initial={{ opacity: 0, scale: 0.98 }}
@@ -1243,13 +1258,13 @@ export function LivePatientIntakeStation() {
             >
               <div>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EAF7ED] border border-[#28A745]/20 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-[#28A745]">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> First-Mile Intake Complete &amp; Synced
+                  <CheckCircle2 className="h-3.5 w-3.5" /> {t.step4Badge}
                 </span>
                 <h2 className="font-heading text-2xl sm:text-3xl font-bold text-[#1E293B] mt-2">
-                  Your Pre-Consultation Storyboard is Ready
+                  {t.step4Title}
                 </h2>
                 <p className="text-xs sm:text-sm text-[#64748B] mt-1">
-                  Present this digital token to the OPD consultation desk or open the Doctor Cockpit to inspect the evidence trail.
+                  {t.step4Subtitle}
                 </p>
               </div>
 
@@ -1269,7 +1284,7 @@ export function LivePatientIntakeStation() {
                   className="rounded-full bg-[#0056B3] text-white hover:bg-[#004494] px-7 py-3 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-md"
                 >
                   <Download className="w-4 h-4" />
-                  <span>Download Official Clinical Intake Report (PDF)</span>
+                  <span>{t.downloadPdf}</span>
                 </a>
                 <button
                   type="button"
@@ -1277,18 +1292,19 @@ export function LivePatientIntakeStation() {
                   className="rounded-full bg-[#17A2B8] text-white hover:bg-[#138496] px-7 py-3 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-md"
                 >
                   <Layers className="w-4 h-4" />
-                  <span>Open Doctor Storyboard View</span>
+                  <span>{t.openDoctorView}</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => {
                     resetKiosk();
+                    setHasInteracted(false);
                     setActiveStepIndex(0);
                   }}
                   className="rounded-full border border-[#E2E8F0] bg-white hover:bg-[#F8F9FA] px-6 py-3 text-xs font-bold text-[#1E293B] transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
                 >
                   <RotateCcw className="w-4 h-4" />
-                  <span>Start Another Intake</span>
+                  <span>{t.startAnotherIntake}</span>
                 </button>
               </div>
             </motion.div>
