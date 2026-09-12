@@ -72,10 +72,14 @@ export function VoiceWaveform({
   active = false,
   level = 0.2,
   className,
+  liveText = "● Live Acoustic Stream",
+  standbyText = "○ Microphone Standby",
 }: {
   active?: boolean;
   level?: number;
   className?: string;
+  liveText?: string;
+  standbyText?: string;
 }) {
   const bars = [0.35, 0.6, 0.9, 0.75, 1, 0.8, 0.95, 0.5, 0.4, 0.7, 0.85, 0.65, 0.45];
 
@@ -94,7 +98,7 @@ export function VoiceWaveform({
           "absolute top-0 right-1 text-[10px] font-mono font-bold uppercase transition-colors",
           active ? "text-[#28A745]" : "text-[#94A3B8]"
         )}>
-          {active ? "● Live Acoustic Stream" : "○ Microphone Standby"}
+          {active ? liveText : standbyText}
         </span>
       </div>
 
