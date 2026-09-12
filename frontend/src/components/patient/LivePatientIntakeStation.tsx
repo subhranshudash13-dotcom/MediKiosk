@@ -675,15 +675,14 @@ export function LivePatientIntakeStation() {
       console.warn("Backend sync notification:", err);
     }
 
-    setActiveStepIndex(4);
+    setActiveStepIndex(3);
   };
 
   const kioskSteps = [
     { id: "language", label: t.step1Nav, shortLabel: "Language", icon: Languages },
     { id: "voice", label: t.step2Nav, shortLabel: "Voice Intake", icon: Mic },
-    { id: "pain", label: t.step3Nav, shortLabel: "Pain Scale", icon: Activity },
-    { id: "scanner", label: t.step4Nav, shortLabel: "OCR Scanner", icon: FileText },
-    { id: "token", label: t.step5Nav, shortLabel: "OPD Token", icon: CheckCircle2 },
+    { id: "scanner", label: t.step3Nav, shortLabel: "OCR Scanner", icon: FileText },
+    { id: "token", label: t.step4Nav, shortLabel: "OPD Token", icon: CheckCircle2 },
   ];
 
   if (!initialized || !isAuthenticated) {
@@ -1182,80 +1181,22 @@ export function LivePatientIntakeStation() {
               {/* 3. Next Step Action Banner */}
               <div className="flex items-center justify-between rounded-2xl bg-white border border-[#E2E8F0] p-5 shadow-xs">
                 <div>
-                  <p className="text-xs sm:text-sm font-bold text-[#1E293B]">{t.readyForPainTitle}</p>
-                  <p className="text-xs text-[#64748B]">{t.readyForPainSubtitle}</p>
+                  <p className="text-xs sm:text-sm font-bold text-[#1E293B]">{t.readyForScannerTitle}</p>
+                  <p className="text-xs text-[#64748B]">{t.readyForScannerSubtitle}</p>
                 </div>
                 <button
                   onClick={() => setActiveStepIndex(2)}
                   className="inline-flex items-center gap-2 rounded-full bg-[#0056B3] hover:bg-[#004494] px-7 py-3 text-xs font-bold text-white shadow-sm hover:shadow-md transition-all cursor-pointer"
                 >
-                  <span>{t.nextPain}</span>
+                  <span>{t.nextScanner}</span>
                   <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
             </motion.div>
           )}
 
-          {/* STEP 3: Pain Rating & Expanded SOCRATES Clinical Matrix */}
+          {/* STEP 3: Prescription & History OCR Scanner */}
           {activeStepIndex === 2 && (
-            <motion.div
-              key="pain-step"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              className="max-w-5xl mx-auto space-y-6 text-center"
-            >
-              <div>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FEF3C7] border border-[#FDE68A] px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-[#92400E]">
-                  <Activity className="h-3.5 w-3.5" /> {t.step3Badge}
-                </span>
-                <h2 className="font-heading text-2xl sm:text-3xl font-bold text-[#1E293B] mt-2">
-                  {t.step3Title}
-                </h2>
-                <p className="text-xs sm:text-sm text-[#64748B] mt-1 max-w-2xl mx-auto">
-                  {t.step3Subtitle}
-                </p>
-              </div>
-
-              {/* Standard Clinical Pain Rating Gauge */}
-              <ClinicalPainGauge
-                score={painScore}
-                onChange={(val) => {
-                  setPainScore(val);
-                  setSocratesState((prev) => ({ ...prev, severity_score: val }));
-                  sendTextMessage(`My pain severity is ${val} out of 10`);
-                }}
-              />
-
-              {/* Full Descriptive 8-Axis SOCRATES Clinical Matrix */}
-              <SocratesRadar
-                socrates={socratesState}
-                onUpdateField={(key, val) => {
-                  setSocratesState((prev) => ({ ...prev, [key]: val }));
-                  sendTextMessage(`Clarifying ${key}: ${val}`);
-                }}
-              />
-
-              <div className="flex justify-between items-center pt-4">
-                <button
-                  onClick={() => setActiveStepIndex(1)}
-                  className="rounded-full border border-[#E2E8F0] bg-white hover:bg-[#F8F9FA] px-6 py-2.5 text-xs font-bold text-[#1E293B] cursor-pointer shadow-xs"
-                >
-                  {t.backToVoice}
-                </button>
-                <button
-                  onClick={() => setActiveStepIndex(3)}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[#0056B3] hover:bg-[#004494] px-7 py-2.5 text-xs font-bold text-white shadow-md cursor-pointer"
-                >
-                  <span>{t.nextScanner}</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </motion.div>
-          )}
-
-          {/* STEP 4: Prescription & History OCR Scanner */}
-          {activeStepIndex === 3 && (
             <motion.div
               key="scanner-step"
               initial={{ opacity: 0 }}
@@ -1265,13 +1206,13 @@ export function LivePatientIntakeStation() {
             >
               <div>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EBF5FF] border border-[#BEE3F8] px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-[#0056B3]">
-                  <FileText className="h-3.5 w-3.5" /> {t.step4Badge}
+                  <FileText className="h-3.5 w-3.5" /> {t.step3Badge}
                 </span>
                 <h2 className="font-heading text-2xl sm:text-3xl font-bold text-[#1E293B] mt-2">
-                  {t.step4Title}
+                  {t.step3Title}
                 </h2>
                 <p className="text-xs text-[#64748B] mt-1">
-                  {t.step4Subtitle}
+                  {t.step3Subtitle}
                 </p>
               </div>
 
@@ -1290,10 +1231,10 @@ export function LivePatientIntakeStation() {
 
               <div className="flex justify-between items-center pt-4">
                 <button
-                  onClick={() => setActiveStepIndex(2)}
+                  onClick={() => setActiveStepIndex(1)}
                   className="rounded-full border border-[#E2E8F0] bg-white hover:bg-[#F8F9FA] px-6 py-2.5 text-xs font-bold text-[#1E293B] cursor-pointer shadow-xs"
                 >
-                  {t.backToPain}
+                  {t.backToVoice}
                 </button>
                 <button
                   onClick={handleGenerateToken}
@@ -1306,8 +1247,8 @@ export function LivePatientIntakeStation() {
             </motion.div>
           )}
 
-          {/* STEP 5: Digital OPD Token & Storyboard Link */}
-          {activeStepIndex === 4 && (
+          {/* STEP 4: Digital OPD Token & Storyboard Link */}
+          {activeStepIndex === 3 && (
             <motion.div
               key="token-step"
               initial={{ opacity: 0, scale: 0.98 }}
@@ -1317,13 +1258,13 @@ export function LivePatientIntakeStation() {
             >
               <div>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EAF7ED] border border-[#28A745]/20 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-[#28A745]">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> {t.step5Badge}
+                  <CheckCircle2 className="h-3.5 w-3.5" /> {t.step4Badge}
                 </span>
                 <h2 className="font-heading text-2xl sm:text-3xl font-bold text-[#1E293B] mt-2">
-                  {t.step5Title}
+                  {t.step4Title}
                 </h2>
                 <p className="text-xs sm:text-sm text-[#64748B] mt-1">
-                  {t.step5Subtitle}
+                  {t.step4Subtitle}
                 </p>
               </div>
 
