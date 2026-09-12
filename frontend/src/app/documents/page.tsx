@@ -537,14 +537,72 @@ export default function DocumentIntelligencePage() {
                         </button>
                       </div>
 
-                      {/* Image Preview (Full, Uncropped) */}
+                      {/* Image Preview with High-Tech Medical Scanner Overlay */}
                       {previewUrl && (
-                        <div className="relative overflow-hidden rounded-2xl border border-[#CBD5E1] bg-slate-100 p-2 shadow-inner">
+                        <div className="relative overflow-hidden rounded-2xl border border-blue-200/80 bg-slate-950 p-2 shadow-inner group">
+                          {/* Corner Viewfinder Reticles */}
+                          <div className="absolute top-3 left-3 w-5 h-5 border-t-2 border-l-2 border-[#0066FF] rounded-tl-sm z-30 pointer-events-none" />
+                          <div className="absolute top-3 right-3 w-5 h-5 border-t-2 border-r-2 border-[#0066FF] rounded-tr-sm z-30 pointer-events-none" />
+                          <div className="absolute bottom-3 left-3 w-5 h-5 border-b-2 border-l-2 border-[#0066FF] rounded-bl-sm z-30 pointer-events-none" />
+                          <div className="absolute bottom-3 right-3 w-5 h-5 border-b-2 border-r-2 border-[#0066FF] rounded-br-sm z-30 pointer-events-none" />
+
+                          {/* Optical HUD Radar Overlay during Scanning */}
+                          {isScanning && (
+                            <div className="absolute inset-0 bg-blue-950/20 backdrop-blur-[1px] z-20 flex flex-col justify-between p-4 pointer-events-none">
+                              {/* Top Scanner HUD Header */}
+                              <div className="flex items-center justify-between">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-600/90 text-white text-[11px] font-bold tracking-wider uppercase shadow-md animate-pulse">
+                                  <Sparkles className="w-3.5 h-3.5" />
+                                  <span>Qwen Vision AI Optical Scanning</span>
+                                </div>
+                                <div className="text-[11px] font-mono text-cyan-300 font-bold bg-slate-900/80 px-2.5 py-0.5 rounded-md border border-cyan-500/30">
+                                  98.8% Accuracy Target
+                                </div>
+                              </div>
+
+                              {/* Moving Laser Beam */}
+                              <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-[#0066FF] to-transparent shadow-[0_0_18px_rgba(0,102,255,1)] animate-bounce z-20" />
+
+                              {/* Bottom Real-time OCR Matrix Stream */}
+                              <div className="bg-slate-900/90 border border-blue-500/30 rounded-xl p-2.5 text-left space-y-1">
+                                <div className="flex items-center justify-between text-[11px] font-medium text-cyan-200">
+                                  <span>{scanStage || "Deciphering Clinical Cursive & Pharmacotherapy..."}</span>
+                                  <RefreshCw className="w-3 h-3 text-cyan-400 animate-spin" />
+                                </div>
+                                <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                                  <div className="bg-gradient-to-r from-blue-500 to-cyan-400 h-full rounded-full w-3/4 animate-pulse" />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
                           <img
                             src={previewUrl}
                             alt="Prescription Preview"
-                            className="max-h-[340px] w-auto h-auto object-contain rounded-xl mx-auto bg-white shadow-xs"
+                            className="max-h-[360px] w-auto h-auto object-contain rounded-xl mx-auto bg-white/95 shadow-xs transition-transform duration-300"
                           />
+                        </div>
+                      )}
+
+                      {/* Live Scanning Pipeline Stages */}
+                      {isScanning && (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-left">
+                          <div className="p-2 rounded-xl bg-blue-50 border border-blue-200/80 text-[10px] flex items-center gap-1.5 text-blue-800 font-semibold">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                            <span className="truncate">1. Image Enhance</span>
+                          </div>
+                          <div className="p-2 rounded-xl bg-blue-500 text-white border border-blue-600 text-[10px] flex items-center gap-1.5 font-bold shadow-xs animate-pulse">
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin shrink-0" />
+                            <span className="truncate">2. Vision AI OCR</span>
+                          </div>
+                          <div className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-[10px] flex items-center gap-1.5 text-slate-500">
+                            <Pill className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span className="truncate">3. Pharmacopeia</span>
+                          </div>
+                          <div className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-[10px] flex items-center gap-1.5 text-slate-500">
+                            <ShieldCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span className="truncate">4. ABDM Sync</span>
+                          </div>
                         </div>
                       )}
 
