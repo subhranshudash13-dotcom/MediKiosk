@@ -145,7 +145,8 @@ export function PrescriptionScanner({
       });
 
       if (!res.ok) {
-        throw new Error(`Server returned HTTP ${res.status}`);
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.detail || `Server returned HTTP ${res.status}`);
       }
 
       setScanStage("Decoding Clinical Purpose & Intent...");
@@ -153,8 +154,8 @@ export function PrescriptionScanner({
       setExtractedDoc(data);
       onScanComplete?.(data);
     } catch (err: any) {
-      console.warn("Upload endpoint failed, falling back to local clinical engine:", err);
-      await processSampleDocument("prescription", selectedFile.name);
+      console.error("Upload failed:", err);
+      setErrorMsg(err.message || "Failed to process prescription image with Qwen Vision OCR.");
     } finally {
       setIsScanning(false);
       setScanStage("");
@@ -414,11 +415,11 @@ export function PrescriptionScanner({
                 </div>
 
                 {previewUrl && (
-                  <div className="relative max-h-40 overflow-hidden rounded-xl border border-[#E2E8F0] bg-white">
+                  <div className="relative overflow-hidden rounded-xl border border-[#CBD5E1] bg-slate-100 p-2 shadow-inner">
                     <img
                       src={previewUrl}
-                      alt="Document Preview"
-                      className="w-full h-auto object-cover max-h-40"
+                      alt="Prescription Document Preview"
+                      className="w-full h-auto max-h-[360px] object-contain rounded-lg mx-auto bg-white shadow-xs"
                     />
                   </div>
                 )}
@@ -468,6 +469,39 @@ export function PrescriptionScanner({
               </div>
             )}
           </div>
+
+          {/* Scanning / Processing Alert Error Banner */}
+          {errorMsg && (
+            <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-start gap-2.5 shadow-xs">
+              <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+              <div>
+                <strong className="font-semibold block">OCR Scanning Alert:</strong>
+                <span>{errorMsg}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Active / Uploaded Prescription Image Display Card */}
+          {(previewUrl || (extractedDoc?.file_path && extractedDoc.file_path.startsWith("data:image/"))) && (
+            <div className="rounded-2xl border border-[#CBD5E1] bg-white p-4 shadow-xs space-y-2.5 text-left">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#1E293B]">
+                  <FileText className="h-4 w-4 text-[#0056B3]" />
+                  <span>Prescription Image Preview</span>
+                </div>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                  Qwen Vision Active
+                </span>
+              </div>
+              <div className="overflow-auto max-h-[380px] rounded-xl border border-[#E2E8F0] bg-slate-50 p-2 flex items-center justify-center">
+                <img
+                  src={previewUrl || extractedDoc?.file_path}
+                  alt="Digitized Clinical Document"
+                  className="max-h-[360px] w-auto h-auto object-contain rounded-lg shadow-2xs"
+                />
+              </div>
+            </div>
+          )}
 
           {/* Quick Instant Test Samples */}
           <div className="rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-xs">

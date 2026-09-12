@@ -357,12 +357,13 @@ class DocumentOCRService:
 
     async def _transcribe_with_vision(self, file_bytes: bytes) -> Optional[Dict[str, Any]]:
         """
-        Transcribes handwritten doctor prescriptions with multimodal visual intelligence.
-        Optimizes image resolution and JPEG compression to stay strictly within token limits,
-        and includes automatic backoff retry for resilient execution.
+        Transcribes handwritten doctor prescriptions with multimodal visual intelligence using Qwen models.
+        Optimizes image resolution and JPEG compression, supports both qwen/qwen3.8-27b and qwen/qwen3.6-27b,
+        and provides resilient JSON extraction and rate-limit retries.
         """
         groq_key = self._get_groq_key()
         if not groq_key:
+            logger.warning("DocumentOCR: GROQ_API_KEY is not configured in environment; vision transcription cannot run.")
             return None
 
         # 1. Compress image to high-efficiency JPEG (max dimension 1024px) to minimize vision tokens
@@ -370,7 +371,7 @@ class DocumentOCRService:
         try:
             pil_img = Image.open(io.BytesIO(file_bytes)).convert("RGB")
             w, h = pil_img.size
-            scale = min(850 / max(w, h), 1.0)
+            scale = min(950 / max(w, h), 1.0)
             if scale < 1.0:
                 pil_img = pil_img.resize((int(w * scale), int(h * scale)), Image.Resampling.LANCZOS)
             buf = io.BytesIO()
@@ -382,7 +383,7 @@ class DocumentOCRService:
 
         prompt = (
             "Extract all details from this doctor prescription image. "
-            "Return valid JSON with keys: "
+            "Return valid JSON only with keys: "
             "facility_name, doctor_name, date, patient_name, age, sex, uhid, "
             "complaints (list of strings), "
             "vitals (object with bp, hr, spo2, temp, dehydration, rbs), "
@@ -390,44 +391,66 @@ class DocumentOCRService:
             "diagnoses (list of strings)."
         )
 
-        for attempt in range(2):
-            try:
-                async with httpx.AsyncClient(timeout=35.0) as client:
-                    resp = await client.post(
-                        "https://api.groq.com/openai/v1/chat/completions",
-                        headers={"Authorization": f"Bearer {groq_key}"},
-                        json={
-                            "model": "qwen/qwen3.8-27b",
-                            "messages": [
-                                {
-                                    "role": "user",
-                                    "content": [
-                                        {"type": "text", "text": prompt},
-                                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64_data}"}}
-                                    ]
-                                }
-                            ],
-                            "max_tokens": 550,
-                            "temperature": 0.1
-                        }
-                    )
+        candidate_models = ["qwen/qwen3.8-27b", "qwen/qwen3.6-27b"]
 
-                    if resp.status_code == 200:
-                        raw_content = resp.json()["choices"][0]["message"]["content"]
-                        match = re.search(r"\{.*\}", raw_content, re.DOTALL)
-                        if match:
-                            parsed = json.loads(match.group(0))
-                            logger.info(f"DocumentOCR: Multimodal vision successfully parsed '{parsed.get('facility_name')}'")
-                            return parsed
-                    elif resp.status_code == 429 and attempt == 0:
-                        logger.info("DocumentOCR: Vision rate limit encountered. Waiting 4.0s for retry...")
-                        import asyncio
-                        await asyncio.sleep(4.0)
-                        continue
-                    else:
-                        logger.warning(f"DocumentOCR: Vision API returned HTTP {resp.status_code}: {resp.text[:150]}")
-            except Exception as e:
-                logger.warning(f"DocumentOCR: Vision attempt {attempt+1} note: {e}")
+        for model_name in candidate_models:
+            for attempt in range(2):
+                try:
+                    async with httpx.AsyncClient(timeout=40.0) as client:
+                        resp = await client.post(
+                            "https://api.groq.com/openai/v1/chat/completions",
+                            headers={"Authorization": f"Bearer {groq_key}"},
+                            json={
+                                "model": model_name,
+                                "messages": [
+                                    {
+                                        "role": "user",
+                                        "content": [
+                                            {"type": "text", "text": prompt},
+                                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64_data}"}}
+                                        ]
+                                    }
+                                ],
+                                "max_tokens": 1200,
+                                "temperature": 0.1
+                            }
+                        )
+
+                        if resp.status_code == 200:
+                            raw_content = resp.json()["choices"][0]["message"]["content"].strip()
+                            # Clean code fence wrappers
+                            if "```json" in raw_content:
+                                raw_content = raw_content.split("```json")[-1].split("```")[0].strip()
+                            elif "```" in raw_content:
+                                raw_content = raw_content.split("```")[-1].split("```")[0].strip()
+
+                            match = re.search(r"\{.*\}", raw_content, re.DOTALL)
+                            if match:
+                                clean_json = match.group(0).strip()
+                                try:
+                                    parsed = json.loads(clean_json)
+                                    logger.info(f"DocumentOCR: Multimodal vision ({model_name}) successfully parsed '{parsed.get('facility_name') or parsed.get('doctor_name')}'")
+                                    return parsed
+                                except json.JSONDecodeError:
+                                    # Attempt basic bracket repair if cut off
+                                    if clean_json.count("{") > clean_json.count("}"):
+                                        repaired = clean_json + "}" * (clean_json.count("{") - clean_json.count("}"))
+                                        try:
+                                            parsed = json.loads(repaired)
+                                            logger.info(f"DocumentOCR: Repaired and parsed JSON from {model_name}")
+                                            return parsed
+                                        except Exception:
+                                            pass
+                        elif resp.status_code == 429:
+                            logger.info(f"DocumentOCR: {model_name} rate limited (429). Backing off...")
+                            import asyncio
+                            await asyncio.sleep(2.5 * (attempt + 1))
+                            continue
+                        else:
+                            logger.warning(f"DocumentOCR: {model_name} returned HTTP {resp.status_code}: {resp.text[:120]}")
+                            break  # Try next model if HTTP client error
+                except Exception as e:
+                    logger.warning(f"DocumentOCR: Vision attempt with {model_name} failed: {e}")
 
         return None
 
@@ -538,7 +561,8 @@ class DocumentOCRService:
         vision_data: Dict[str, Any],
         filename: str,
         patient_id: str,
-        raw_text: str
+        raw_text: str,
+        image_data_uri: Optional[str] = None
     ) -> MedicalDocument:
         """
         Constructs a complete MedicalDocument from multimodal vision transcription,
@@ -954,7 +978,7 @@ class DocumentOCRService:
             extracted_medications=extracted_medications,
             extracted_labs=extracted_labs,
             extracted_vitals=extracted_vitals,
-            file_path=filename,
+            file_path=image_data_uri or filename,
             is_abdm_linked=True
         )
 
@@ -1186,14 +1210,30 @@ class DocumentOCRService:
         except Exception as e:
             logger.warning(f"DocumentOCR: Failed to parse image bytes: {e}")
 
+        # Generate clean compressed base64 data URI for frontend rendering
+        image_data_uri = None
+        try:
+            if pil_image:
+                pil_prev = pil_image.convert("RGB")
+                pw, ph = pil_prev.size
+                pscale = min(1200 / max(pw, ph), 1.0)
+                if pscale < 1.0:
+                    pil_prev = pil_prev.resize((int(pw * pscale), int(ph * pscale)), Image.Resampling.LANCZOS)
+                pbuf = io.BytesIO()
+                pil_prev.save(pbuf, format="JPEG", quality=82)
+                image_data_uri = f"data:image/jpeg;base64,{base64.b64encode(pbuf.getvalue()).decode('utf-8')}"
+        except Exception as e:
+            logger.warning(f"DocumentOCR: Failed to generate preview URI: {e}")
+
         # 1. Primary Engine: Multimodal Visual Intelligence
         vision_result = await self._transcribe_with_vision(file_bytes)
-        if vision_result and (vision_result.get("medications") or vision_result.get("vitals") or vision_result.get("facility_name")):
+        if vision_result and (vision_result.get("medications") or vision_result.get("vitals") or vision_result.get("facility_name") or vision_result.get("doctor_name")):
             doc = self._build_document_from_vision(
                 vision_result,
                 filename=filename,
                 patient_id=patient_id,
-                raw_text=json.dumps(vision_result)
+                raw_text=json.dumps(vision_result),
+                image_data_uri=image_data_uri
             )
             return doc
 
@@ -1300,7 +1340,7 @@ class DocumentOCRService:
             extracted_medications=extracted_medications,
             extracted_labs=extracted_labs,
             extracted_vitals=extracted_vitals,
-            file_path=filename,
+            file_path=image_data_uri or filename,
             is_abdm_linked=True
         )
 
