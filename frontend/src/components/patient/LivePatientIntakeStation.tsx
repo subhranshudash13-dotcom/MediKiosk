@@ -187,7 +187,7 @@ export function LivePatientIntakeStation() {
           try {
             historyData = await HistoryAPI.getMyHistory();
           } catch {
-            historyData = await HistoryAPI.getPatientHistory(user?.id || "P-DEMO-001");
+            historyData = await HistoryAPI.getPatientHistory(user?.user_id || "P-DEMO-001");
           }
         } else {
           historyData = await HistoryAPI.getPatientHistory("P-DEMO-001");
