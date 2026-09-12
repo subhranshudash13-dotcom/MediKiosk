@@ -98,7 +98,7 @@ export function Doctor30SecondView({
           </p>
           <div className="pt-1 flex items-center gap-1.5 text-xs text-[#1B4332] font-semibold">
             <Clock className="w-3.5 h-3.5 text-[#9C4124]" />
-            <span>Onset: {patient.hpi.onset.split(",")[0] || "Acute (2d)"}</span>
+            <span>Onset: {patient.hpi?.onset ? patient.hpi.onset.split(",")[0] : "Acute (2d)"}</span>
           </div>
         </div>
 
@@ -110,15 +110,15 @@ export function Doctor30SecondView({
           <ul className="text-xs text-[#4E5752] space-y-1">
             <li className="flex items-start gap-1 truncate">
               <span className="text-[#1B4332] font-bold">•</span>
-              <span className="truncate">{patient.hpi.character}</span>
+              <span className="truncate">{patient.hpi?.character || "Not specified"}</span>
             </li>
             <li className="flex items-start gap-1 truncate">
               <span className="text-[#1B4332] font-bold">•</span>
-              <span className="truncate">Radiation: {patient.hpi.radiation || "None reported"}</span>
+              <span className="truncate">Radiation: {patient.hpi?.radiation || "None reported"}</span>
             </li>
             <li className="flex items-start gap-1 truncate">
               <span className="text-[#1B4332] font-bold">•</span>
-              <span className="truncate">Severity: {patient.hpi.severity}</span>
+              <span className="truncate">Severity: {patient.hpi?.severity || "Moderate"}</span>
             </li>
           </ul>
         </div>

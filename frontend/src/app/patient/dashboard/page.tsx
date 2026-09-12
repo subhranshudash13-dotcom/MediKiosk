@@ -350,7 +350,25 @@ export default function PatientDashboardPage() {
           {/* Right Column: Actions & Consent Hub (2 cols) */}
           <div className="md:col-span-2 space-y-6">
             {/* Action Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Link
+                href="/patient/history"
+                className="p-6 rounded-[28px] bg-gradient-to-br from-[#0B2545] to-[#134074] text-white shadow-subtle hover:shadow-md transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
+              >
+                <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-blue-200">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold font-heading">Health History</h3>
+                  <p className="text-xs text-white/80 mt-1 leading-relaxed">
+                    Unified timeline of prior clinical visits, OCR prescriptions, lab trends, and active meds.
+                  </p>
+                </div>
+                <span className="text-xs font-bold text-blue-200 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                  View Records &rarr;
+                </span>
+              </Link>
+
               <Link
                 href="/kiosk"
                 className="p-6 rounded-[28px] bg-gradient-to-br from-[#1B4332] to-[#2D6A4F] text-white shadow-subtle hover:shadow-md transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
@@ -359,9 +377,9 @@ export default function PatientDashboardPage() {
                   <Mic className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold font-heading">Start Kiosk Triage Session</h3>
+                  <h3 className="text-base font-bold font-heading">Kiosk Triage</h3>
                   <p className="text-xs text-white/80 mt-1 leading-relaxed">
-                    Begin vernacular clinical voice intake at this station. Encounter automatically links to your profile.
+                    Begin vernacular clinical voice intake. Encounter automatically links to your profile.
                   </p>
                 </div>
                 <span className="text-xs font-bold text-[#D8F3DC] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
@@ -377,13 +395,13 @@ export default function PatientDashboardPage() {
                   <FileText className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold font-heading text-neutral-900">Medical Document Timeline</h3>
+                  <h3 className="text-base font-bold font-heading text-neutral-900">Document Studio</h3>
                   <p className="text-xs text-neutral-500 mt-1 leading-relaxed">
-                    Upload physical prescription scans or lab reports. View OCR extracted medications &amp; vitals.
+                    Upload physical prescription scans or lab reports. Extract OCR medications &amp; vitals.
                   </p>
                 </div>
                 <span className="text-xs font-bold text-[#1B4332] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                  Open Document Studio &rarr;
+                  Upload Scans &rarr;
                 </span>
               </Link>
             </div>

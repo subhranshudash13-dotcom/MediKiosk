@@ -70,7 +70,9 @@ async def upload_medical_document(
         doc = await ocr_service.process_document(content, filename=filename, patient_id=patient_id)
         
         if auto_sync_timeline:
-            timeline_service.sync_document_to_timeline(doc)
+            await timeline_service.sync_document_to_timeline_async(doc)
+        else:
+            await timeline_service.persist_document_to_db(doc)
             
         return doc
     except HTTPException:
@@ -101,7 +103,7 @@ async def process_sample_document(
     dummy_bytes = b"SAMPLE_CLINICAL_DOCUMENT_BYTES"
     
     doc = await ocr_service.process_document(dummy_bytes, filename=sample_filename, patient_id=patient_id)
-    timeline_service.sync_document_to_timeline(doc)
+    await timeline_service.sync_document_to_timeline_async(doc)
     return doc
 
 
@@ -118,7 +120,7 @@ async def get_patient_timeline(patient_id: str = "P-DEMO-001"):
 async def sync_document_to_timeline(patient_id: str, document: MedicalDocument):
     """Sync an existing structured MedicalDocument directly into a patient's timeline."""
     document.patient_id = patient_id
-    return timeline_service.sync_document_to_timeline(document)
+    return await timeline_service.sync_document_to_timeline_async(document)
 
 
 @router.get("/reference-ranges", response_model=Dict[str, Any])

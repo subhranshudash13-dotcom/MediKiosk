@@ -242,8 +242,14 @@ async def init_db_indexes(db: Any):
         # Medical Documents & OCR
         await db.documents.create_index([("document_id", 1)], unique=True)
         await db.documents.create_index([("patient_id", 1)])
+        await db.documents.create_index([("created_at", -1)])
 
-        logger.info("Successfully ensured database indexes for auth, patient, encounter, and kiosk models.")
+        # Timeline Events (Longitudinal History)
+        await db.timeline_events.create_index([("event_id", 1)], unique=True)
+        await db.timeline_events.create_index([("patient_id", 1)])
+        await db.timeline_events.create_index([("date", -1)])
+
+        logger.info("Successfully ensured database indexes for auth, patient, encounter, document, and timeline models.")
     except Exception as e:
         logger.warning(f"Notice: Database index initialization skipped or unsupported: {e}")
 

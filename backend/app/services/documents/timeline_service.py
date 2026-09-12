@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from datetime import date, datetime, timedelta
 
 from app.models.documents import (
@@ -11,8 +11,20 @@ from app.models.documents import (
     ExtractedLabResult,
     SeverityLevel,
 )
+from app.core.database import get_database
 
 logger = logging.getLogger(__name__)
+
+
+def _sanitize_for_mongo(obj: Any) -> Any:
+    """Recursively converts date objects to ISO strings for safe MongoDB insertion."""
+    if isinstance(obj, dict):
+        return {k: _sanitize_for_mongo(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_sanitize_for_mongo(i) for i in obj]
+    elif isinstance(obj, date) and not isinstance(obj, datetime):
+        return obj.isoformat()
+    return obj
 
 
 class LongitudinalTimelineService:
@@ -291,7 +303,207 @@ class LongitudinalTimelineService:
         self._patient_documents[patient_id].insert(0, doc)
 
         logger.info(f"TimelineService: Successfully synced document {doc.document_id} to patient {patient_id} timeline")
+
+        # Automatically fire async persistence if an event loop is running
+        try:
+            import asyncio
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.create_task(self.persist_document_to_db(doc))
+                asyncio.create_task(self.persist_timeline_event_to_db(event))
+        except Exception:
+            pass
+
         return event
+
+    async def persist_document_to_db(self, doc: MedicalDocument) -> bool:
+        """Persists or updates an OCR-extracted MedicalDocument in the MongoDB documents collection."""
+        try:
+            db = get_database()
+            data = doc.model_dump() if hasattr(doc, "model_dump") else doc.dict()
+            sanitized = _sanitize_for_mongo(data)
+            await db["documents"].update_one(
+                {"document_id": doc.document_id},
+                {"$set": sanitized},
+                upsert=True
+            )
+            logger.info(f"TimelineService: Persisted document {doc.document_id} to MongoDB")
+            return True
+        except Exception as e:
+            logger.warning(f"TimelineService: Failed to persist document {doc.document_id} to MongoDB: {e}")
+            return False
+
+    async def persist_timeline_event_to_db(self, event: TimelineEvent) -> bool:
+        """Persists or updates a TimelineEvent in the MongoDB timeline_events collection."""
+        try:
+            db = get_database()
+            data = event.model_dump() if hasattr(event, "model_dump") else event.dict()
+            sanitized = _sanitize_for_mongo(data)
+            await db["timeline_events"].update_one(
+                {"event_id": event.event_id},
+                {"$set": sanitized},
+                upsert=True
+            )
+            logger.info(f"TimelineService: Persisted timeline event {event.event_id} to MongoDB")
+            return True
+        except Exception as e:
+            logger.warning(f"TimelineService: Failed to persist timeline event {event.event_id} to MongoDB: {e}")
+            return False
+
+    async def sync_document_to_timeline_async(self, doc: MedicalDocument) -> TimelineEvent:
+        """Converts doc to TimelineEvent, caches in memory, and persists both doc and event to MongoDB."""
+        event = self.sync_document_to_timeline(doc)
+        await self.persist_document_to_db(doc)
+        await self.persist_timeline_event_to_db(event)
+        return event
+
+    async def ensure_demo_records_seeded(self):
+        """Ensures demo patient P-DEMO-001 has records seeded in MongoDB for instant evaluation."""
+        try:
+            db = get_database()
+            existing_count = await db["timeline_events"].count_documents({"patient_id": "P-DEMO-001"})
+            if existing_count > 0:
+                return
+
+            demo_events = self._patient_timeline_events.get("P-DEMO-001", [])
+            for evt in demo_events:
+                await self.persist_timeline_event_to_db(evt)
+
+            # Also seed a realistic encounter
+            enc_count = await db["encounters"].count_documents({"patient_id": "P-DEMO-001"})
+            if enc_count == 0:
+                await db["encounters"].insert_one({
+                    "encounter_id": "ENC-DEMO-2024-06",
+                    "patient_id": "P-DEMO-001",
+                    "patient_name": "Ramesh Kumar",
+                    "age": 58,
+                    "gender": "male",
+                    "encounter_date": "2024-06-15",
+                    "hospital_name": "AIIMS New Delhi - Outpatient Cardiology",
+                    "department": "Cardiology",
+                    "doctor_name": "Dr. Rajesh Gupta, MD",
+                    "chief_complaint": "Post-stent cardiology review, mild exertion breathlessness",
+                    "hpi": "58-year-old male known case of CAD post-PCI (LAD DES, Nov 2023) and Type 2 Diabetes presenting for scheduled 6-month cardiology follow-up.",
+                    "socrates": {
+                        "site": "Substernal",
+                        "onset": "Gradual on brisk walking",
+                        "character": "Heaviness",
+                        "radiation": "None",
+                        "associations": "Mild dyspnea",
+                        "timeCourse": "Resolves with 5 mins rest",
+                        "exacerbating": "Climbing stairs",
+                        "severity": "3/10"
+                    },
+                    "vitals": {
+                        "bp": "138/86 mmHg",
+                        "pulse": "74 bpm",
+                        "spo2": "98%",
+                        "temp": "98.2 °F",
+                        "weight": "72 kg",
+                        "height": "170 cm"
+                    },
+                    "past_history": ["CAD (Post-PCI LAD DES Nov 2023)", "Type 2 Diabetes Mellitus", "Essential Hypertension"],
+                    "current_medications": [
+                        {"drug": "Amlodipine Besylate", "dose": "5 mg", "frequency": "1-0-0 (OD)"},
+                        {"drug": "Atorvastatin Calcium", "dose": "20 mg", "frequency": "0-0-1 (HS)"},
+                        {"drug": "Clopidogrel", "dose": "75 mg", "frequency": "1-0-0 (OD)"},
+                        {"drug": "Metformin Hydrochloride", "dose": "500 mg", "frequency": "1-0-1 (BD)"}
+                    ],
+                    "allergies": ["No known drug allergies (NKDA)"],
+                    "provisional_diagnosis": "Coronary Artery Disease (Post-PCI, stable), Essential Hypertension, Type 2 DM",
+                    "clinical_notes": "LVEF 52% on 2D Echo. Stress test not indicated at present. Continue current medical therapy. Review in 3 months.",
+                    "prescribed_medications": [
+                        {"drug": "Amlodipine Besylate", "dosage": "5 mg", "frequency": "1-0-0 (OD)", "duration": "90 days", "instructions": "Post-breakfast"},
+                        {"drug": "Atorvastatin Calcium", "dosage": "20 mg", "frequency": "0-0-1 (HS)", "duration": "90 days", "instructions": "Bedtime"},
+                        {"drug": "Clopidogrel", "dosage": "75 mg", "frequency": "1-0-0 (OD)", "duration": "90 days", "instructions": "Post-meals"},
+                        {"drug": "Metformin Hydrochloride", "dosage": "500 mg", "frequency": "1-0-1 (BD)", "duration": "90 days", "instructions": "Post-meals"}
+                    ],
+                    "follow_up_recommendation": "Follow-up in Cardiology OPD after 3 months with repeat FBS and lipid profile.",
+                    "status": "completed",
+                    "is_abdm_synced": True,
+                    "created_at": "2024-06-15T11:30:00Z"
+                })
+
+            # Also seed OCR documents corresponding to the timeline
+            doc_count = await db["documents"].count_documents({"patient_id": "P-DEMO-001"})
+            if doc_count == 0:
+                await db["documents"].insert_one({
+                    "document_id": "DOC-AIIMS-2024-06",
+                    "patient_id": "P-DEMO-001",
+                    "patient_name": "Ramesh Kumar",
+                    "document_type": "prescription",
+                    "document_date": "2024-06-15",
+                    "doctor_name": "Dr. Rajesh Gupta, MD (Cardiology)",
+                    "facility_name": "AIIMS New Delhi - Outpatient Cardiology",
+                    "document_purpose": "Post-PCI Cardiology Follow-up & Titration",
+                    "clinical_intent": "Dual antiplatelet and statin maintenance post-stenting with blood pressure management.",
+                    "confidence_score": 97.5,
+                    "extracted_diagnoses": [
+                        {"condition": "Coronary Artery Disease (Post-PCI)", "condition_type": "chronic"},
+                        {"condition": "Essential Hypertension", "condition_type": "chronic"}
+                    ],
+                    "extracted_medications": [
+                        {"name": "Amlodipine Besylate", "dosage": "5 mg", "frequency": "1-0-0 (OD)", "route": "oral", "duration": "90 days", "indication": "Hypertension", "confidence": 98.0},
+                        {"name": "Atorvastatin Calcium", "dosage": "20 mg", "frequency": "0-0-1 (HS)", "route": "oral", "duration": "90 days", "indication": "Secondary Prevention", "confidence": 97.0},
+                        {"name": "Clopidogrel", "dosage": "75 mg", "frequency": "1-0-0 (OD)", "route": "oral", "duration": "90 days", "indication": "Stent Patency", "confidence": 96.0}
+                    ],
+                    "extracted_labs": [],
+                    "raw_ocr_text": "AIIMS NEW DELHI OPD CARDIOLOGY\nPt: Ramesh Kumar, Age: 58, Male\nRx: Amlodipine 5mg OD, Atorvastatin 20mg HS, Clopidogrel 75mg OD.\nDiagnosis: CAD Post-PCI, HTN.",
+                    "is_abdm_linked": True,
+                    "created_at": "2024-06-15T11:45:00Z"
+                })
+                await db["documents"].insert_one({
+                    "document_id": "DOC-LAB-2024-03",
+                    "patient_id": "P-DEMO-001",
+                    "patient_name": "Ramesh Kumar",
+                    "document_type": "lab_report",
+                    "document_date": "2024-03-20",
+                    "doctor_name": "Dr. Sunita Rao, MD (Pathology)",
+                    "facility_name": "National Diagnostic & Reference Laboratory",
+                    "document_purpose": "Comprehensive Metabolic & Glycemic Panel",
+                    "clinical_intent": "Evaluate glycemic control and renal function.",
+                    "confidence_score": 98.0,
+                    "extracted_diagnoses": [
+                        {"condition": "Diabetic Nephropathy Stage 3", "condition_type": "chronic"},
+                        {"condition": "Type 2 Diabetes Mellitus", "condition_type": "chronic"}
+                    ],
+                    "extracted_medications": [],
+                    "extracted_labs": [
+                        {
+                            "test_name": "Glycated Hemoglobin (HbA1c)",
+                            "value": "9.2",
+                            "unit": "%",
+                            "reference_range": "< 5.7%",
+                            "is_abnormal": True,
+                            "severity_flag": "CRITICAL_HIGH",
+                            "clinical_significance": "Severely elevated HbA1c indicating suboptimal glycemic control"
+                        },
+                        {
+                            "test_name": "Fasting Blood Sugar (FBS)",
+                            "value": "178",
+                            "unit": "mg/dL",
+                            "reference_range": "70 - 100 mg/dL",
+                            "is_abnormal": True,
+                            "severity_flag": "ELEVATED",
+                            "clinical_significance": "Elevated Fasting Blood Sugar"
+                        },
+                        {
+                            "test_name": "Serum Creatinine",
+                            "value": "2.4",
+                            "unit": "mg/dL",
+                            "reference_range": "0.6 - 1.2 mg/dL",
+                            "is_abnormal": True,
+                            "severity_flag": "CRITICAL_HIGH",
+                            "clinical_significance": "Renal impairment / Elevated serum creatinine"
+                        }
+                    ],
+                    "raw_ocr_text": "NATIONAL DIAGNOSTIC & REFERENCE LAB\nPatient: Ramesh Kumar\nHbA1c: 9.2% [High]\nFBS: 178 mg/dL [High]\nSerum Creatinine: 2.4 mg/dL [Critical High]",
+                    "is_abdm_linked": True,
+                    "created_at": "2024-03-20T09:15:00Z"
+                })
+            logger.info("TimelineService: Verified and seeded demo records for P-DEMO-001 in MongoDB")
+        except Exception as e:
+            logger.warning(f"TimelineService: Could not seed demo records to DB: {e}")
 
 
 timeline_service = LongitudinalTimelineService()

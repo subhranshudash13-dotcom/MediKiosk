@@ -460,42 +460,42 @@ export default function DoctorDashboard() {
                       <span className="text-[#374151]/70 font-semibold block uppercase text-[10px] mb-0.5">
                         Site &amp; Location
                       </span>
-                      <p className="font-bold text-[#374151]">{currentPatient.hpi.location}</p>
+                      <p className="font-bold text-[#374151]">{currentPatient.hpi?.location || "General / Diffuse"}</p>
                     </div>
 
                     <div className="p-3.5 rounded-[10px] bg-[#FDFBF7] border border-[#FDEBD0]">
                       <span className="text-[#374151]/70 font-semibold block uppercase text-[10px] mb-0.5">
                         Onset &amp; Chronology
                       </span>
-                      <p className="font-medium text-[#374151]">{currentPatient.hpi.onset}</p>
+                      <p className="font-medium text-[#374151]">{currentPatient.hpi?.onset || "Acute"}</p>
                     </div>
 
                     <div className="p-3.5 rounded-[10px] bg-[#FDFBF7] border border-[#FDEBD0]">
                       <span className="text-[#374151]/70 font-semibold block uppercase text-[10px] mb-0.5">
                         Character of Distress
                       </span>
-                      <p className="font-medium text-[#374151]">{currentPatient.hpi.character}</p>
+                      <p className="font-medium text-[#374151]">{currentPatient.hpi?.character || "Standard"}</p>
                     </div>
 
                     <div className="p-3.5 rounded-[10px] bg-[#FDFBF7] border border-[#FDEBD0]">
                       <span className="text-[#374151]/70 font-semibold block uppercase text-[10px] mb-0.5">
                         Radiation Pattern
                       </span>
-                      <p className="font-medium text-[#374151]">{currentPatient.hpi.radiation}</p>
+                      <p className="font-medium text-[#374151]">{currentPatient.hpi?.radiation || "None reported"}</p>
                     </div>
 
                     <div className="p-3.5 rounded-[10px] bg-[#FDFBF7] border border-[#FDEBD0]">
                       <span className="text-[#374151]/70 font-semibold block uppercase text-[10px] mb-0.5">
                         Severity &amp; Pain Score
                       </span>
-                      <p className="font-extrabold text-[#C2410C]">{currentPatient.hpi.severity}</p>
+                      <p className="font-extrabold text-[#C2410C]">{currentPatient.hpi?.severity || "Moderate"}</p>
                     </div>
 
                     <div className="p-3.5 rounded-[10px] bg-[#FDFBF7] border border-[#FDEBD0]">
                       <span className="text-[#374151]/70 font-semibold block uppercase text-[10px] mb-0.5">
                         Associated Symptoms
                       </span>
-                      <p className="font-medium text-[#374151]">{currentPatient.hpi.associated}</p>
+                      <p className="font-medium text-[#374151]">{currentPatient.hpi?.associated || "None"}</p>
                     </div>
                   </div>
                 </div>

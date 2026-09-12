@@ -155,3 +155,18 @@ export const KioskAPI = {
     return res.data;
   },
 };
+
+export const HistoryAPI = {
+  getMyHistory: async () => {
+    const res = await apiClient.get("/history/me");
+    return res.data;
+  },
+  getPatientHistory: async (patientId: string) => {
+    const res = await apiClient.get(`/history/patient/${patientId}`);
+    return res.data;
+  },
+  getPatientDocuments: async (patientId: string) => {
+    const res = await apiClient.get(`/history/patient/${patientId}/documents`);
+    return res.data;
+  },
+};

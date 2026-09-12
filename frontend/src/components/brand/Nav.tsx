@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Mic, Stethoscope, UserPlus, LogIn, LogOut } from "lucide-react";
+import { Mic, Stethoscope, UserPlus, LogIn, LogOut, Clock } from "lucide-react";
 import { Logo } from "./Logo";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/auth-store";
@@ -11,11 +11,11 @@ import { useEffect } from "react";
 const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/kiosk", label: "Patient Kiosk" },
+  { href: "/patient/history", label: "History" },
   { href: "/doctor", label: "Doctor Cockpit" },
   { href: "/documents", label: "Document Studio" },
   { href: "/abha", label: "ABHA & Consent" },
   { href: "/records", label: "EHR Records" },
-  { href: "/system", label: "System Health" },
 ];
 
 export function Nav() {

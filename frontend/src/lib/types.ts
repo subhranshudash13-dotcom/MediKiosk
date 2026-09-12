@@ -125,3 +125,112 @@ export interface AbhaKYC {
   mobile?: string;
   auth_status: "pending" | "verified" | "failed";
 }
+
+// ─── Longitudinal Patient History Types ──────────────────────────────
+
+export interface HistoryMedication {
+  name: string;
+  dosage?: string;
+  frequency?: string;
+  route?: string;
+  duration?: string;
+  indication?: string;
+  therapeutic_class?: string;
+  clinical_purpose?: string;
+  instructions?: string;
+  confidence?: number;
+}
+
+export interface HistoryLabResult {
+  test_name: string;
+  value: string;
+  unit?: string;
+  reference_range?: string;
+  is_abnormal: boolean;
+  severity_flag?: "NORMAL" | "BORDERLINE" | "ELEVATED" | "CRITICAL_HIGH" | "CRITICAL_LOW" | string;
+  clinical_significance?: string;
+}
+
+export interface HistoryDiagnosis {
+  condition: string;
+  icd10_code?: string;
+  condition_type?: string;
+  notes?: string;
+}
+
+export interface HistoryEncounterRecord {
+  record_type: "encounter";
+  encounter_id: string;
+  patient_id: string;
+  patient_name?: string;
+  age?: number;
+  gender?: string;
+  encounter_date: string;
+  hospital_name?: string;
+  department?: string;
+  doctor_name?: string;
+  chief_complaint?: string;
+  hpi?: string;
+  socrates?: Record<string, any>;
+  vitals?: Record<string, any>;
+  past_history?: string[];
+  current_medications?: Array<Record<string, any>>;
+  allergies?: string[];
+  provisional_diagnosis?: string;
+  clinical_notes?: string;
+  prescribed_medications?: Array<Record<string, any>>;
+  follow_up_recommendation?: string;
+  status: string;
+  is_abdm_synced: boolean;
+  created_at?: string;
+}
+
+export interface HistoryDocumentRecord {
+  record_type: "document";
+  document_id: string;
+  patient_id: string;
+  document_type: string;
+  document_date?: string;
+  doctor_name?: string;
+  facility_name?: string;
+  document_purpose?: string;
+  clinical_intent?: string;
+  confidence_score?: number;
+  extracted_medications: HistoryMedication[];
+  extracted_labs: HistoryLabResult[];
+  extracted_diagnoses: HistoryDiagnosis[];
+  raw_ocr_text?: string;
+  is_abdm_linked: boolean;
+  created_at?: string;
+}
+
+export interface HistoryTimelineEvent {
+  event_id: string;
+  patient_id: string;
+  date: string;
+  record_type: "encounter" | "document" | "session" | string;
+  title: string;
+  summary?: string;
+  provider_name?: string;
+  facility_name?: string;
+  category?: string;
+  medications: HistoryMedication[];
+  abnormal_labs: HistoryLabResult[];
+  diagnoses: string[];
+  is_abdm_verified: boolean;
+}
+
+export interface PatientHistoryResponse {
+  patient_id: string;
+  patient_name?: string;
+  total_records: number;
+  total_encounters: number;
+  total_documents: number;
+  timeline: HistoryTimelineEvent[];
+  encounters: HistoryEncounterRecord[];
+  documents: HistoryDocumentRecord[];
+  active_medications: HistoryMedication[];
+  critical_lab_alerts: string[];
+  last_visit_date?: string;
+  last_visit_department?: string;
+}

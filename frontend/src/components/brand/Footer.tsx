@@ -59,6 +59,11 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/patient/history" className="hover:text-white transition-colors flex items-center gap-1">
+                  • Patient Health History <ArrowUpRight className="h-3 w-3 opacity-60" />
+                </Link>
+              </li>
+              <li>
                 <Link href="/abha" className="hover:text-white transition-colors flex items-center gap-1">
                   • ABHA Consent Manager <ArrowUpRight className="h-3 w-3 opacity-60" />
                 </Link>
