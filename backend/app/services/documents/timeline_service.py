@@ -279,6 +279,7 @@ class LongitudinalTimelineService:
         event = TimelineEvent(
             event_id=f"EVT-{doc.document_id}",
             patient_id=patient_id,
+            user_id=getattr(doc, "user_id", None),
             date=event_date,
             document_type=doc.document_type,
             title=title,
@@ -320,7 +321,7 @@ class LongitudinalTimelineService:
         """Persists or updates an OCR-extracted MedicalDocument in the MongoDB documents collection."""
         try:
             db = get_database()
-            data = doc.model_dump() if hasattr(doc, "model_dump") else doc.dict()
+            data = doc.model_dump(mode="json") if hasattr(doc, "model_dump") else doc.dict()
             sanitized = _sanitize_for_mongo(data)
             await db["documents"].update_one(
                 {"document_id": doc.document_id},
@@ -337,7 +338,7 @@ class LongitudinalTimelineService:
         """Persists or updates a TimelineEvent in the MongoDB timeline_events collection."""
         try:
             db = get_database()
-            data = event.model_dump() if hasattr(event, "model_dump") else event.dict()
+            data = event.model_dump(mode="json") if hasattr(event, "model_dump") else event.dict()
             sanitized = _sanitize_for_mongo(data)
             await db["timeline_events"].update_one(
                 {"event_id": event.event_id},
