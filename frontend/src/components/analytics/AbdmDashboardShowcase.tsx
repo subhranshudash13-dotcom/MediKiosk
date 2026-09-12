@@ -221,15 +221,6 @@ export function AbdmDashboardShowcase() {
       {/* ========================================================================= */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-[#DEE2E6]">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold tracking-wide uppercase border border-emerald-300">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-              Live ABDM Telemetry &bull; National Health Stack
-            </span>
-            <span className="text-xs font-semibold text-[#6C7A89] hidden sm:inline">
-              M1, M2 &amp; M3 Certified Architecture
-            </span>
-          </div>
           <h2 className="font-heading font-extrabold text-2xl sm:text-3xl lg:text-4xl text-[#2C3E50] tracking-tight">
             Ayushman Bharat Digital Mission (ABDM) Insights
           </h2>

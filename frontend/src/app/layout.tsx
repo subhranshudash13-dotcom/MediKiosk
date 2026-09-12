@@ -5,6 +5,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "MediKiosk — Point-of-Entry Clinical Triage & Intake Platform",
   description: "Vernacular point-of-entry clinical intake, prescription OCR intelligence, and ABDM-integrated health kiosk for Indian healthcare institutions.",
+  icons: {
+    icon: "/medikiosk-icon.svg",
+    shortcut: "/medikiosk-icon.svg",
+    apple: "/medikiosk-icon.svg",
+  },
 };
 
 export default function RootLayout({
