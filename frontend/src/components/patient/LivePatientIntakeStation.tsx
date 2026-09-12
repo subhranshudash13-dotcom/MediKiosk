@@ -588,8 +588,8 @@ export function LivePatientIntakeStation() {
       abhaId: patientAbha || "91-4567-8901-2345",
       triageLevel: isEmerg ? "EMERGENCY" : isUrg ? "URGENT" : "ROUTINE",
       chiefComplaint: socratesState.site
-        ? `${socratesState.site}: ${socratesState.character || "Pain"} (Score ${painScore}/10)`
-        : "Sub-sternal chest discomfort & shortness of breath",
+        ? `${socratesState.site}: ${socratesState.character || "Pain"} (Severity ${painScore}/10)`
+        : (transcript || "General clinical intake assessment"),
       triagedTime: "Just now",
       intakeSource: intakeMode,
       caregiverRelation: intakeMode === "CAREGIVER" ? caregiverRelation : undefined,
@@ -608,24 +608,24 @@ export function LivePatientIntakeStation() {
         medications: true,
       },
       vitals: {
-        bp: "128/84 mmHg",
-        pulse: "90 bpm",
+        bp: "124/80 mmHg",
+        pulse: "78 bpm",
         spo2: "98%",
-        temp: "99.2 °F",
-        bmi: "23.1 (Normal)",
+        temp: "98.6 °F",
+        bmi: "22.8 (Normal)",
       },
       hpi: {
-        onset: socratesState.onset || "2 days duration",
-        location: socratesState.site || "Thorax / Upper body",
-        character: socratesState.character || "Constricting ache",
-        radiation: socratesState.radiation || "Radiating to shoulder",
+        onset: socratesState.onset || "Recent onset",
+        location: socratesState.site || "General",
+        character: socratesState.character || "Discomfort",
+        radiation: socratesState.radiation || "None reported",
         severity: `${painScore} / 10`,
-        aggravating: socratesState.exacerbating_relieving || "Exertion",
-        relieving: "Resting",
-        associated: socratesState.associations?.join(", ") || "Nocturnal fever",
+        aggravating: socratesState.exacerbating_relieving || "Daily activity",
+        relieving: "Rest",
+        associated: socratesState.associations?.join(", ") || "None reported",
       },
       voiceTranscript: {
-        original: transcript || "छाती में दर्द और भारीपन लग रहा है।",
+        original: transcript || "Patient described symptoms at kiosk.",
         language: language,
         confidence: 99.1,
       },
@@ -634,11 +634,11 @@ export function LivePatientIntakeStation() {
       ocrHistory: {
         medications: scannedMedications.map(m => ({ ...m, source: "Prescription OCR" })),
         abnormalLabs: [],
-        timeline: [
-          { year: "2022", event: "Pulmonary TB DOTS Treatment Completed", type: "Historical Context" },
-          { year: "2024", event: "Essential Hypertension Rx Initiation", type: "Chronic Rx" },
-          { year: "2026", event: "OPD Triage Intake at MediKiosk", type: "First-Mile Intake" }
-        ],
+        timeline: historicalClues.map((c) => ({
+          year: c.year,
+          event: `${c.condition} - ${c.source}`,
+          type: "Historical Context"
+        })),
       },
     };
 
@@ -659,19 +659,16 @@ export function LivePatientIntakeStation() {
           chief_complaint: newPatient.chiefComplaint,
           intake_source: intakeMode,
           caregiver_relation: caregiverRelation,
-          socrates: socratesState,
-          past_history: [
-            "Pulmonary Tuberculosis (DOTS completed 2022)",
-            "Essential Hypertension (Diagnosed 2024)"
-          ],
-          allergies: [
-            "Penicillin (Severe skin rash reported 2021)",
-            "No known food allergies"
+          socrates: { ...socratesState, severity_score: painScore },
+          past_history: historicalClues.map(c => `${c.condition} (${c.year}) • ${c.source}`),
+          allergies: (user as any)?.allergies && (user as any).allergies.length > 0 ? (user as any).allergies : [
+            "No known drug or food allergies reported"
           ],
           current_medications: scannedMedications,
           vitals: newPatient.vitals,
           evidence_trail: evidence,
-          language: language
+          language: language,
+          raw_transcripts: transcript ? [transcript] : []
         })
       });
     } catch (err) {

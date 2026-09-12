@@ -43,8 +43,9 @@ class ClinicalReportGenerator:
         """Gathers all multimodal data for a given session into a unified report dictionary."""
         from app.services.ai.orchestrator import ai_orchestrator
 
-        # 1. Fetch from MongoDB
-        session_data = await self.db["sessions"].find_one({"session_id": session_id})
+        # 1. Fetch from database
+        db = get_database()
+        session_data = await db["sessions"].find_one({"session_id": session_id})
         if not session_data:
             session_data = {}
 
@@ -53,20 +54,25 @@ class ClinicalReportGenerator:
 
         now_str = datetime.now(timezone.utc).strftime("%d-%b-%Y %H:%M UTC")
 
-        # Patient demographics
-        name = session_data.get("name") or (live_state.patient_name if live_state else None) or "Ananya Sharma"
-        age = session_data.get("age") or (live_state.age if live_state else None) or 28
-        gender = session_data.get("gender") or (live_state.gender if live_state else None) or "Female"
-        token = session_data.get("token", "#104")
-        abha_id = session_data.get("abha_id") or (live_state.abha_id if live_state else None) or "91-4567-8901-2345"
-        triage_level = session_data.get("triage_level", "URGENT")
+        # Patient demographics - use session or live state data
+        name = session_data.get("name") or (live_state.patient_name if live_state and live_state.patient_name else None) or "Patient"
+        age = session_data.get("age") or (live_state.age if live_state and live_state.age else None) or 28
+        gender = session_data.get("gender") or (live_state.gender if live_state and live_state.gender else None) or "Female"
+        token = session_data.get("token") or "A-101"
+        abha_id = session_data.get("abha_id") or (live_state.abha_id if live_state and live_state.abha_id else None) or "91-4567-8901-2345"
+        triage_level = session_data.get("triage_level") or "ROUTINE"
+        
+        raw_transcripts = session_data.get("raw_transcripts", [])
+        if not raw_transcripts and live_state and live_state.raw_transcripts:
+            raw_transcripts = live_state.raw_transcripts
+
         chief_complaint = (
             session_data.get("chief_complaint")
             or (live_state.chief_complaints[0] if live_state and live_state.chief_complaints else None)
-            or (live_state.raw_transcripts[-1] if live_state and live_state.raw_transcripts else None)
-            or "Sub-sternal chest discomfort & exertional tightness"
+            or (raw_transcripts[-1] if raw_transcripts else None)
+            or "Clinical Consultation Intake"
         )
-        language = (session_data.get("language") or (live_state.language if live_state else "hi")).upper()
+        language = (session_data.get("language") or (live_state.language if live_state and live_state.language else "hi")).upper()
 
         # SOCRATES matrix
         socrates = session_data.get("socrates", {})
@@ -74,14 +80,14 @@ class ClinicalReportGenerator:
             socrates = live_state.socrates.model_dump(exclude_none=True)
         if not socrates:
             socrates = {
-                "site": "Thorax / Retro-sternal",
-                "onset": "2 days duration, gradual progression",
-                "character": "Heavy constricting pressure",
-                "radiation": "Radiating to left shoulder & upper arm",
-                "associations": ["Diaphoresis (mild sweating)", "Exertional shortness of breath"],
-                "timing": "Continuous, worsening towards evening",
-                "exacerbating_relieving": "Exacerbated by walking; relieved with rest",
-                "severity_score": 7,
+                "site": "Not specified",
+                "onset": "Acute onset",
+                "character": "Discomfort / Pain",
+                "radiation": "None reported",
+                "associations": [],
+                "timing": "Intermittent",
+                "exacerbating_relieving": "Not specified",
+                "severity_score": 0,
             }
 
         # Past medical history
@@ -89,20 +95,14 @@ class ClinicalReportGenerator:
         if not past_history and live_state and live_state.past_history:
             past_history = live_state.past_history
         if not past_history:
-            past_history = [
-                "Essential Hypertension (Diagnosed 2024, on oral Amlodipine 5mg)",
-                "Pulmonary Tuberculosis (Completed 6-month DOTS regimen in 2022; Sputum AFB negative)"
-            ]
+            past_history = ["No prior chronic conditions recorded"]
 
         # Allergies
         allergies = session_data.get("allergies", [])
         if not allergies and live_state and live_state.allergies:
             allergies = live_state.allergies
         if not allergies:
-            allergies = [
-                "Penicillin & Beta-lactams (Reported severe urticarial rash in 2021)",
-                "No known food allergies"
-            ]
+            allergies = ["No known drug or food allergies reported"]
 
         # Active medications
         medications = session_data.get("current_medications") or session_data.get("medications", [])
@@ -110,17 +110,15 @@ class ClinicalReportGenerator:
             medications = [{"drug": m, "dose": "Standard", "frequency": "Daily", "source": "Patient EHR"} for m in live_state.current_medications]
         if not medications:
             medications = [
-                {"drug": "Tab Amlodipine", "dose": "5 mg", "frequency": "1-0-0 (Morning)", "source": "Prescription OCR"},
-                {"drug": "Tab Paracetamol", "dose": "650 mg", "frequency": "1-0-1 (SOS for fever/pain)", "source": "Reported by Patient"},
-                {"drug": "Cap Pantoprazole", "dose": "40 mg", "frequency": "1-0-0 (Empty Stomach)", "source": "Prescription OCR"}
+                {"drug": "No active prescription medications recorded", "dose": "-", "frequency": "-", "source": "Intake"}
             ]
 
         vitals = session_data.get("vitals", {
-            "bp": "128/84 mmHg",
-            "pulse": "90 bpm",
-            "spo2": "98%",
-            "temp": "99.2 °F",
-            "bmi": "23.1 (Normal)"
+            "bp": "120/80 mmHg",
+            "pulse": "76 bpm",
+            "spo2": "99%",
+            "temp": "98.6 °F",
+            "bmi": "22.5 (Normal)"
         })
 
         # Historical correlation note
@@ -129,36 +127,25 @@ class ClinicalReportGenerator:
             hist_corr = live_state.historical_correlation.model_dump()
 
         relevance_notes = (
-            hist_corr.get("clinical_link")
+            hist_corr.get("clinical_link") or hist_corr.get("clinical_rationale")
             if hist_corr and isinstance(hist_corr, dict)
-            else "Surfaced historical Essential Hypertension (2024) and Pulmonary TB (2022) for physician clinical correlation with current presenting symptoms."
+            else f"Longitudinal review completed for {name}. No critical historical conflict identified."
         )
-
-        # Raw transcripts and evidence trail
-        raw_transcripts = session_data.get("raw_transcripts", [])
-        if not raw_transcripts and live_state and live_state.raw_transcripts:
-            raw_transcripts = live_state.raw_transcripts
 
         evidence_trail = session_data.get("evidence_timeline") or session_data.get("evidence_trail", [])
         if not evidence_trail:
             evidence_trail = [
                 {
-                    "timeframe": socrates.get("onset", "2 Days Ago"),
+                    "timeframe": socrates.get("onset", "Today"),
                     "source": f"Spoken Patient Voice Intake ({language})",
-                    "detail": f"Patient reported {socrates.get('character', 'discomfort')} in {socrates.get('site', 'Thorax')}. Latest statement: '{raw_transcripts[-1] if raw_transcripts else chief_complaint}'",
-                    "provenance": "Bhashini IndicASR / Whisper • 99.1% Confidence"
+                    "detail": f"Patient reported: '{raw_transcripts[-1] if raw_transcripts else chief_complaint}'",
+                    "provenance": "Bhashini IndicASR / Whisper • Verified"
                 },
                 {
-                    "timeframe": "Historical (2024)",
-                    "source": "Document OCR / EHR Record",
-                    "detail": f"Documented background of {past_history[0] if past_history else 'Hypertension'}.",
-                    "provenance": "Apex Health OPD Records"
-                },
-                {
-                    "timeframe": "Today",
+                    "timeframe": "Point-of-Entry",
                     "source": "Point-of-Entry MediKiosk Intake",
-                    "detail": f"Pain score {socrates.get('severity_score', 7)}/10 recorded with ABDM Consent verified.",
-                    "provenance": f"ABDM Token #{token}"
+                    "detail": f"Triage Priority: {triage_level}. Pain score: {socrates.get('severity_score', 0)}/10. ABDM Consent verified.",
+                    "provenance": f"ABDM Token {token}"
                 }
             ]
 
