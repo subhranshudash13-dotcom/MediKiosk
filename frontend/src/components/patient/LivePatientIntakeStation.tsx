@@ -474,6 +474,7 @@ export function LivePatientIntakeStation() {
 
   const stopListening = async () => {
     setHasInteracted(true);
+    setRecording(false);
     if (speechRecognitionRef.current) {
       try {
         speechRecognitionRef.current.stop();
@@ -481,38 +482,49 @@ export function LivePatientIntakeStation() {
       speechRecognitionRef.current = null;
     }
 
-    if (universalRecorderRef.current && isRecording) {
+    const recorder = universalRecorderRef.current;
+    universalRecorderRef.current = null;
+
+    if (recorder || isRecording) {
       setIsLoading(true);
       try {
-        const audioBlob = await universalRecorderRef.current.stop();
-        universalRecorderRef.current = null;
+        let audioBlob: Blob | null = null;
+        if (recorder) {
+          audioBlob = await recorder.stop();
+        }
 
-        const formData = new FormData();
-        formData.append("file", audioBlob, "patient_speech.wav");
-        formData.append("session_id", sessionId);
-        formData.append("language_code", language);
-        formData.append("synthesize_audio", "true");
-        formData.append("patient_name", patientName);
-        formData.append("age", patientAge.toString());
-        formData.append("gender", patientGender);
-        formData.append("past_history", JSON.stringify([
-          "Pulmonary Tuberculosis (DOTS completed 2022)",
-          "Essential Hypertension (Diagnosed 2024)"
-        ]));
-        formData.append("historical_clues", JSON.stringify(historicalClues));
+        if (audioBlob && audioBlob.size > 0) {
+          const formData = new FormData();
+          formData.append("file", audioBlob, "patient_speech.wav");
+          formData.append("session_id", sessionId);
+          formData.append("language_code", language);
+          formData.append("synthesize_audio", "true");
+          formData.append("patient_name", patientName);
+          formData.append("age", patientAge.toString());
+          formData.append("gender", patientGender);
+          formData.append("past_history", JSON.stringify([
+            "Pulmonary Tuberculosis (DOTS completed 2022)",
+            "Essential Hypertension (Diagnosed 2024)"
+          ]));
+          formData.append("historical_clues", JSON.stringify(historicalClues));
 
-        const backendUrl = getBackendUrl();
-        const resp = await fetch(`${backendUrl}/api/v1/ai/voice-intake`, {
-          method: "POST",
-          body: formData,
-        });
-        const data = await resp.json();
-        const finalTranscript =
-          data.clinical_state?.raw_transcripts?.slice(-1)[0] ||
-          liveSpeechTranscriptRef.current ||
-          "Audio recorded";
-        setTranscript(finalTranscript);
-        processResponseData(data);
+          const backendUrl = getBackendUrl();
+          const resp = await fetch(`${backendUrl}/api/v1/ai/voice-intake`, {
+            method: "POST",
+            body: formData,
+          });
+          const data = await resp.json();
+          const finalTranscript =
+            data.clinical_state?.raw_transcripts?.slice(-1)[0] ||
+            liveSpeechTranscriptRef.current ||
+            "Audio recorded";
+          setTranscript(finalTranscript);
+          processResponseData(data);
+        } else if (liveSpeechTranscriptRef.current && liveSpeechTranscriptRef.current.trim()) {
+          await sendTextMessage(liveSpeechTranscriptRef.current.trim());
+        } else {
+          setAiSpokenResponse("Voice recorded. Please confirm your symptom details.");
+        }
       } catch (err) {
         console.error("Failed voice intake:", err);
         setAiSpokenResponse("Audio intake recorded. Feel free to refine with the options below.");
@@ -1080,7 +1092,12 @@ export function LivePatientIntakeStation() {
                   <div className="flex flex-col items-center justify-center pt-2">
                     {isRecording ? (
                       <button
-                        onClick={stopListening}
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          stopListening();
+                        }}
                         className="flex items-center gap-3 rounded-full bg-[#DC3545] hover:bg-[#C82333] px-9 py-4 text-xs sm:text-sm font-bold text-white shadow-lg transition-all cursor-pointer animate-pulse"
                       >
                         <MicOff className="h-5 w-5" />

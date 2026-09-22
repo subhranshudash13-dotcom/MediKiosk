@@ -379,14 +379,17 @@ export function PrescriptionScanner({
               isDragging ? "border-[#0056B3] bg-[#EBF5FF] scale-[1.01]" : "border-[#CBD5E1] bg-[#F8F9FA]/60"
             )}
           >
-            {/* Laser Scanning Animation */}
+            {/* Top-to-Bottom Laser Scanning Animation */}
             {isScanning && (
               <motion.div
                 initial={{ top: "0%" }}
                 animate={{ top: "100%" }}
-                transition={{ repeat: Infinity, duration: 1.4, ease: "linear" }}
-                className="absolute left-0 right-0 h-1 bg-[#0056B3] shadow-[0_0_12px_rgba(0,86,179,0.9)] z-20"
-              />
+                transition={{ repeat: Infinity, duration: 2.2, ease: "linear", repeatType: "loop" }}
+                className="absolute inset-x-0 z-20 pointer-events-none"
+              >
+                <div className="h-16 -translate-y-full bg-gradient-to-t from-cyan-400/30 via-blue-500/15 to-transparent w-full pointer-events-none" />
+                <div className="h-1 bg-gradient-to-r from-transparent via-cyan-300 to-transparent shadow-[0_0_16px_#06b6d4,0_0_30px_#3b82f6] -translate-y-1/2" />
+              </motion.div>
             )}
 
             {selectedFile ? (

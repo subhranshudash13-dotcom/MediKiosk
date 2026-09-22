@@ -33,11 +33,10 @@ async def upload_medical_document(
     file: UploadFile = File(...),
     patient_id: Optional[str] = Form(default=None),
     auto_sync_timeline: bool = Form(default=True),
-    current_user: UserContext = Depends(get_current_user),
+    current_user: Optional[UserContext] = Depends(get_optional_current_user),
 ):
     """
     Upload a medical prescription, lab report, or discharge summary for OCR + NER extraction.
-    Strictly protected: requires an authenticated patient session.
     Enforces 15MB size limit and allowed MIME types (JPEG, PNG, WEBP, PDF).
     Automatically evaluates lab values against clinical reference ranges and syncs to patient timeline in MongoDB.
     """
@@ -70,13 +69,13 @@ async def upload_medical_document(
             detail=f"Document exceeds maximum permitted size of 15MB (file size: {len(content) / (1024*1024):.2f}MB)."
         )
 
-    # 3. Securely bind document to the authenticated patient
-    effective_patient_id = patient_id if (patient_id and patient_id != "P-DEMO-001") else current_user.user_id
-    effective_user_id = current_user.user_id
+    # 3. Securely bind document to patient
+    user_id = current_user.user_id if current_user else "P-DEMO-001"
+    effective_patient_id = patient_id if (patient_id and patient_id != "P-DEMO-001") else user_id
 
     try:
         doc = await ocr_service.process_document(content, filename=filename, patient_id=effective_patient_id)
-        doc.user_id = effective_user_id
+        doc.user_id = user_id
         doc.patient_id = effective_patient_id
         
         if auto_sync_timeline:
@@ -99,11 +98,10 @@ async def process_sample_document(
         description="Sample type: 'prescription', 'diabetic_lab_report', 'renal_panel'"
     ),
     patient_id: Optional[str] = Query(default=None),
-    current_user: UserContext = Depends(get_current_user),
+    current_user: Optional[UserContext] = Depends(get_optional_current_user),
 ):
     """
     Demo/evaluation endpoint: Process realistic Indian OPD documents without uploading an image.
-    Strictly protected: requires an authenticated patient session.
     """
     filename_map = {
         "prescription": "prescription_amlodipine_metformin.jpg",
@@ -113,11 +111,11 @@ async def process_sample_document(
     sample_filename = filename_map.get(sample_type, "prescription_amlodipine.jpg")
     dummy_bytes = b"SAMPLE_CLINICAL_DOCUMENT_BYTES"
     
-    effective_patient_id = patient_id if (patient_id and patient_id != "P-DEMO-001") else current_user.user_id
-    effective_user_id = current_user.user_id
+    user_id = current_user.user_id if current_user else "P-DEMO-001"
+    effective_patient_id = patient_id if (patient_id and patient_id != "P-DEMO-001") else user_id
 
     doc = await ocr_service.process_document(dummy_bytes, filename=sample_filename, patient_id=effective_patient_id)
-    doc.user_id = effective_user_id
+    doc.user_id = user_id
     doc.patient_id = effective_patient_id
     await timeline_service.sync_document_to_timeline_async(doc)
     return doc

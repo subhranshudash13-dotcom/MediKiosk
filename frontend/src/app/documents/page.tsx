@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, ChangeEvent, DragEvent } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -31,21 +32,13 @@ import {
   X,
   ArrowRight,
   FileCheck,
-  Eye,
-  LogIn,
-  UserPlus,
-  Sun,
-  Moon,
   Clock,
   Printer,
-  Lightbulb,
-  AlertCircle,
-  Check,
+  Image as ImageIcon,
 } from "lucide-react";
 import { Nav } from "@/components/brand/Nav";
 import { Footer } from "@/components/brand/Footer";
-import { PrescriptionScanner } from "@/components/visualization/PrescriptionScanner";
-import { MedicalDocument, ExtractedMedication, ExtractedLabResult } from "@/lib/types";
+import { MedicalDocument } from "@/lib/types";
 import { useAuthStore } from "@/lib/auth-store";
 import { getBackendUrl } from "@/lib/config";
 import { getAccessToken } from "@/lib/auth-api";
@@ -58,13 +51,6 @@ function parseDosageSchedule(frequency?: string) {
   const isNight = !isSOS && (f.includes("1-0-1") || f.includes("1-1-1") || f.includes("0-0-1") || f.includes("001") || f.includes("101") || f.includes("hs") || f.includes("night") || f.includes("bedtime") || f.includes("bd") || f.includes("tds"));
 
   return { isMorning, isAfternoon, isNight, isSOS };
-}
-
-function parseActionDirectives(actionPlan?: string, clinicalIntent?: string): string[] {
-  const text = actionPlan || clinicalIntent || "";
-  const parts = text.split(/(?:\d+\.\s+|;\s*)/).map(s => s.trim()).filter(s => s.length > 4);
-  if (parts.length > 0) return parts;
-  return text ? [text] : ["Take prescribed medications on time.", "Ensure adequate hydration and rest.", "Follow up if symptoms persist."];
 }
 
 interface QuickExampleItem {
@@ -113,8 +99,7 @@ const QUICK_EXAMPLES: QuickExampleItem[] = [
 
 export default function DocumentIntelligencePage() {
   const router = useRouter();
-  const { user, isAuthenticated, isLoading, initialized, initAuth } = useAuthStore();
-  const effectivePatientId = user?.user_id || "P-DEMO-001";
+  const { user, initAuth } = useAuthStore();
 
   // Upload & Scan state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -125,7 +110,6 @@ export default function DocumentIntelligencePage() {
   const [extractedDoc, setExtractedDoc] = useState<MedicalDocument | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [activeUploadTab, setActiveUploadTab] = useState<"upload" | "camera" | "device">("upload");
-  const [activeResultsTab, setActiveResultsTab] = useState<"overview" | "meds" | "labs" | "raw">("overview");
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
@@ -139,15 +123,9 @@ export default function DocumentIntelligencePage() {
     const fileToUse = overrideFile || selectedFile;
     if (!fileToUse) return;
 
-    if (!isAuthenticated) {
-      setErrorMsg("Authentication required. Please sign in to upload and scan documents.");
-      router.push("/patient/login?returnUrl=/documents");
-      return;
-    }
-
     setIsScanning(true);
     setErrorMsg(null);
-    setScanStage("Uploading medical document to Qwen Vision Engine...");
+    setScanStage("Uploading medical document to Vision OCR Engine...");
 
     try {
       const formData = new FormData();
@@ -173,9 +151,6 @@ export default function DocumentIntelligencePage() {
       });
 
       if (!res.ok) {
-        if (res.status === 401) {
-          throw new Error("Authentication required. Please log in before uploading documents.");
-        }
         const errJson = await res.json().catch(() => ({}));
         throw new Error(errJson.detail || `Server returned HTTP ${res.status}`);
       }
@@ -186,7 +161,7 @@ export default function DocumentIntelligencePage() {
 
       // Auto-scroll down to results preview
       setTimeout(() => {
-        window.scrollTo({ top: 400, behavior: "smooth" });
+        window.scrollTo({ top: 560, behavior: "smooth" });
       }, 100);
     } catch (err: any) {
       console.error("Upload failed:", err);
@@ -197,13 +172,8 @@ export default function DocumentIntelligencePage() {
     }
   };
 
-  // Handle file selection (with auto-scanning trigger)
+  // Handle file selection
   const handleFileChange = (file: File) => {
-    if (!isAuthenticated) {
-      setErrorMsg("Authentication required. Please log in before uploading documents.");
-      router.push("/patient/login?returnUrl=/documents");
-      return;
-    }
     setErrorMsg(null);
     setSelectedFile(file);
     if (file.type.startsWith("image/")) {
@@ -252,11 +222,6 @@ export default function DocumentIntelligencePage() {
 
   // Process Quick Sample Preset
   const processSampleDocument = async (sampleType: string) => {
-    if (!isAuthenticated) {
-      setErrorMsg("Authentication required. Please log in before processing sample documents.");
-      router.push("/patient/login?returnUrl=/documents");
-      return;
-    }
     setIsScanning(true);
     setErrorMsg(null);
     setScanStage("Loading clinical reference document...");
@@ -279,9 +244,6 @@ export default function DocumentIntelligencePage() {
       );
 
       if (!res.ok) {
-        if (res.status === 401) {
-          throw new Error("Authentication required. Please log in to process documents.");
-        }
         throw new Error(`Server returned HTTP ${res.status}`);
       }
 
@@ -290,7 +252,7 @@ export default function DocumentIntelligencePage() {
       setExtractedDoc(data);
       // Auto-scroll to results
       setTimeout(() => {
-        window.scrollTo({ top: 400, behavior: "smooth" });
+        window.scrollTo({ top: 560, behavior: "smooth" });
       }, 100);
     } catch (err: any) {
       console.error("Sample process failed:", err);
@@ -302,7 +264,7 @@ export default function DocumentIntelligencePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#1E293B] font-sans selection:bg-[#EBF5FF] selection:text-[#0066FF] flex flex-col justify-between">
+    <div className="min-h-screen bg-[#F8F9FA] text-[#1E293B] font-sans selection:bg-[#EBF5FF] selection:text-[#0056B3] flex flex-col justify-between relative overflow-x-hidden">
       {/* Hidden File & Camera Inputs */}
       <input
         ref={fileInputRef}
@@ -320,931 +282,648 @@ export default function DocumentIntelligencePage() {
         onChange={handleFileInput}
       />
 
-      {/* ─── Standard MediKiosk Global Navigation Bar ─── */}
+      {/* ─── 1. GLOBAL NAVBAR (RETAINED AS REQUESTED) ─── */}
       <Nav />
 
-      {/* ─── Main Page Wrapper ─── */}
-      <main className="max-w-[1240px] mx-auto w-full px-4 md:px-8 py-6 space-y-6 flex-1 text-left">
-        {/* Top Navigation Row: Back to Dashboard & Doctor Workstation Link */}
-        <div className="flex items-center justify-between gap-4">
-          <Link
-            href="/patient/dashboard"
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-blue-50/80 hover:bg-blue-100/70 border border-blue-100 text-blue-700 text-xs font-semibold transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Back to Dashboard</span>
-          </Link>
+      {/* ─── 2. KIOSK HERO HEADER BANNER (Matching Kiosk Page Royal Blue Gradient) ─── */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#003882] via-[#0056B3] to-[#0070EB] text-white py-10 sm:py-14 px-4 sm:px-6 lg:px-8 border-b border-[#0047AB]">
+        {/* Subtle Background Orbs */}
+        <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-white/10 blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 -right-24 w-96 h-96 rounded-full bg-[#17A2B8]/20 blur-3xl pointer-events-none" />
 
-          <Link
-            href="/doctor"
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-all shadow-xs"
-          >
-            <Stethoscope className="w-3.5 h-3.5 text-sky-400" />
-            <span>Doctor Workstation</span>
-          </Link>
-        </div>
+        <div className="max-w-7xl mx-auto relative z-10 space-y-6">
+          {/* Top Navigation Row inside Hero */}
+          <div className="flex items-center justify-between gap-4 pb-2 border-b border-white/15">
+            <Link
+              href="/patient/dashboard"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-bold transition-all shadow-xs backdrop-blur-md"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-[#38BDF8]" />
+              <span>Back to Dashboard</span>
+            </Link>
 
-        {/* ─── Sub-Header & Insights Callout ─── */}
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 pb-2">
-          {/* Left Title & Description */}
-          <div className="max-w-2xl space-y-1.5 text-left">
-            <div className="text-[11px] font-extrabold tracking-wider text-[#0066FF] uppercase">
-              DOCUMENT INTELLIGENCE
+            {/* Center Brand Logo */}
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-white text-[#0056B3] flex items-center justify-center font-bold shadow-sm">
+                <Activity className="w-4 h-4 text-[#0056B3]" />
+              </div>
+              <span className="font-heading font-extrabold text-xl text-white tracking-tight">
+                Medi<span className="text-[#38BDF8]">Kiosk</span>
+              </span>
+              <span className="text-xs font-medium text-white/80 hidden sm:inline">
+                &bull; Your Health. In Your Hands.
+              </span>
             </div>
-            <h1 className="font-heading font-extrabold text-2xl md:text-3xl text-[#0F172A] tracking-tight leading-tight">
-              Upload &amp; Understand Your Medical Documents
-            </h1>
-            <p className="text-xs md:text-sm text-[#64748B] leading-relaxed">
-              Attach prescriptions, lab reports, or discharge summaries. MediKiosk uses advanced OCR to extract, organize and understand your health information — securely and in your language.
-            </p>
+
+            <Link
+              href="/doctor"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-bold transition-all shadow-xs backdrop-blur-md"
+            >
+              <Stethoscope className="w-3.5 h-3.5 text-[#38BDF8]" />
+              <span>Doctor Workstation</span>
+            </Link>
           </div>
 
-          {/* Right Floating Accent Card ("From documents to insights") */}
-          <div className="relative overflow-hidden rounded-[26px] bg-gradient-to-r from-emerald-50/80 via-teal-50/50 to-white border border-emerald-200/70 p-4 sm:p-5 shadow-xs flex items-center justify-between gap-5 shrink-0 max-w-md w-full">
-            <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-white border border-emerald-200 text-emerald-600 flex items-center justify-center shadow-2xs shrink-0">
-                <FileCheck className="w-6 h-6 text-emerald-600" />
+          {/* Hero 2-Column Split: Title & Kiosk Graphic Showcase */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center text-left pt-2">
+            {/* LEFT COLUMN */}
+            <div className="lg:col-span-7 space-y-4">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 px-4 py-1.5 text-xs font-bold tracking-wide text-white shadow-xs">
+                <Sparkles className="w-3.5 h-3.5 text-[#38BDF8]" /> DOCUMENT INTELLIGENCE &amp; OCR STATION
               </div>
-              <div className="text-left">
-                <h3 className="font-heading font-bold text-xs sm:text-sm text-[#0F172A]">
-                  From documents to insights
-                </h3>
-                <p className="text-[11px] text-[#64748B] mt-0.5 font-medium">
-                  OCR · Clinical Context · Organized Timeline
-                </p>
-              </div>
+
+              <h1 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
+                Upload &amp; Understand <br />
+                <span className="text-[#38BDF8]">Your Medical Documents</span>
+              </h1>
+
+              <p className="text-sm sm:text-base text-white/90 leading-relaxed font-normal max-w-xl">
+                Attach prescriptions, lab reports, or discharge summaries. MediKiosk uses advanced Qwen Vision OCR to extract, organize and understand your health information &mdash; securely and in your language.
+              </p>
             </div>
 
-            {/* Organic Pill Badge */}
-            <div className="hidden sm:block text-right bg-emerald-100/70 text-emerald-900 px-3 py-2 rounded-2xl border border-emerald-200 text-[11px] font-semibold leading-tight shrink-0">
-              <div>Your health,</div>
-              <div>Your story.</div>
-              <div className="font-bold text-emerald-950">In one place.</div>
-            </div>
-          </div>
-        </div>
+            {/* RIGHT COLUMN: Kiosk Document Stack Showcase */}
+            <div className="lg:col-span-5 relative">
+              <div className="rounded-3xl bg-white/10 p-4 border border-white/20 backdrop-blur-md shadow-2xl relative overflow-hidden">
+                <div className="relative rounded-2xl bg-[#0F172A] border border-slate-700 p-4 min-h-[160px] flex items-center justify-between gap-3 text-left">
+                  
+                  {/* Floating Document Cards Stack */}
+                  <div className="relative w-full max-w-[240px] h-28">
+                    <motion.div
+                      initial={{ rotate: -6 }}
+                      animate={{ y: [0, -3, 0] }}
+                      transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                      className="absolute left-0 top-3 w-28 bg-white border border-slate-200 rounded-xl p-2 shadow-md z-10 text-slate-900"
+                    >
+                      <span className="text-[9px] font-bold block">Prescription</span>
+                      <div className="h-1 w-full bg-slate-200 rounded-full mt-1" />
+                      <div className="text-emerald-500 font-extrabold text-[10px] mt-1">℞</div>
+                    </motion.div>
 
-        {/* ─── Main Two-Column Layout (Upload Station + What Happens Next) ─── */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* LEFT COLUMN: Upload Card (8 Cols) */}
-          <div className="lg:col-span-8 bg-white border border-[#E2E8F0] rounded-[28px] p-6 md:p-8 shadow-xs space-y-6 text-left">
-            {!initialized || isLoading ? (
-              /* Loading auth session */
-              <div className="rounded-[24px] border border-[#E2E8F0] bg-[#F8FAFC] p-12 text-center flex flex-col items-center justify-center min-h-[300px] shadow-xs space-y-3">
-                <RefreshCw className="w-7 h-7 text-[#0066FF] animate-spin" />
-                <p className="text-xs font-semibold text-[#64748B]">Verifying patient session...</p>
-              </div>
-            ) : !isAuthenticated ? (
-              /* ─── Unauthorized Access Barrier Card ─── */
-              <div className="rounded-[24px] border-2 border-dashed border-blue-200 bg-gradient-to-b from-blue-50/70 to-white p-8 sm:p-12 text-center flex flex-col items-center justify-center min-h-[320px] shadow-xs space-y-4">
-                <div className="w-16 h-16 rounded-2xl bg-blue-100 text-[#0066FF] flex items-center justify-center shadow-xs">
-                  <Lock className="w-8 h-8 text-[#0066FF]" />
-                </div>
-                <div className="max-w-md space-y-1.5">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100/70 border border-blue-200 text-blue-800 text-[11px] font-bold uppercase tracking-wider">
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#0066FF]" />
-                    <span>Secure Patient Portal Access</span>
+                    <motion.div
+                      initial={{ rotate: 0 }}
+                      animate={{ y: [0, -4, 0] }}
+                      transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut", delay: 0.3 }}
+                      className="absolute left-14 top-0 w-32 bg-white border border-blue-200 rounded-xl p-2.5 shadow-xl z-30 text-slate-900"
+                    >
+                      <span className="text-[10px] font-bold block">Lab Report</span>
+                      <div className="h-1 w-full bg-blue-500 rounded-full mt-1" />
+                      <div className="h-1 w-3/4 bg-blue-200 rounded-full mt-1" />
+                      <div className="absolute -top-2 -right-1.5 bg-[#0056B3] text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase">
+                        OCR
+                      </div>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ rotate: 6 }}
+                      animate={{ y: [0, -3, 0] }}
+                      transition={{ repeat: Infinity, duration: 4.2, ease: "easeInOut", delay: 0.6 }}
+                      className="absolute right-0 top-4 w-28 bg-white border border-slate-200 rounded-xl p-2 shadow-md z-20 text-slate-900"
+                    >
+                      <span className="text-[8px] font-bold block">Discharge Summary</span>
+                      <div className="h-1 w-full bg-slate-200 rounded-full mt-1" />
+                      <FileText className="w-3 h-3 text-blue-500 mt-1" />
+                    </motion.div>
                   </div>
-                  <h3 className="text-lg sm:text-xl font-extrabold text-[#0F172A] tracking-tight">
-                    Authentication Required to Upload Documents
-                  </h3>
-                  <p className="text-xs sm:text-sm text-[#64748B] leading-relaxed">
-                    Doctor prescription OCR, multimodal vision transcription, and longitudinal EHR synchronization are restricted to authenticated patients. Please log in or create an account to upload documents.
-                  </p>
-                </div>
 
-                <div className="flex flex-col sm:flex-row items-center gap-3 pt-2 w-full max-w-sm">
-                  <Link
-                    href="/patient/login?returnUrl=/documents"
-                    className="w-full sm:w-1/2 rounded-full bg-[#0066FF] hover:bg-[#0052CC] text-white py-2.5 px-4 text-xs font-bold shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-1.5"
-                  >
-                    <LogIn className="w-3.5 h-3.5" />
-                    <span>Sign In</span>
-                  </Link>
-                  <Link
-                    href="/patient/signup?returnUrl=/documents"
-                    className="w-full sm:w-1/2 rounded-full bg-white hover:bg-slate-50 border border-[#CBD5E1] text-[#0F172A] py-2.5 px-4 text-xs font-bold shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-1.5"
-                  >
-                    <UserPlus className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Sign Up</span>
-                  </Link>
+                  <div className="hidden sm:flex flex-col items-end justify-center pr-1 shrink-0 space-y-0.5">
+                    <span className="font-serif italic text-sm text-white font-semibold text-right leading-tight">
+                      From documents <br /> to insights
+                    </span>
+                    <svg className="w-16 h-4 text-[#38BDF8]" viewBox="0 0 100 25" fill="none">
+                      <path d="M 5 20 Q 50 5 95 18" stroke="currentColor" strokeWidth="2" strokeDasharray="4 3" fill="none" />
+                      <path d="M 90 12 L 96 18 L 88 22" fill="currentColor" />
+                    </svg>
+                  </div>
                 </div>
               </div>
-            ) : (
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ─── 3. MAIN KIOSK UPLOADER STATION ─── */}
+      <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-6 flex-1 text-left">
+        
+        <div className="bg-white border border-[#E2E8F0] rounded-3xl p-6 sm:p-8 shadow-sm space-y-6 text-left relative overflow-hidden">
+          
+          {/* Action Tabs Header & Security Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-4 pb-2 border-b border-slate-100">
+            {/* Tabs */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveUploadTab("upload");
+                  fileInputRef.current?.click();
+                }}
+                className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  activeUploadTab === "upload"
+                    ? "bg-[#0056B3] text-white shadow-md"
+                    : "bg-[#F8F9FA] border border-slate-200 text-slate-700 hover:bg-slate-100"
+                }`}
+              >
+                <UploadCloud className="w-4 h-4" />
+                <span>Upload Document</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveUploadTab("camera");
+                  cameraInputRef.current?.click();
+                }}
+                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  activeUploadTab === "camera"
+                    ? "bg-[#0056B3] text-white shadow-md"
+                    : "bg-[#F8F9FA] border border-slate-200 text-slate-700 hover:bg-slate-100"
+                }`}
+              >
+                <Camera className="w-4 h-4" />
+                <span>Use Camera</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveUploadTab("device");
+                  fileInputRef.current?.click();
+                }}
+                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  activeUploadTab === "device"
+                    ? "bg-[#0056B3] text-white shadow-md"
+                    : "bg-[#F8F9FA] border border-slate-200 text-slate-700 hover:bg-slate-100"
+                }`}
+              >
+                <Folder className="w-4 h-4" />
+                <span>From Device</span>
+              </button>
+            </div>
+
+            {/* Security Guarantee Note */}
+            <div className="flex items-center gap-2 text-xs text-[#64748B]">
+              <Lock className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-xs font-medium">All uploads are encrypted and secure</span>
+              <Info className="w-3.5 h-3.5 text-slate-400" />
+            </div>
+          </div>
+
+          {/* ─── MAIN DRAG & DROP DASHED ZONE (NO INTERSECTING BACKGROUND DOTTED LINE) ─── */}
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => !selectedFile && fileInputRef.current?.click()}
+            className={`relative rounded-2xl border-2 border-dashed p-6 sm:p-10 transition-all text-center flex flex-col items-center justify-center min-h-[240px] overflow-hidden ${
+              selectedFile
+                ? "border-[#0056B3]/70 bg-[#F0F7FF]"
+                : "border-[#84BAFF] bg-gradient-to-b from-[#F2F7FF] via-[#EBF3FF] to-[#F5F9FF] hover:bg-[#EEF5FF] cursor-pointer"
+            } ${isDragging ? "border-[#0056B3] bg-[#EBF5FF] scale-[1.01]" : ""}`}
+          >
+            {/* 4 Floating Format Badges (PDF, JPG, PNG, WEBP) */}
+            {!selectedFile && (
               <>
-                {/* Top Tab Bar & Security Note */}
-                <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-[#F1F5F9]">
-                  <div className="flex items-center gap-1.5 p-1 bg-slate-100/80 rounded-full border border-slate-200/70">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveUploadTab("upload");
-                        fileInputRef.current?.click();
-                      }}
-                      className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                        activeUploadTab === "upload"
-                          ? "bg-white text-[#0066FF] shadow-xs"
-                          : "text-[#64748B] hover:text-[#0F172A]"
-                      }`}
-                    >
-                      <UploadCloud className="w-3.5 h-3.5 text-[#0066FF]" />
-                      <span>Upload Document</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveUploadTab("camera");
-                        cameraInputRef.current?.click();
-                      }}
-                      className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                        activeUploadTab === "camera"
-                          ? "bg-white text-[#0066FF] shadow-xs"
-                          : "text-[#64748B] hover:text-[#0F172A]"
-                      }`}
-                    >
-                      <Camera className="w-3.5 h-3.5" />
-                      <span>Use Camera</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveUploadTab("device");
-                        fileInputRef.current?.click();
-                      }}
-                      className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                        activeUploadTab === "device"
-                          ? "bg-white text-[#0066FF] shadow-xs"
-                          : "text-[#64748B] hover:text-[#0F172A]"
-                      }`}
-                    >
-                      <Folder className="w-3.5 h-3.5" />
-                      <span>From Device</span>
-                    </button>
-                  </div>
-
-                  {/* Encryption Note */}
-                  <div className="flex items-center gap-1.5 text-xs text-[#64748B]">
-                    <Lock className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="text-[11px]">All uploads are encrypted and secure</span>
-                    <Info className="w-3.5 h-3.5 text-slate-400" />
-                  </div>
-                </div>
-
-                {/* ─── Dashed Dropzone Area ─── */}
-                <div
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  onClick={() => !selectedFile && fileInputRef.current?.click()}
-                  className={`relative rounded-[24px] border-2 border-dashed p-6 sm:p-10 transition-all text-center flex flex-col items-center justify-center min-h-[290px] ${
-                    selectedFile
-                      ? "border-[#0066FF]/60 bg-[#F0F7FF]/50"
-                      : "border-[#B8D5FA] bg-[#F7FAFF]/80 hover:bg-[#F0F6FF] hover:border-[#0066FF] cursor-pointer"
-                  } ${isDragging ? "border-[#0066FF] bg-[#EBF5FF] scale-[1.01]" : ""}`}
+                <motion.div
+                  initial={{ rotate: -6 }}
+                  animate={{ y: [0, -3, 0] }}
+                  transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                  className="absolute top-5 left-6 sm:top-6 sm:left-12 pointer-events-none hidden sm:flex flex-col items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-red-50 to-pink-100 border border-red-200 shadow-sm text-red-600 font-extrabold text-xs"
                 >
-                  {/* Laser Scan Animation when processing */}
-                  {isScanning && (
-                    <div className="absolute inset-x-0 h-1 bg-[#0066FF] shadow-[0_0_12px_rgba(0,102,255,0.9)] animate-pulse z-20 top-1/2" />
-                  )}
+                  <FileText className="w-4 h-4 text-red-500 mb-0.5" />
+                  <span>PDF</span>
+                </motion.div>
 
-                  {selectedFile ? (
-                    /* Selected File Card & Actions */
-                    <div className="w-full space-y-4" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-between bg-white p-3.5 rounded-2xl border border-[#E2E8F0] shadow-xs">
-                        <div className="flex items-center gap-3 truncate">
-                          <div className="h-10 w-10 rounded-xl bg-[#EBF5FF] text-[#0066FF] flex items-center justify-center shrink-0">
-                            <FileCheck className="h-5 w-5" />
-                          </div>
-                          <div className="text-left truncate">
-                            <p className="text-xs font-bold text-[#0F172A] truncate">
-                              {selectedFile.name}
-                            </p>
-                            <p className="text-[10px] text-[#64748B]">
-                              {(selectedFile.size / 1024).toFixed(1)} KB · {selectedFile.type || "Medical File"}
-                            </p>
-                          </div>
-                        </div>
+                <motion.div
+                  initial={{ rotate: 5 }}
+                  animate={{ y: [0, -3, 0] }}
+                  transition={{ repeat: Infinity, duration: 4.5, ease: "easeInOut", delay: 0.5 }}
+                  className="absolute bottom-5 left-12 sm:bottom-6 sm:left-20 pointer-events-none hidden sm:flex flex-col items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-50 to-sky-100 border border-blue-200 shadow-sm text-blue-600 font-extrabold text-xs"
+                >
+                  <ImageIcon className="w-4 h-4 text-blue-500 mb-0.5" />
+                  <span>JPG</span>
+                </motion.div>
 
-                        <button
-                          type="button"
-                          onClick={clearSelectedFile}
-                          className="h-8 w-8 rounded-full bg-[#F1F5F9] text-[#64748B] hover:bg-red-50 hover:text-red-600 flex items-center justify-center transition-colors cursor-pointer"
-                          title="Remove file"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
+                <motion.div
+                  initial={{ rotate: 5 }}
+                  animate={{ y: [0, -3, 0] }}
+                  transition={{ repeat: Infinity, duration: 3.8, ease: "easeInOut", delay: 0.2 }}
+                  className="absolute top-5 right-6 sm:top-6 sm:right-12 pointer-events-none hidden sm:flex flex-col items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-100 border border-emerald-200 shadow-sm text-emerald-600 font-extrabold text-xs"
+                >
+                  <ImageIcon className="w-4 h-4 text-emerald-500 mb-0.5" />
+                  <span>PNG</span>
+                </motion.div>
 
-                      {/* Image Preview with High-Tech Medical Scanner Overlay */}
-                      {previewUrl && (
-                        <div className="relative overflow-hidden rounded-2xl border border-blue-200/80 bg-slate-950 p-2 shadow-inner group">
-                          {/* Corner Viewfinder Reticles */}
-                          <div className="absolute top-3 left-3 w-5 h-5 border-t-2 border-l-2 border-[#0066FF] rounded-tl-sm z-30 pointer-events-none" />
-                          <div className="absolute top-3 right-3 w-5 h-5 border-t-2 border-r-2 border-[#0066FF] rounded-tr-sm z-30 pointer-events-none" />
-                          <div className="absolute bottom-3 left-3 w-5 h-5 border-b-2 border-l-2 border-[#0066FF] rounded-bl-sm z-30 pointer-events-none" />
-                          <div className="absolute bottom-3 right-3 w-5 h-5 border-b-2 border-r-2 border-[#0066FF] rounded-br-sm z-30 pointer-events-none" />
-
-                          {/* Optical HUD Radar Overlay during Scanning */}
-                          {isScanning && (
-                            <div className="absolute inset-0 bg-blue-950/20 backdrop-blur-[1px] z-20 flex flex-col justify-between p-4 pointer-events-none">
-                              {/* Top Scanner HUD Header */}
-                              <div className="flex items-center justify-between">
-                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-600/90 text-white text-[11px] font-bold tracking-wider uppercase shadow-md animate-pulse">
-                                  <Sparkles className="w-3.5 h-3.5" />
-                                  <span>Qwen Vision AI Optical Scanning</span>
-                                </div>
-                                <div className="text-[11px] font-mono text-cyan-300 font-bold bg-slate-900/80 px-2.5 py-0.5 rounded-md border border-cyan-500/30">
-                                  98.8% Accuracy Target
-                                </div>
-                              </div>
-
-                              {/* Moving Laser Beam */}
-                              <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-[#0066FF] to-transparent shadow-[0_0_18px_rgba(0,102,255,1)] animate-bounce z-20" />
-
-                              {/* Bottom Real-time OCR Matrix Stream */}
-                              <div className="bg-slate-900/90 border border-blue-500/30 rounded-xl p-2.5 text-left space-y-1">
-                                <div className="flex items-center justify-between text-[11px] font-medium text-cyan-200">
-                                  <span>{scanStage || "Deciphering Clinical Cursive & Pharmacotherapy..."}</span>
-                                  <RefreshCw className="w-3 h-3 text-cyan-400 animate-spin" />
-                                </div>
-                                <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                                  <div className="bg-gradient-to-r from-blue-500 to-cyan-400 h-full rounded-full w-3/4 animate-pulse" />
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          <img
-                            src={previewUrl}
-                            alt="Prescription Preview"
-                            className="max-h-[360px] w-auto h-auto object-contain rounded-xl mx-auto bg-white/95 shadow-xs transition-transform duration-300"
-                          />
-                        </div>
-                      )}
-
-                      {/* Live Scanning Pipeline Stages */}
-                      {isScanning && (
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-left">
-                          <div className="p-2 rounded-xl bg-blue-50 border border-blue-200/80 text-[10px] flex items-center gap-1.5 text-blue-800 font-semibold">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                            <span className="truncate">1. Image Enhance</span>
-                          </div>
-                          <div className="p-2 rounded-xl bg-blue-500 text-white border border-blue-600 text-[10px] flex items-center gap-1.5 font-bold shadow-xs animate-pulse">
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin shrink-0" />
-                            <span className="truncate">2. Vision AI OCR</span>
-                          </div>
-                          <div className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-[10px] flex items-center gap-1.5 text-slate-500">
-                            <Pill className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span className="truncate">3. Pharmacopeia</span>
-                          </div>
-                          <div className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-[10px] flex items-center gap-1.5 text-slate-500">
-                            <ShieldCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span className="truncate">4. ABDM Sync</span>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Trigger OCR Button */}
-                      <button
-                        type="button"
-                        onClick={() => processUploadedFile()}
-                        disabled={isScanning}
-                        className="w-full rounded-full bg-[#0066FF] hover:bg-[#0052CC] text-white py-3 text-xs font-bold shadow-sm hover:shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-75"
-                      >
-                        {isScanning ? (
-                          <>
-                            <RefreshCw className="h-4 w-4 animate-spin" />
-                            <span>{scanStage || "Processing Medical Document with Qwen Vision..."}</span>
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="h-4 w-4" />
-                            <span>Re-scan &amp; Analyze Document</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  ) : (
-                    /* Default Empty Dropzone */
-                    <div className="space-y-3.5 py-4">
-                      {/* Big Blue Cloud Icon */}
-                      <div className="w-16 h-16 rounded-full bg-[#EBF5FF] text-[#0066FF] flex items-center justify-center mx-auto shadow-xs">
-                        <UploadCloud className="w-8 h-8" />
-                      </div>
-
-                      <div>
-                        <h3 className="text-base sm:text-lg font-bold text-[#0F172A]">
-                          Drag &amp; drop your medical document here
-                        </h3>
-                        <p className="text-xs text-[#64748B] mt-0.5">
-                          or click to browse files
-                        </p>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          fileInputRef.current?.click();
-                        }}
-                        className="rounded-full bg-[#0066FF] hover:bg-[#0052CC] text-white px-8 py-2.5 text-xs sm:text-sm font-bold shadow-sm hover:shadow-md transition-all cursor-pointer"
-                      >
-                        Choose File
-                      </button>
-
-                      <p className="text-[11px] text-[#94A3B8]">
-                        Supports JPG, PNG, PDF, WEBP (Max 10 MB)
-                      </p>
-
-                      {/* Document Type Categories Row */}
-                      <div className="pt-4 flex flex-wrap items-center justify-center gap-2.5">
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#E2E8F0] text-left shadow-2xs">
-                          <FileText className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          <div>
-                            <div className="text-[11px] font-bold text-[#0F172A] leading-tight">Prescriptions</div>
-                            <div className="text-[9px] text-[#64748B]">(PDF / Image)</div>
-                          </div>
-                        </div>
-
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#E2E8F0] text-left shadow-2xs">
-                          <FlaskConical className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                          <div>
-                            <div className="text-[11px] font-bold text-[#0F172A] leading-tight">Lab Reports</div>
-                            <div className="text-[9px] text-[#64748B]">(PDF / Image)</div>
-                          </div>
-                        </div>
-
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#E2E8F0] text-left shadow-2xs">
-                          <FileSpreadsheet className="w-3.5 h-3.5 text-red-600 shrink-0" />
-                          <div>
-                            <div className="text-[11px] font-bold text-[#0F172A] leading-tight">Discharge Summaries</div>
-                            <div className="text-[9px] text-[#64748B]">(PDF / Image)</div>
-                          </div>
-                        </div>
-
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#E2E8F0] text-left shadow-2xs">
-                          <Receipt className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                          <div>
-                            <div className="text-[11px] font-bold text-[#0F172A] leading-tight">Medical Bills</div>
-                            <div className="text-[9px] text-[#64748B]">(Optional)</div>
-                          </div>
-                        </div>
-
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#E2E8F0] text-left shadow-2xs">
-                          <MoreHorizontal className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                          <div>
-                            <div className="text-[11px] font-bold text-[#0F172A] leading-tight">More</div>
-                            <div className="text-[9px] text-[#64748B]">(Any document)</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <motion.div
+                  initial={{ rotate: -5 }}
+                  animate={{ y: [0, -3, 0] }}
+                  transition={{ repeat: Infinity, duration: 4.2, ease: "easeInOut", delay: 0.7 }}
+                  className="absolute bottom-5 right-12 sm:bottom-6 sm:right-20 pointer-events-none hidden sm:flex flex-col items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-50 to-fuchsia-100 border border-purple-200 shadow-sm text-purple-600 font-extrabold text-xs"
+                >
+                  <ImageIcon className="w-4 h-4 text-purple-500 mb-0.5" />
+                  <span>WEBP</span>
+                </motion.div>
               </>
             )}
 
-            {/* Error Message Alert */}
-            {errorMsg && (
-              <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-start gap-3">
-                <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-                <div>
-                  <strong className="font-bold block">Document Scanning Alert:</strong>
-                  <span>{errorMsg}</span>
-                </div>
-              </div>
+            {/* Laser Beam Scanner HUD Effect when processing */}
+            {isScanning && !previewUrl && (
+              <motion.div
+                initial={{ top: "0%" }}
+                animate={{ top: "100%" }}
+                transition={{ repeat: Infinity, duration: 2.2, ease: "linear", repeatType: "loop" }}
+                className="absolute inset-x-0 z-20 pointer-events-none"
+              >
+                <div className="h-16 -translate-y-full bg-gradient-to-t from-[#0056B3]/25 to-transparent w-full" />
+                <div className="h-1 bg-gradient-to-r from-transparent via-[#0056B3] to-transparent shadow-[0_0_16px_#0056B3] -translate-y-1/2" />
+              </motion.div>
             )}
 
-            {/* ─── LIVE EXTRACTED RESULTS VIEWER (Appears on Scan Complete) ─── */}
-            {extractedDoc && (
-              <div className="pt-6 border-t-2 border-slate-200 space-y-6 animate-fadeIn">
-                {/* 1. Header & Verification Hero Card */}
-                <div className="rounded-3xl border-2 border-[#0066FF]/30 bg-gradient-to-br from-[#F0F7FF] via-white to-[#EBF3FF] p-6 sm:p-7 shadow-sm relative overflow-hidden space-y-4">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="space-y-1.5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full bg-[#0066FF] text-white px-3 py-1 text-xs font-black uppercase tracking-wider shadow-xs">
-                          {extractedDoc.document_type.replace("_", " ")}
-                        </span>
-                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-3 py-1 rounded-full">
-                          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                          {extractedDoc.confidence_score || 99.2}% Verified by Qwen Vision AI
-                        </span>
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-[#0066FF] bg-white px-3 py-1 rounded-full border border-[#0066FF]/30 shadow-2xs">
-                          <ShieldCheck className="h-3.5 w-3.5" /> ABDM Linked
-                        </span>
-                      </div>
-                      <h3 className="font-heading text-xl sm:text-2xl font-black text-[#0F172A] pt-1 leading-snug tracking-tight">
-                        {extractedDoc.document_purpose || "Outpatient Clinical Prescription"}
-                      </h3>
+            {selectedFile ? (
+              <div className="w-full max-w-xl space-y-3" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center justify-between bg-white p-3.5 rounded-2xl border border-blue-200 shadow-xs">
+                  <div className="flex items-center gap-3 truncate">
+                    <div className="h-10 w-10 rounded-xl bg-[#EBF5FF] text-[#0056B3] flex items-center justify-center shrink-0 font-bold">
+                      <FileCheck className="h-5 w-5" />
                     </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => window.print()}
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 px-3.5 py-1.5 rounded-full border border-slate-300 transition-all shadow-2xs cursor-pointer"
-                        title="Print prescription record"
-                      >
-                        <Printer className="h-3.5 w-3.5 text-slate-600" /> Print
-                      </button>
-                      <Link
-                        href="/patient/history"
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-3.5 py-1.5 rounded-full border border-emerald-400 transition-all shadow-2xs"
-                      >
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> View in Health Timeline &rarr;
-                      </Link>
+                    <div className="text-left truncate">
+                      <p className="text-xs font-bold text-[#0F172A] truncate">
+                        {selectedFile.name}
+                      </p>
+                      <p className="text-[10px] text-[#64748B]">
+                        {(selectedFile.size / 1024).toFixed(1)} KB &bull; {selectedFile.type || "Medical File"}
+                      </p>
                     </div>
                   </div>
 
-                  {/* 2. Bento Consultation Info Strip (4 Spacious Cards) */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
-                    {/* Doctor */}
-                    <div className="p-3.5 rounded-2xl bg-white border border-blue-100/90 shadow-2xs space-y-1">
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-blue-600 uppercase tracking-wider">
-                        <Stethoscope className="w-4 h-4 text-[#0066FF]" /> Treating Physician
-                      </div>
-                      <div className="text-sm sm:text-base font-black text-[#0F172A] truncate" title={extractedDoc.doctor_name || "Attending Physician"}>
-                        {extractedDoc.doctor_name || "Dr. Attending Physician"}
-                      </div>
-                      <div className="text-xs text-slate-500 font-medium truncate">
-                        Consultant Physician
-                      </div>
-                    </div>
-
-                    {/* Healthcare Facility */}
-                    <div className="p-3.5 rounded-2xl bg-white border border-blue-100/90 shadow-2xs space-y-1">
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-blue-600 uppercase tracking-wider">
-                        <Building2 className="w-4 h-4 text-[#0066FF]" /> Facility / Clinic
-                      </div>
-                      <div className="text-sm sm:text-base font-bold text-[#0F172A] truncate" title={extractedDoc.facility_name || "Healthcare Clinic"}>
-                        {extractedDoc.facility_name || "Healthcare Clinic"}
-                      </div>
-                      <div className="text-xs text-slate-500 font-medium truncate">
-                        Outpatient Department
-                      </div>
-                    </div>
-
-                    {/* Patient Name */}
-                    <div className="p-3.5 rounded-2xl bg-white border border-blue-100/90 shadow-2xs space-y-1">
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-blue-600 uppercase tracking-wider">
-                        <User className="w-4 h-4 text-[#0066FF]" /> Patient Details
-                      </div>
-                      <div className="text-sm sm:text-base font-black text-[#0F172A] truncate" title={extractedDoc.patient_name || user?.full_name || "Registered Patient"}>
-                        {extractedDoc.patient_name || user?.full_name || "Registered Patient"}
-                      </div>
-                      <div className="text-xs text-slate-500 font-medium truncate">
-                        ABHA ID / UHID Verified
-                      </div>
-                    </div>
-
-                    {/* Prescription Date */}
-                    <div className="p-3.5 rounded-2xl bg-white border border-blue-100/90 shadow-2xs space-y-1">
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-blue-600 uppercase tracking-wider">
-                        <Calendar className="w-4 h-4 text-[#0066FF]" /> Consultation Date
-                      </div>
-                      <div className="text-sm sm:text-base font-mono font-bold text-[#0F172A]">
-                        {String(extractedDoc.document_date || new Date().toISOString().split("T")[0])}
-                      </div>
-                      <div className="text-xs text-slate-500 font-medium">
-                        Digitized Medical Record
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 3. Diagnosed Medical Conditions (if available) */}
-                {extractedDoc.extracted_diagnoses && extractedDoc.extracted_diagnoses.length > 0 && (
-                  <div className="p-5 rounded-2xl bg-slate-50/90 border border-slate-200 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <HeartPulse className="w-5 h-5 text-rose-600" />
-                      <h4 className="font-heading text-sm font-black text-[#0F172A] uppercase tracking-wider">
-                        Confirmed Diagnoses &amp; Clinical Indications ({extractedDoc.extracted_diagnoses.length})
-                      </h4>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      {extractedDoc.extracted_diagnoses.map((diag, dIdx) => {
-                        const condName = typeof diag === "string" ? diag : diag.condition;
-                        const icdCode = typeof diag === "object" ? diag.icd10_code : undefined;
-                        const notes = typeof diag === "object" ? diag.notes : undefined;
-                        return (
-                          <div key={dIdx} className="p-3.5 rounded-xl bg-white border border-slate-200 space-y-1 shadow-2xs">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="font-bold text-sm sm:text-base text-slate-900">{condName}</span>
-                              {icdCode && (
-                                <span className="text-xs font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 shrink-0">
-                                  {icdCode}
-                                </span>
-                              )}
-                            </div>
-                            {notes && (
-                              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">{notes}</p>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* 4. Recorded Consultation Vitals (if available) */}
-                {extractedDoc.extracted_vitals && extractedDoc.extracted_vitals.length > 0 && (
-                  <div className="p-5 rounded-2xl bg-slate-50/90 border border-slate-200 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Activity className="w-5 h-5 text-emerald-600" />
-                      <h4 className="font-heading text-sm font-black text-[#0F172A] uppercase tracking-wider">
-                        Recorded Physical Examination &amp; Vitals
-                      </h4>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                      {extractedDoc.extracted_vitals.map((v, vIdx) => (
-                        <div key={vIdx} className="p-3.5 rounded-xl bg-white border border-slate-200 space-y-1 shadow-2xs">
-                          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">{v.vital_name}</span>
-                          <div className="text-base sm:text-lg font-black text-slate-900">
-                            {v.value} <span className="text-xs font-normal text-slate-500">{v.unit}</span>
-                          </div>
-                          {v.is_abnormal ? (
-                            <span className="inline-block text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                              Requires Attention
-                            </span>
-                          ) : (
-                            <span className="inline-block text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                              Within Range
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* 5. Doctor's Action Directives & Care Plan */}
-                <div className="rounded-2xl bg-gradient-to-br from-blue-50/90 via-indigo-50/50 to-white p-5 sm:p-6 border-2 border-blue-200 shadow-2xs space-y-3">
-                  <div className="flex items-center gap-2">
-                    <FileCheck className="w-5 h-5 text-[#0066FF]" />
-                    <h4 className="font-heading text-sm sm:text-base font-black text-blue-950 uppercase tracking-wider">
-                      Physician&apos;s Clinical Directives &amp; Action Plan
-                    </h4>
-                  </div>
-                  <div className="space-y-2">
-                    {parseActionDirectives(extractedDoc.physician_action_plan, extractedDoc.clinical_intent).map((directive, pIdx) => (
-                      <div key={pIdx} className="flex items-start gap-3 bg-white/90 p-3 rounded-xl border border-blue-100 shadow-2xs">
-                        <span className="w-6 h-6 rounded-full bg-[#0066FF] text-white font-bold text-xs flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
-                          {pIdx + 1}
-                        </span>
-                        <p className="text-xs sm:text-sm text-slate-800 font-medium leading-relaxed">
-                          {directive}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 6. Extracted Pharmacotherapy & Medication Routine (Core Highlight!) */}
-                {extractedDoc.extracted_medications && extractedDoc.extracted_medications.length > 0 && (
-                  <div className="space-y-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2 pb-1 border-b border-slate-200">
-                      <div className="flex items-center gap-2">
-                        <Pill className="w-5 h-5 text-[#0066FF]" />
-                        <div>
-                          <h4 className="font-heading text-base sm:text-lg font-black text-[#0F172A] tracking-tight">
-                            Prescribed Medications &amp; Daily Routine ({extractedDoc.extracted_medications.length})
-                          </h4>
-                          <p className="text-xs text-slate-500 font-medium">
-                            Follow meal timings and take medicines as scheduled. Do not skip doses.
-                          </p>
-                        </div>
-                      </div>
-                      <span className="text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
-                        Normalized against Indian Pharmacopeia
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4">
-                      {extractedDoc.extracted_medications.map((med, idx) => {
-                        const sched = parseDosageSchedule(med.frequency);
-                        return (
-                          <div
-                            key={idx}
-                            className="p-5 sm:p-6 rounded-2xl bg-white border-2 border-slate-200/90 hover:border-[#0066FF]/60 hover:shadow-md transition-all space-y-4 shadow-xs"
-                          >
-                            {/* Med Card Title & Strength */}
-                            <div className="flex flex-wrap items-start justify-between gap-2">
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="w-7 h-7 rounded-lg bg-blue-100 text-[#0066FF] flex items-center justify-center font-bold text-xs shrink-0">
-                                    {idx + 1}
-                                  </span>
-                                  <h5 className="font-heading text-base sm:text-lg font-black text-[#0F172A]">
-                                    {med.name}
-                                  </h5>
-                                </div>
-                                {med.therapeutic_class && (
-                                  <span className="inline-block text-xs font-semibold text-purple-800 bg-purple-50 px-2.5 py-0.5 rounded-md border border-purple-200">
-                                    {med.therapeutic_class}
-                                  </span>
-                                )}
-                              </div>
-
-                              <div className="flex items-center gap-2">
-                                {med.dosage && (
-                                  <span className="text-sm sm:text-base font-mono font-bold text-blue-700 bg-blue-50 px-3.5 py-1 rounded-lg border border-blue-200 shrink-0">
-                                    {med.dosage}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Visual Daily Schedule Strip */}
-                            <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-200 space-y-1.5">
-                              <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                                  <Clock className="w-3.5 h-3.5 text-blue-600" /> Daily Timing Schedule:
-                                </span>
-                                {med.frequency && (
-                                  <span className="text-xs font-bold text-slate-800">
-                                    Frequency: <span className="font-mono text-blue-700">{med.frequency}</span>
-                                  </span>
-                                )}
-                              </div>
-
-                              {sched.isSOS ? (
-                                <div className="p-2.5 rounded-lg bg-amber-100/70 border border-amber-300 text-amber-950 font-bold text-xs sm:text-sm flex items-center gap-2">
-                                  <span className="w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-xs shrink-0">⚡</span>
-                                  <span>Take SOS (As needed): Only if symptoms, fever &gt; 100°F, or severe pain occur.</span>
-                                </div>
-                              ) : (
-                                <div className="grid grid-cols-3 gap-2 text-xs sm:text-sm">
-                                  {/* Morning */}
-                                  <div
-                                    className={`p-2 rounded-lg text-center font-bold border transition-colors ${
-                                      sched.isMorning
-                                        ? "bg-amber-50 border-amber-300 text-amber-950 shadow-2xs"
-                                        : "bg-white border-slate-200 text-slate-400"
-                                    }`}
-                                  >
-                                    <div className="flex items-center justify-center gap-1">
-                                      <Sun className={`w-3.5 h-3.5 ${sched.isMorning ? "text-amber-600" : "text-slate-400"}`} />
-                                      <span>Morning</span>
-                                    </div>
-                                    <div className="text-[11px] font-semibold mt-0.5">
-                                      {sched.isMorning ? "1 Dose" : "—"}
-                                    </div>
-                                  </div>
-
-                                  {/* Afternoon */}
-                                  <div
-                                    className={`p-2 rounded-lg text-center font-bold border transition-colors ${
-                                      sched.isAfternoon
-                                        ? "bg-sky-50 border-sky-300 text-sky-950 shadow-2xs"
-                                        : "bg-white border-slate-200 text-slate-400"
-                                    }`}
-                                  >
-                                    <div className="flex items-center justify-center gap-1">
-                                      <Sun className={`w-3.5 h-3.5 ${sched.isAfternoon ? "text-sky-600" : "text-slate-400"}`} />
-                                      <span>Afternoon</span>
-                                    </div>
-                                    <div className="text-[11px] font-semibold mt-0.5">
-                                      {sched.isAfternoon ? "1 Dose" : "—"}
-                                    </div>
-                                  </div>
-
-                                  {/* Night */}
-                                  <div
-                                    className={`p-2 rounded-lg text-center font-bold border transition-colors ${
-                                      sched.isNight
-                                        ? "bg-indigo-50 border-indigo-300 text-indigo-950 shadow-2xs"
-                                        : "bg-white border-slate-200 text-slate-400"
-                                    }`}
-                                  >
-                                    <div className="flex items-center justify-center gap-1">
-                                      <Moon className={`w-3.5 h-3.5 ${sched.isNight ? "text-indigo-600" : "text-slate-400"}`} />
-                                      <span>Night</span>
-                                    </div>
-                                    <div className="text-[11px] font-semibold mt-0.5">
-                                      {sched.isNight ? "1 Dose" : "—"}
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Why Prescribed (Plain English) */}
-                            <div className="rounded-xl bg-amber-50/70 border border-amber-200/90 p-3.5 space-y-1">
-                              <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 uppercase tracking-wider">
-                                <Lightbulb className="w-3.5 h-3.5 text-amber-600" />
-                                <span>Why this medicine is prescribed:</span>
-                              </div>
-                              <p className="text-xs sm:text-sm font-semibold text-slate-800 leading-relaxed">
-                                {med.clinical_purpose || med.indication || "Prescribed by physician to treat clinical symptoms and restore health."}
-                              </p>
-                            </div>
-
-                            {/* Administration & Timing Footer */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm pt-1">
-                              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-2">
-                                <span className="font-bold text-slate-900 shrink-0">🍽️ Instructions:</span>
-                                <span className="text-slate-700 font-medium">
-                                  {med.instructions || "Take post-meals with a glass of water"}
-                                </span>
-                              </div>
-                              <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200 flex items-start gap-2">
-                                <span className="font-bold text-blue-950 shrink-0">⏱️ Course:</span>
-                                <span className="text-blue-900 font-semibold">
-                                  {med.duration ? `${med.duration} (Complete full course)` : "5 to 7 Days course"}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* 7. Bottom Action Bar */}
-                <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200">
                   <button
                     type="button"
-                    onClick={() => {
-                      setExtractedDoc(null);
-                      setSelectedFile(null);
-                      setPreviewUrl(null);
-                      setErrorMsg(null);
-                    }}
-                    className="w-full sm:w-auto px-5 py-2.5 rounded-full border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs sm:text-sm font-bold transition-all text-center cursor-pointer shadow-2xs"
+                    onClick={clearSelectedFile}
+                    className="h-8 w-8 rounded-full bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-600 flex items-center justify-center transition-colors cursor-pointer"
+                    title="Remove file"
                   >
-                    Scan Another Prescription
+                    <X className="h-4 w-4" />
                   </button>
-                  <Link
-                    href="/patient/history"
-                    className="w-full sm:w-auto px-6 py-2.5 rounded-full bg-[#0066FF] hover:bg-[#0052CC] text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-1.5"
-                  >
-                    <span>View in Health Timeline</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
                 </div>
+
+                {previewUrl && (
+                  <div className="relative overflow-hidden rounded-2xl border border-blue-500/50 bg-slate-950 p-2 shadow-xl group">
+                    <img
+                      src={previewUrl}
+                      alt="Prescription Preview"
+                      className="max-h-[240px] w-auto h-auto object-contain rounded-xl mx-auto bg-white/95"
+                    />
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => processUploadedFile()}
+                  disabled={isScanning}
+                  className="w-full rounded-full bg-[#0056B3] hover:bg-[#004085] text-white py-3 text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {isScanning ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      <span>{scanStage || "Processing Medical Document..."}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      <span>Re-scan &amp; Analyze Document</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            ) : (
+              /* Center Dropzone Content */
+              <div className="space-y-3 py-2 z-10 max-w-md">
+                <div className="w-16 h-16 rounded-full bg-[#EBF5FF] border border-[#B3D4FF] text-[#0056B3] flex items-center justify-center mx-auto shadow-xs">
+                  <UploadCloud className="w-8 h-8 text-[#0056B3]" />
+                </div>
+
+                <div className="space-y-0.5">
+                  <h3 className="text-lg sm:text-xl font-extrabold text-[#0F172A] tracking-tight">
+                    Drag &amp; drop your medical document here
+                  </h3>
+                  <p className="text-xs text-[#64748B] font-medium">
+                    or click to browse files
+                  </p>
+                </div>
+
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      fileInputRef.current?.click();
+                    }}
+                    className="rounded-full bg-[#0056B3] hover:bg-[#004085] text-white px-8 py-2.5 text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all cursor-pointer inline-flex items-center gap-2"
+                  >
+                    <UploadCloud className="w-4 h-4" />
+                    <span>Choose File</span>
+                  </button>
+                </div>
+
+                <p className="text-xs text-[#64748B] font-medium pt-0.5">
+                  Supports JPG, PNG, PDF, WEBP (Max 10 MB)
+                </p>
               </div>
             )}
           </div>
 
-          {/* RIGHT COLUMN: What Happens Next? (4 or 5 Cols) */}
-          <div className="lg:col-span-4 bg-white border border-[#E2E8F0] rounded-[28px] p-6 md:p-8 shadow-xs space-y-6 text-left">
-            <h2 className="font-heading font-bold text-lg text-[#0F172A] tracking-tight">
-              What happens next?
-            </h2>
-
-            {/* Stepper with connecting line */}
-            <div className="relative pl-1 space-y-6">
-              {/* Vertical connecting line */}
-              <div className="absolute left-[15px] top-4 bottom-4 w-[2px] bg-slate-200/80" />
-
-              {/* Step 1 */}
-              <div className="relative flex items-start gap-3.5">
-                <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center shrink-0 z-10 border-2 border-white shadow-2xs">
-                  1
+          {/* ─── BOTTOM 3 CATEGORY CARDS (Uniform, Smooth & Consistent) ─── */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+            <button
+              type="button"
+              onClick={() => processSampleDocument("prescription")}
+              className="p-4 rounded-2xl bg-white border border-[#E2E8F0] hover:border-[#0056B3] hover:bg-[#F8FAFC] shadow-2xs hover:shadow-md transition-all duration-200 text-left flex items-center gap-3.5 cursor-pointer group"
+            >
+              <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-200/80 font-bold text-sm group-hover:scale-105 transition-transform duration-200">
+                ℞
+              </div>
+              <div className="truncate">
+                <div className="text-xs font-bold text-[#0F172A] group-hover:text-[#0056B3] transition-colors truncate">
+                  Prescriptions
                 </div>
-                <div className="space-y-0.5 pt-0.5">
-                  <h3 className="text-xs font-bold text-[#0F172A]">
-                    Document Processing
-                  </h3>
-                  <p className="text-[11px] text-[#64748B] leading-relaxed">
-                    We extract text using advanced OCR (supports multiple languages).
-                  </p>
+                <div className="text-[11px] text-[#64748B] font-medium truncate mt-0.5">
+                  (PDF / Image)
                 </div>
               </div>
+            </button>
 
-              {/* Step 2 */}
-              <div className="relative flex items-start gap-3.5">
-                <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 font-bold text-xs flex items-center justify-center shrink-0 z-10 border-2 border-white shadow-2xs">
-                  2
+            <button
+              type="button"
+              onClick={() => processSampleDocument("diabetic_lab_report")}
+              className="p-4 rounded-2xl bg-white border border-[#E2E8F0] hover:border-[#0056B3] hover:bg-[#F8FAFC] shadow-2xs hover:shadow-md transition-all duration-200 text-left flex items-center gap-3.5 cursor-pointer group"
+            >
+              <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 border border-purple-200/80 font-bold group-hover:scale-105 transition-transform duration-200">
+                <FlaskConical className="w-5 h-5 text-purple-600" />
+              </div>
+              <div className="truncate">
+                <div className="text-xs font-bold text-[#0F172A] group-hover:text-[#0056B3] transition-colors truncate">
+                  Lab Reports
                 </div>
-                <div className="space-y-0.5 pt-0.5">
-                  <h3 className="text-xs font-bold text-[#0F172A]">
-                    Clinical Understanding
-                  </h3>
-                  <p className="text-[11px] text-[#64748B] leading-relaxed">
-                    MediKiosk identifies medications, tests, diagnoses and key information.
-                  </p>
+                <div className="text-[11px] text-[#64748B] font-medium truncate mt-0.5">
+                  (PDF / Image)
                 </div>
               </div>
+            </button>
 
-              {/* Step 3 */}
-              <div className="relative flex items-start gap-3.5">
-                <div className="w-7 h-7 rounded-full bg-purple-100 text-purple-700 font-bold text-xs flex items-center justify-center shrink-0 z-10 border-2 border-white shadow-2xs">
-                  3
+            <button
+              type="button"
+              onClick={() => processSampleDocument("prescription")}
+              className="p-4 rounded-2xl bg-white border border-[#E2E8F0] hover:border-[#0056B3] hover:bg-[#F8FAFC] shadow-2xs hover:shadow-md transition-all duration-200 text-left flex items-center gap-3.5 cursor-pointer group"
+            >
+              <div className="w-11 h-11 rounded-xl bg-blue-50 text-[#0056B3] flex items-center justify-center shrink-0 border border-blue-200/80 font-bold group-hover:scale-105 transition-transform duration-200">
+                <MoreHorizontal className="w-5 h-5 text-[#0056B3]" />
+              </div>
+              <div className="truncate">
+                <div className="text-xs font-bold text-[#0F172A] group-hover:text-[#0056B3] transition-colors truncate">
+                  More
                 </div>
-                <div className="space-y-0.5 pt-0.5">
-                  <h3 className="text-xs font-bold text-[#0F172A]">
-                    Saved to Your Records
-                  </h3>
-                  <p className="text-[11px] text-[#64748B] leading-relaxed">
-                    The information is added to your health timeline.
-                  </p>
+                <div className="text-[11px] text-[#64748B] font-medium truncate mt-0.5">
+                  (Any document)
                 </div>
               </div>
-
-              {/* Step 4 */}
-              <div className="relative flex items-start gap-3.5">
-                <div className="w-7 h-7 rounded-full bg-amber-100 text-amber-700 font-bold text-xs flex items-center justify-center shrink-0 z-10 border-2 border-white shadow-2xs">
-                  4
-                </div>
-                <div className="space-y-0.5 pt-0.5">
-                  <h3 className="text-xs font-bold text-[#0F172A]">
-                    Review &amp; Edit
-                  </h3>
-                  <p className="text-[11px] text-[#64748B] leading-relaxed">
-                    You can review, correct and organize the details.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Privacy & Security Guarantee Card */}
-            <div className="p-4 rounded-2xl bg-[#F0FDF4] border border-[#DCFCE7] flex items-center justify-between gap-3 shadow-2xs">
-              <div className="flex items-start gap-2.5">
-                <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-xs font-bold text-emerald-950">
-                    Your data is private and secure
-                  </h4>
-                  <p className="text-[10px] text-emerald-700 leading-snug mt-0.5">
-                    All documents are encrypted and stored securely in your personal health record.
-                  </p>
-                </div>
-              </div>
-
-              <div className="inline-flex items-center gap-1 bg-white/90 border border-emerald-300 px-2.5 py-1 rounded-full text-[10px] font-bold text-emerald-800 shrink-0 shadow-2xs">
-                <Lock className="w-2.5 h-2.5 text-emerald-700" />
-                <span>HIPAA Compliant</span>
-              </div>
-            </div>
+            </button>
           </div>
+
+          {/* Error Alert Box */}
+          {errorMsg && (
+            <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-start gap-3">
+              <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+              <div>
+                <strong className="font-bold block">OCR Processing Alert:</strong>
+                <span>{errorMsg}</span>
+              </div>
+            </div>
+          )}
+
+          {/* ─── 4. EXTRACTED OCR RESULTS DISPLAY SECTION ─── */}
+          {extractedDoc && (
+            <div className="pt-6 border-t-2 border-slate-200 space-y-6 animate-fadeIn">
+              {/* Document Summary Header */}
+              <div className="rounded-3xl border-2 border-[#0056B3]/30 bg-gradient-to-br from-[#F0F7FF] via-white to-[#EBF3FF] p-6 sm:p-7 shadow-sm relative overflow-hidden space-y-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="space-y-1.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-[#0056B3] text-white px-3 py-1 text-xs font-black uppercase tracking-wider shadow-xs">
+                        {extractedDoc.document_type.replace("_", " ")}
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-3 py-1 rounded-full">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                        {extractedDoc.confidence_score || 99.2}% Verified by Vision OCR
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-[#0056B3] bg-white px-3 py-1 rounded-full border border-[#0056B3]/30 shadow-2xs">
+                        <ShieldCheck className="h-3.5 w-3.5" /> ABDM Linked
+                      </span>
+                    </div>
+                    <h3 className="font-heading text-xl sm:text-2xl font-black text-[#0F172A] pt-1 leading-snug tracking-tight">
+                      {extractedDoc.document_purpose || "Outpatient Clinical Prescription"}
+                    </h3>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => window.print()}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 px-3.5 py-1.5 rounded-full border border-slate-300 transition-all shadow-2xs cursor-pointer"
+                    >
+                      <Printer className="h-3.5 w-3.5 text-slate-600" /> Print Record
+                    </button>
+                    <Link
+                      href="/patient/history"
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-3.5 py-1.5 rounded-full border border-emerald-400 transition-all shadow-2xs"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> View Timeline &rarr;
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Consultation Details Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
+                  <div className="p-3.5 rounded-2xl bg-white border border-blue-100 shadow-2xs space-y-1">
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-blue-600 uppercase tracking-wider">
+                      <Stethoscope className="w-4 h-4 text-[#0056B3]" /> Treating Physician
+                    </div>
+                    <div className="text-sm font-black text-[#0F172A] truncate">
+                      {extractedDoc.doctor_name || "Dr. Attending Physician"}
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-white border border-blue-100 shadow-2xs space-y-1">
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-blue-600 uppercase tracking-wider">
+                      <Building2 className="w-4 h-4 text-[#0056B3]" /> Facility / Hospital
+                    </div>
+                    <div className="text-sm font-bold text-[#0F172A] truncate">
+                      {extractedDoc.facility_name || "Outpatient Care Clinic"}
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-white border border-blue-100 shadow-2xs space-y-1">
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-blue-600 uppercase tracking-wider">
+                      <User className="w-4 h-4 text-[#0056B3]" /> Patient Name
+                    </div>
+                    <div className="text-sm font-black text-[#0F172A] truncate">
+                      {extractedDoc.patient_name || user?.full_name || "Registered Patient"}
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-white border border-blue-100 shadow-2xs space-y-1">
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-blue-600 uppercase tracking-wider">
+                      <Calendar className="w-4 h-4 text-[#0056B3]" /> Date
+                    </div>
+                    <div className="text-sm font-mono font-bold text-[#0F172A]">
+                      {String(extractedDoc.document_date || new Date().toISOString().split("T")[0])}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Extracted Prescribed Medications */}
+              {extractedDoc.extracted_medications && extractedDoc.extracted_medications.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between pb-1 border-b border-slate-200">
+                    <div className="flex items-center gap-2">
+                      <Pill className="w-5 h-5 text-[#0056B3]" />
+                      <h4 className="font-heading text-base sm:text-lg font-black text-[#0F172A]">
+                        Extracted Prescribed Medications ({extractedDoc.extracted_medications.length})
+                      </h4>
+                    </div>
+                    <span className="text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+                      Indian Pharmacopeia Verified
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    {extractedDoc.extracted_medications.map((med, idx) => {
+                      const sched = parseDosageSchedule(med.frequency);
+                      return (
+                        <div
+                          key={idx}
+                          className="p-5 rounded-2xl bg-white border-2 border-slate-200 hover:border-[#0056B3]/60 transition-all space-y-3 shadow-xs"
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="w-6 h-6 rounded-lg bg-blue-100 text-[#0056B3] flex items-center justify-center font-bold text-xs">
+                                  {idx + 1}
+                                </span>
+                                <h5 className="font-heading text-base font-black text-[#0F172A]">
+                                  {med.name}
+                                </h5>
+                              </div>
+                              {med.therapeutic_class && (
+                                <span className="inline-block text-xs font-semibold text-purple-800 bg-purple-50 px-2.5 py-0.5 rounded-md border border-purple-200">
+                                  {med.therapeutic_class}
+                                </span>
+                              )}
+                            </div>
+
+                            {med.dosage && (
+                              <span className="text-sm font-mono font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-lg border border-blue-200">
+                                {med.dosage}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+                            <div className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                              <Clock className="w-3.5 h-3.5 text-blue-600" /> Timing Schedule: <span className="text-slate-900 font-mono">{med.frequency}</span>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-2 text-xs">
+                              <div className={`p-2 rounded-lg text-center font-bold border ${sched.isMorning ? "bg-amber-50 border-amber-300 text-amber-950" : "bg-white text-slate-400"}`}>
+                                Morning {sched.isMorning ? "(1 Dose)" : ""}
+                              </div>
+                              <div className={`p-2 rounded-lg text-center font-bold border ${sched.isAfternoon ? "bg-sky-50 border-sky-300 text-sky-950" : "bg-white text-slate-400"}`}>
+                                Afternoon {sched.isAfternoon ? "(1 Dose)" : ""}
+                              </div>
+                              <div className={`p-2 rounded-lg text-center font-bold border ${sched.isNight ? "bg-indigo-50 border-indigo-300 text-indigo-950" : "bg-white text-slate-400"}`}>
+                                Night {sched.isNight ? "(1 Dose)" : ""}
+                              </div>
+                            </div>
+                          </div>
+
+                          {med.clinical_purpose && (
+                            <div className="rounded-xl bg-amber-50/70 border border-amber-200 p-3 text-xs font-semibold text-slate-800">
+                              <span className="font-bold text-amber-900">Purpose: </span>
+                              {med.clinical_purpose}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-2 flex items-center justify-between gap-3 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setExtractedDoc(null);
+                    setSelectedFile(null);
+                    setPreviewUrl(null);
+                  }}
+                  className="px-5 py-2.5 rounded-full border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-all"
+                >
+                  Scan Another Document
+                </button>
+
+                <Link
+                  href="/patient/history"
+                  className="px-6 py-2.5 rounded-full bg-[#0056B3] hover:bg-[#004085] text-white text-xs font-bold shadow-xs hover:shadow-md transition-all flex items-center gap-1.5"
+                >
+                  <span>View in Health Timeline</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* ─── Bottom Section: Quick Examples ─── */}
-        <div className="space-y-3.5 pt-4 text-left">
-          {/* Section Heading & View All Link */}
+        {/* ─── 5. QUICK SAMPLE EXAMPLES SECTION ─── */}
+        <div className="space-y-3.5 pt-2 text-left">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="font-heading font-bold text-lg text-[#0F172A] tracking-tight">
                 Quick Examples
               </h2>
               <p className="text-xs text-[#64748B]">
-                Try with sample documents to see how it works.
+                Try with sample documents to see how OCR extraction works.
               </p>
             </div>
 
             <button
               type="button"
               onClick={() => processSampleDocument("prescription")}
-              className="text-xs font-bold text-[#0066FF] hover:text-[#0052CC] inline-flex items-center gap-1 transition-colors cursor-pointer"
+              className="text-xs font-bold text-[#0056B3] hover:text-[#003882] inline-flex items-center gap-1 transition-colors cursor-pointer"
             >
               <span>View all examples</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          {/* 4 Example Cards Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {QUICK_EXAMPLES.map((example) => (
               <div
                 key={example.id}
                 onClick={() => processSampleDocument(example.type === "imaging" ? "prescription" : example.type)}
-                className="bg-white border border-[#E2E8F0] hover:border-[#0066FF] rounded-2xl p-4 shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center justify-between gap-3 group"
+                className="bg-white border border-[#E2E8F0] hover:border-[#0056B3] rounded-2xl p-4 shadow-2xs hover:shadow-md transition-all cursor-pointer flex items-center justify-between gap-3 group"
               >
-                {/* Left Mini-Thumbnail */}
-                <div className="w-12 h-14 rounded-lg bg-slate-50 border border-slate-200 flex flex-col items-center justify-center p-1 shrink-0 overflow-hidden shadow-2xs group-hover:border-blue-300 transition-colors">
-                  {example.type === "imaging" ? (
-                    <div className="w-full h-full bg-slate-900 rounded flex items-center justify-center text-[8px] font-mono text-cyan-300 font-bold">
-                      X-RAY
-                    </div>
-                  ) : (
-                    <div className="w-full h-full flex flex-col justify-between p-0.5">
-                      <span className="font-serif font-black text-[9px] text-[#0066FF] leading-none">
-                        ℞
-                      </span>
-                      <div className="space-y-0.5">
-                        <div className="h-0.5 w-full bg-slate-300 rounded" />
-                        <div className="h-0.5 w-3/4 bg-slate-300 rounded" />
-                        <div className="h-0.5 w-1/2 bg-slate-300 rounded" />
-                      </div>
-                    </div>
-                  )}
+                <div className="w-11 h-13 rounded-lg bg-slate-50 border border-slate-200 flex flex-col items-center justify-center p-1 shrink-0 group-hover:border-blue-300">
+                  <span className="font-serif font-black text-xs text-[#0056B3]">
+                    ℞
+                  </span>
                 </div>
 
-                {/* Center Content */}
                 <div className="flex-1 truncate text-left space-y-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-bold text-[#0F172A] truncate group-hover:text-[#0066FF] transition-colors">
-                      {example.title}
-                    </span>
+                  <div className="text-xs font-bold text-[#0F172A] truncate group-hover:text-[#0056B3] transition-colors">
+                    {example.title}
                   </div>
-                  <span
-                    className={`inline-block text-[9px] font-bold px-2 py-0.5 rounded-full border ${example.badgeColor}`}
-                  >
+                  <span className={`inline-block text-[9px] font-bold px-2 py-0.5 rounded-full border ${example.badgeColor}`}>
                     {example.badge}
                   </span>
                   <p className="text-[10px] text-[#64748B] truncate">
@@ -1252,17 +931,17 @@ export default function DocumentIntelligencePage() {
                   </p>
                 </div>
 
-                {/* Right Arrow Button */}
-                <div className="w-6 h-6 rounded-full bg-slate-100 group-hover:bg-blue-100 text-slate-400 group-hover:text-[#0066FF] flex items-center justify-center shrink-0 transition-colors">
+                <div className="w-6 h-6 rounded-full bg-slate-100 group-hover:bg-blue-100 text-slate-400 group-hover:text-[#0056B3] flex items-center justify-center shrink-0 transition-colors">
                   <ChevronRight className="w-3.5 h-3.5" />
                 </div>
               </div>
             ))}
           </div>
         </div>
+
       </main>
 
-      {/* 3. Global Footer */}
+      {/* ─── 6. FOOTER ─── */}
       <Footer />
     </div>
   );

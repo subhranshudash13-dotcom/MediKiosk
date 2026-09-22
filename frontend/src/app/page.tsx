@@ -70,7 +70,7 @@ export default function Home() {
         {/* ========================================================================= */}
         {/* HERO SECTION: AMBIENT HOSPITAL LOUNGE + ROTATING VALUE PROPOSITION       */}
         {/* ========================================================================= */}
-        <section className="relative w-full min-h-[70vh] flex flex-col justify-between items-center text-center px-4 sm:px-6 py-10 sm:py-14 overflow-hidden bg-slate-950 text-white">
+        <section className="relative w-full min-h-[calc(100vh-4rem)] flex flex-col justify-between items-center text-center px-4 sm:px-6 py-6 sm:py-10 overflow-hidden bg-slate-950 text-white">
           
           {/* Moving Blurred Hospital Lounge Background */}
           <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden select-none z-0">
